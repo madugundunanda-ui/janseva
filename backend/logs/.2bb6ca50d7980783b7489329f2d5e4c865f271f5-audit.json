@@ -1,0 +1,35 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\.2bb6ca50d7980783b7489329f2d5e4c865f271f5-audit.json",
+    "files": [
+        {
+            "date": 1779210141641,
+            "name": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\combined-2026-05-19.log",
+            "hash": "e74d9774f5149acc25b0390de9db19bfc4b363a99f47a199efb4e748620130cf"
+        },
+        {
+            "date": 1779287427331,
+            "name": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\combined-2026-05-20.log",
+            "hash": "2c171ceed65ecef3e0acc55ddf12afa4b81e2a83e0f7d54c71116cda6561e26c"
+        },
+        {
+            "date": 1779470592263,
+            "name": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\combined-2026-05-22.log",
+            "hash": "e938dab2d2b89f1c9bc928177b5a726950cd7b1ab18e4191839bbe21928a3df6"
+        },
+        {
+            "date": 1779726890161,
+            "name": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\combined-2026-05-25.log",
+            "hash": "eb4729c91ff9f8833651cda76380ee1a7a9359b2c5db9a2e98aa6fa0841daa65"
+        },
+        {
+            "date": 1779800476783,
+            "name": "C:\\Users\\M. Devika Rani\\Desktop\\Citizen-Grievance-System\\backend\\logs\\combined-2026-05-26.log",
+            "hash": "9493a0188248fd38a6598908348ec8b8a1d68654cd747fd29c12d246031706cc"
+        }
+    ],
+    "hashType": "sha256"
+}

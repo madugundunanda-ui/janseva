@@ -1,0 +1,17 @@
+{"level":"info","message":"Citizen Grievance Backend running on port 5000","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:00:27"}
+{"level":"info","message":"MongoDB connected: 127.0.0.1","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:00:27"}
+{"level":"info","message":"Citizen Grievance Backend running on port 5000","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:01:32"}
+{"level":"info","message":"MongoDB connected: 127.0.0.1","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:01:32"}
+{"level":"info","message":"Citizen Grievance Backend running on port 5000","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:08:37"}
+{"level":"info","message":"MongoDB connected: 127.0.0.1","service":"citizen-grievance-backend","timestamp":"2026-05-20 20:08:37"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 304 324ms","method":"GET","responseTimeMs":324,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:22:09","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/feedback/public 304 196ms","method":"GET","responseTimeMs":196,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:22:09","url":"/api/feedback/public"}
+{"ip":"::1","level":"info","message":"GET /api/feedback/public 304 50ms","method":"GET","responseTimeMs":50,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:35:41","url":"/api/feedback/public"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 304 194ms","method":"GET","responseTimeMs":194,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:35:41","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 304 8ms","method":"GET","responseTimeMs":8,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:35:48","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/feedback/public 304 9ms","method":"GET","responseTimeMs":9,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:35:48","url":"/api/feedback/public"}
+{"ip":"::1","level":"info","message":"GET /api/feedback/public 304 72ms","method":"GET","responseTimeMs":72,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:41:02","url":"/api/feedback/public"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 304 269ms","method":"GET","responseTimeMs":269,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:41:02","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 304 1203ms","method":"GET","responseTimeMs":1203,"service":"citizen-grievance-backend","statusCode":304,"timestamp":"2026-05-20 20:48:41","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/announcements?published=true 200 82ms","method":"GET","responseTimeMs":82,"service":"citizen-grievance-backend","statusCode":200,"timestamp":"2026-05-20 20:48:43","url":"/api/announcements?published=true"}
+{"ip":"::1","level":"info","message":"GET /api/feedback/public 200 40ms","method":"GET","responseTimeMs":40,"service":"citizen-grievance-backend","statusCode":200,"timestamp":"2026-05-20 20:48:43","url":"/api/feedback/public"}
