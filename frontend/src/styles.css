@@ -1,0 +1,249 @@
+@import 'tailwindcss';
+
+/* Gineko-Inspired Soft Editorial Palette */
+:root {
+  --font-geist: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --bg-deep: #eeebdc;
+  --bg-panel: #e4e0cc;
+  --bg-surface: #d6dec7;
+  --gineko-glow-core: #f3f0e5;
+  --gineko-glow-mid: #ece7d7;
+  --gineko-glow-outer: #e0dac6;
+  --text-primary: #383545 !important;
+  --text-muted: #545063 !important;
+  --accent-blue: #8a85a2;
+  --accent-cyan: #a33f93 !important;
+  --accent-emerald: #91ad84;
+  --glass-bg: rgba(247, 245, 237, 0.6);
+  --glass-border: rgba(127, 122, 141, 0.18);
+}
+
+html {
+  scroll-behavior: initial; /* Lenis scroll control */
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-geist);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  color: var(--text-primary) !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-kerning: normal;
+  overflow-x: hidden;
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--gineko-glow-core) 0%,
+    var(--gineko-glow-mid) 55%,
+    var(--gineko-glow-outer) 100%
+  ) !important;
+  background-attachment: fixed !important;
+  transition: background 0.1s ease-out;
+}
+
+body, h1, h2, h3, h4, h5, h6, p, span, div, td, th {
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  text-rendering: optimizeLegibility !important;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 17, 21, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(106, 169, 255, 0.15);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(106, 169, 255, 0.3);
+}
+
+/* Glassmorphism Styles */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 24px 0 rgba(0, 0, 0, 0.25);
+  transition: border-color 0.3s ease, background 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(163, 63, 147, 0.35);
+  background: rgba(247, 245, 237, 0.82);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  outline: none;
+  font-size: 0.85rem;
+  transition: all 0.25s ease;
+}
+
+.glass-input:focus {
+  border-color: var(--accent-cyan);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 0 14px rgba(163, 63, 147, 0.2);
+}
+
+/* Typography & Official Text Glow */
+.text-glow {
+  text-shadow: 0 0 12px rgba(163, 63, 147, 0.2);
+}
+
+.text-glow-blue {
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.55);
+}
+
+.text-glow-cyan {
+  text-shadow: 0 0 18px rgba(163, 63, 147, 0.35);
+}
+
+/* Interactive official card border gradient glow */
+.glow-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.glow-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03), rgba(112, 175, 255, 0.25));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Clean Government Dot Grid Background */
+.tech-dots-bg {
+  position: relative;
+}
+
+.tech-dots-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(127, 122, 141, 0.15) 1px, transparent 1px);
+  background-size: 28px 28px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.55;
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+  100% { transform: translateY(0px); }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.65; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 6s ease-in-out infinite;
+}
+
+/* Lenis Specific Overrides */
+.lenis.lenis-smooth {
+  scroll-behavior: auto;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overflow: clip;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* Dynamic Scroll Transitions Theme Tokens */
+.landing-container {
+  --bg-color: transparent;
+  --text-primary: #383545;
+  --text-muted: #545063;
+  --glass-bg: rgba(247, 245, 237, 0.6);
+  --glass-border: rgba(127, 122, 141, 0.18);
+  --btn-bg: #a33f93;
+  --btn-text: #ffffff;
+  background-color: var(--bg-color) !important;
+  transition: none !important; /* Let GSAP handle smooth variable interpolation directly */
+}
+
+.text-glow-bright {
+  text-shadow: 0 0 25px rgba(255, 255, 255, 0.4);
+}
+
+.text-primary-var {
+  color: var(--text-primary) !important;
+}
+
+.text-muted-var {
+  color: var(--text-muted) !important;
+}
+
+.bg-glass-var {
+  background-color: var(--glass-bg) !important;
+}
+
+.border-var {
+  border-color: var(--glass-border) !important;
+}
+
+.glass-input::placeholder {
+  color: #545063 !important;
+  opacity: 0.8 !important;
+}
+
+@keyframes progressMove {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-progress {
+  animation: progressMove 1.5s infinite linear;
+}
+
+@keyframes pulseProgress {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.animate-pulse-progress {
+  animation: pulseProgress 1.2s infinite ease-in-out;
+}

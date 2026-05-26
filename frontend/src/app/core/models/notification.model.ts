@@ -1,0 +1,13 @@
+export type NotificationChannel = 'websocket' | 'polling' | 'system';
+export type NotificationKind = 'citizen_alert' | 'officer_update' | 'admin_alert' | 'sla_warning' | 'complaint_update';
+
+export interface NotificationItem {
+  id: string;
+  kind: NotificationKind;
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  targetRole?: string;
+  channel: NotificationChannel;
+}

@@ -1,0 +1,150 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { Router, RouterLink } from '@angular/router';
+import { AuthService } from '../../core/services/auth.service';
+import { ComplaintsService } from '../../core/services/complaints.service';
+import { TranslationService } from '../../core/services/translation.service';
+import { Complaint } from '../../core/services/api.service';
+
+@Component({
+  selector: 'app-supervisor',
+  imports: [CommonModule, RouterLink],
+  template: `
+    <div class="space-y-6 pb-12">
+      <!-- Supervisor Hero Banner -->
+      <div class="glass-panel p-6 rounded-2xl border border-var flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-amber-950/5 via-transparent to-transparent">
+        <div class="space-y-2">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-amber-500/20 bg-amber-950/10 font-mono text-[9px] text-amber-400 uppercase tracking-widest">
+            <span>📡 GOVERNANCE CONTROL NODE ACTIVE // JURISDICTION DEPT SUPERVISOR ACTIVE</span>
+          </div>
+          <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono">
+            GOVERNANCE CONSOLE // <span class="text-glow">{{ authService.currentUser()?.name }}</span>
+          </h2>
+          <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl">
+            This workspace provides high-level jurisdiction oversight. Dispatch unassigned tickets, manage officer workloads, monitor SLA risk indicators, and audit resolution proofs.
+          </p>
+        </div>
+
+        <button [routerLink]="['/dashboard/complaints']" class="px-5 py-3 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(245,158,11,0.2)] cursor-pointer">
+          Dispatch Officer Panel
+        </button>
+      </div>
+
+      <!-- Quick Metrics Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Metric: Total Department Load -->
+        <div class="glass-panel p-5 rounded-xl border border-var">
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">Total Department Load</div>
+          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ deptComplaints.length }}</div>
+          <div class="font-mono text-[8px] text-[#6AA9FF] mt-1 uppercase tracking-wide">ACTIVE TICKETS IN DEPT</div>
+        </div>
+
+        <!-- Metric: Unassigned -->
+        <div class="glass-panel p-5 rounded-xl border border-var">
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">Unassigned Tickets</div>
+          <div class="text-2xl font-bold font-mono tracking-tight text-amber-400">{{ unassignedCount }}</div>
+          <div class="font-mono text-[8px] text-amber-400 mt-1 uppercase tracking-wide">NEEDS WARD OFFICER</div>
+        </div>
+
+        <!-- Metric: SLA Risks / Escalated -->
+        <div class="glass-panel p-5 rounded-xl border border-var">
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">Escalated SLA Risks</div>
+          <div class="text-2xl font-bold font-mono tracking-tight text-red-400">{{ escalatedCount }}</div>
+          <div class="font-mono text-[8px] text-red-400 mt-1 uppercase tracking-wide">HIGH ESCALATION PROBABILITY</div>
+        </div>
+
+        <!-- Metric: Resolved -->
+        <div class="glass-panel p-5 rounded-xl border border-var">
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">Resolved Cleared</div>
+          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ resolvedCount }}</div>
+          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">SUCCESS RESOLVED</div>
+        </div>
+      </div>
+
+      <!-- Action items: Unassigned tickets queue -->
+      <div class="glass-panel rounded-2xl border border-var overflow-hidden">
+        <div class="p-5 border-b border-var flex items-center justify-between">
+          <h3 class="font-mono text-[10px] tracking-widest text-amber-400 uppercase font-bold">Unassigned Tickets Waiting Dispatch</h3>
+          <span class="font-mono text-[9px] text-muted-var uppercase">Immediate Dispatch Action Required</span>
+        </div>
+
+        <div class="divide-y divide-white/5">
+          @for (complaint of unassignedComplaints; track complaint.id) {
+            <div class="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-white/2 transition-colors">
+              <div class="space-y-1">
+                <div class="flex items-center gap-3 font-mono text-[9px] uppercase">
+                  <span class="text-amber-400">{{ complaint.id }}</span>
+                  <span class="text-muted-var">• WARD {{ complaint.location.ward }}</span>
+                  <span class="text-red-400 font-bold">• AI Severity: {{ complaint.severityScore ?? 75 }}/100</span>
+                </div>
+                <h4 class="text-sm font-semibold text-primary-var uppercase">{{ complaint.title }}</h4>
+                <p class="text-xs text-muted-var line-clamp-1 font-mono uppercase">{{ complaint.description }}</p>
+              </div>
+
+              <div class="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-end">
+                <span class="px-2 py-0.5 rounded text-[8px] font-mono border border-purple-500/30 text-purple-400 bg-purple-950/15 uppercase tracking-wider">
+                  Submitted
+                </span>
+                
+                <button [routerLink]="['/dashboard/complaints']" class="px-3 py-1.5 rounded bg-white text-black text-[9px] font-mono uppercase font-bold cursor-pointer">
+                  Assign Officer
+                </button>
+              </div>
+            </div>
+          } @empty {
+            <div class="p-12 text-center">
+              <p class="font-mono text-xs text-muted-var uppercase">All incoming departmental grievances are assigned.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  `,
+  styles: [`
+    :host {
+      display: block;
+    }
+  `]
+})
+export class SupervisorComponent implements OnInit {
+  deptComplaints: Complaint[] = [];
+  unassignedComplaints: Complaint[] = [];
+  unassignedCount = 0;
+  escalatedCount = 0;
+  resolvedCount = 0;
+
+  constructor(
+    public authService: AuthService,
+    private complaintsService: ComplaintsService,
+    public translationService: TranslationService
+  ) {}
+
+  ngOnInit(): void {
+    const user = this.authService.currentUser();
+    const userDeptId = this.getDepartmentId();
+
+    if (user) {
+      this.complaintsService.loadComplaints().subscribe((data) => {
+        // Filter complaints belonging to the supervisor's department
+        this.deptComplaints = data.filter(c => {
+          const compDeptId = typeof c.department === 'object' && c.department !== null ? (c.department as any).id || (c.department as any)._id : c.department;
+          return compDeptId === userDeptId;
+        });
+
+        this.unassignedComplaints = this.deptComplaints.filter(c => c.status === 'submitted');
+        this.unassignedCount = this.unassignedComplaints.length;
+        this.escalatedCount = this.deptComplaints.filter(c => c.status === 'escalated').length;
+        this.resolvedCount = this.deptComplaints.filter(c => c.status === 'resolved').length;
+      });
+    }
+  }
+
+  getDepartmentId(): string {
+    const user = this.authService.currentUser();
+    if (!user) return '';
+    if (typeof user.department === 'object' && user.department !== null) {
+      return (user.department as any).id || (user.department as any)._id || '';
+    }
+    return String(user.department || '');
+  }
+}
