@@ -2,10 +2,12 @@ const express = require('express');
 const feedbackController = require('../controllers/feedbackController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorizeRoles } = require('../middleware/roleMiddleware');
+const { validate } = require('../middleware/validate');
+const { submitFeedbackSchema } = require('../validators');
 
 const router = express.Router();
 
-router.post('/', protect, authorizeRoles('citizen'), feedbackController.createFeedback);
+router.post('/', protect, authorizeRoles('citizen'), validate(submitFeedbackSchema), feedbackController.createFeedback);
 router.get('/my', protect, authorizeRoles('citizen'), feedbackController.getMyFeedback);
 router.get('/public', feedbackController.getPublicFeedback);
 router.get('/stats', protect, authorizeRoles('admin'), feedbackController.getFeedbackStats);

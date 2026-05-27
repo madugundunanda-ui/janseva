@@ -7,6 +7,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
 @Component({
   selector: 'app-login',
+  standalone: true,
   imports: [RouterLink, FormsModule, CommonModule],
   template: `
     <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden tech-dots-bg">
@@ -77,7 +78,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
         </div>
 
         <!-- Elegant Highlight Card based on role -->
-        @if (selectedRole === 'citizen') {
+        <ng-container *ngIf="selectedRole === 'citizen'">
           <div class="mb-6 p-4 rounded-xl border border-amber-500/25 bg-amber-950/15 text-amber-200 font-mono text-[10px] uppercase tracking-wide leading-relaxed flex items-start gap-3 shadow-[0_0_15px_rgba(245,158,11,0.08)]">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
@@ -86,7 +87,8 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
               {{ translationService.t('ONLY_NEW_CITIZENS') }}
             </div>
           </div>
-        } @else {
+        </ng-container>
+        <ng-container *ngIf="selectedRole !== 'citizen'">
           <div class="mb-6 p-4 rounded-xl border border-blue-500/25 bg-blue-950/15 text-blue-200 font-mono text-[9.5px] uppercase tracking-wide leading-relaxed flex items-start gap-3 shadow-[0_0_15px_rgba(59,130,246,0.08)] animate-pulse">
             <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0 text-[#6AA9FF]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
@@ -95,13 +97,11 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
               Authorized Government Personnel Only. System Access Logs Active // Unauthorized Access Logged.
             </div>
           </div>
-        }
+        </ng-container>
 
-        @if (errorMessage) {
-          <div class="mb-6 p-4 rounded bg-red-100 border border-red-300 text-red-700 font-mono text-xs uppercase tracking-wide">
-            {{ errorMessage }}
-          </div>
-        }
+        <div *ngIf="errorMessage" class="mb-6 p-4 rounded bg-red-100 border border-red-300 text-red-700 font-mono text-xs uppercase tracking-wide">
+          {{ errorMessage }}
+        </div>
 
         <!-- Login Form -->
         <form (ngSubmit)="onSubmit()" class="space-y-6">
@@ -127,24 +127,19 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
                    placeholder="••••••••">
           </div>
 
-          <button type="submit" [disabled]="loading" 
+            <button type="submit" [disabled]="loading" 
                   class="w-full py-3.5 rounded font-mono font-bold text-xs tracking-wider uppercase transition-all duration-500 disabled:opacity-50 cursor-pointer"
                   [ngClass]="selectedRole === 'citizen' ? 'bg-[#A33F93] hover:bg-[#8c357f] text-white shadow-[0_0_15px_rgba(163,63,147,0.25)]' : 'bg-[#06b6d4] hover:bg-[#0891b2] text-black shadow-[0_0_15px_rgba(6,182,212,0.25)]'">
-            @if (loading) {
-              DECODING AUTH...
-            } @else {
-              {{ translationService.t('AUTHENTICATE_GATEWAY') }}
-            }
+            <span *ngIf="loading">DECODING AUTH...</span>
+            <span *ngIf="!loading">{{ translationService.t('AUTHENTICATE_GATEWAY') }}</span>
           </button>
         </form>
 
         <!-- Only show registration links for Citizen role -->
-        @if (selectedRole === 'citizen') {
-          <div class="mt-6 text-center text-xs font-mono text-muted-var">
-            {{ translationService.t('NEW_NODE') }} 
-            <a [routerLink]="['/auth/register']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1 font-bold">{{ translationService.t('REGISTER_CORE') }}</a>
-          </div>
-        }
+        <div *ngIf="selectedRole === 'citizen'" class="mt-6 text-center text-xs font-mono text-muted-var">
+          {{ translationService.t('NEW_NODE') }} 
+          <a [routerLink]="['/auth/register']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1 font-bold">{{ translationService.t('REGISTER_CORE') }}</a>
+        </div>
       </div>
     </div>
   `,
@@ -223,13 +218,20 @@ export class LoginComponent implements OnInit {
 
     this.authService.login(payload).subscribe({
       next: (res) => {
+        this.loading = false;
         this.redirectToDashboard(res?.user?.role);
       },
       error: (err) => {
-        if (err.status === 401 && err.message?.toLowerCase().includes('role')) {
+        const status = err?.status;
+        const friendly = err?.friendlyMessage || err?.error?.message || err?.message || '';
+        if ((status === 401 || status === 403) && /role/i.test(friendly)) {
           this.errorMessage = "The requested role does not match this user's account role.";
+        } else if (status === 403) {
+          this.errorMessage = 'Access forbidden for the selected role.';
+        } else if (status === 401) {
+          this.errorMessage = 'Invalid credentials.';
         } else {
-          this.errorMessage = err.message || 'Authentication Gateway Rejected Credentials';
+          this.errorMessage = friendly || 'Authentication Gateway Rejected Credentials';
         }
         this.loading = false;
       },

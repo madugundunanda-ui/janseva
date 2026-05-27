@@ -25,8 +25,18 @@ export class NotificationsService {
       return;
     }
 
+    const token = window.localStorage.getItem('token');
+    if (!token) {
+      this.startPolling();
+      return;
+    }
+
     try {
-      this.socket = new WebSocket(environment.websocketUrl);
+      let wsUrl = `${environment.websocketUrl}?token=${token}`;
+      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+        wsUrl = wsUrl.replace(/^ws:/i, 'wss:');
+      }
+      this.socket = new WebSocket(wsUrl);
       
       this.socket.onopen = () => {
         this.stopPolling();

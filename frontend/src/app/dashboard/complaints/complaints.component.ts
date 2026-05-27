@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Complaint, Department, User } from '../../core/services/api.service';
+import { UserDepartmentRef } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
 import { ComplaintsService } from '../../core/services/complaints.service';
 import { DepartmentsService } from '../../core/services/departments.service';
@@ -678,8 +679,6 @@ export class ComplaintsComponent implements OnInit {
     }
   }
 
-  }
-
   submitComplaint() {
     this.loadingSubmit = true;
 
@@ -1049,7 +1048,7 @@ export class ComplaintsComponent implements OnInit {
     alert('Resolution feedback registered on municipal grid ledger.');
   }
 
-  departmentName(dept: Department | string | undefined): string {
+  departmentName(dept: Department | UserDepartmentRef | string | undefined): string {
     if (!dept) {
       return 'General Operations';
     }
@@ -1057,6 +1056,6 @@ export class ComplaintsComponent implements OnInit {
       const match = this.departmentsList.find((item) => item.id === dept || item.name.toLowerCase() === dept.toLowerCase());
       return match?.name ?? dept;
     }
-    return dept && typeof dept !== 'string' ? dept.name : 'General Operations';
+    return dept && typeof dept !== 'string' ? (dept.name ?? 'General Operations') : 'General Operations';
   }
 }

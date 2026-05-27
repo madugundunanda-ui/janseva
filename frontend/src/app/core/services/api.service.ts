@@ -53,7 +53,14 @@ export class ApiService {
       map((response) => this.unwrap<T>(response)),
       retry({
         count: 2,
-        delay: (error, retryCount) => timer(retryCount * 1000)
+        delay: (error, retryCount) => {
+          // Only retry on 5xx server errors or network failures (status 0)
+          const status = error?.status ?? 0;
+          if (status > 0 && status < 500) {
+            return throwError(() => error);
+          }
+          return timer(retryCount * 1000);
+        }
       }),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -244,8 +251,17 @@ export class ApiService {
 
   private handleError(path: string) {
     return (error: HttpErrorResponse) => {
-      const message = error.error?.message || error.message || `Request failed for ${path}`;
-      return throwError(() => new Error(message));
+      // Preserve the original HttpErrorResponse so callers can inspect status/code
+      // but ensure there's a readable message available.
+      if (error && typeof error === 'object') {
+        try {
+          const message = error.error?.message || error.message || `Request failed for ${path}`;
+          (error as any).friendlyMessage = message;
+        } catch {
+          // ignore
+        }
+      }
+      return throwError(() => error);
     };
   }
 

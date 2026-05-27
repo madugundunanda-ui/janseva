@@ -6,6 +6,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
 @Component({
   selector: 'app-register',
+  standalone: true,
   imports: [RouterLink, FormsModule],
   template: `
     <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden tech-dots-bg">
@@ -35,9 +36,9 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
         </div>
 
         @if (errorMessage) {
-          <div class="mb-6 p-4 rounded bg-red-100 border border-red-300 text-red-700 font-mono text-xs uppercase tracking-wide">
-            {{ errorMessage }}
-          </div>
+        <div class="mb-6 p-4 rounded bg-red-100 border border-red-300 text-red-700 font-mono text-xs uppercase tracking-wide">
+          {{ errorMessage }}
+        </div>
         }
 
         <!-- Signup Form -->
@@ -73,9 +74,9 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
           <button type="submit" [disabled]="loading" class="w-full mt-2 py-3.5 rounded bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-50">
             @if (loading) {
-              {{ translationService.t('REGISTERING') }}
+              <span>{{ translationService.t('REGISTERING') }}</span>
             } @else {
-              {{ translationService.t('INIT_REGISTER') }}
+              <span>{{ translationService.t('INIT_REGISTER') }}</span>
             }
           </button>
         </form>

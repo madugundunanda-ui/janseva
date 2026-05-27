@@ -135,6 +135,10 @@ const userSchema = new mongoose.Schema(
     longitude: {
       type: Number,
     },
+    geoPoint: {
+      type: { type: String, enum: ['Point'] },
+      coordinates: { type: [Number] },
+    },
     trustScore: {
       type: Number,
       default: 100,
@@ -155,6 +159,20 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1, department: 1 });
+userSchema.index({ geoPoint: '2dsphere' });
+
+// Auto-populate geoPoint from latitude/longitude on save
+userSchema.pre('save', function setGeoPoint(next) {
+  if (this.latitude != null && this.longitude != null && isFinite(this.latitude) && isFinite(this.longitude)) {
+    this.geoPoint = {
+      type: 'Point',
+      coordinates: [this.longitude, this.latitude]
+    };
+  } else {
+    this.geoPoint = undefined;
+  }
+  next();
+});
 
 userSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) {

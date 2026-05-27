@@ -314,34 +314,60 @@ const createComplaint = asyncHandler(async (req, res) => {
       // Get all active officers in this department
       const officers = await User.find({ role: 'officer', department: departmentId, activeStatus: true });
       if (officers.length > 0) {
+        const officerIds = officers.map(o => o._id);
+        const activeStatuses = ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'];
+
+        // Single aggregation to get all officer stats in one query
+        const statsAgg = await Complaint.aggregate([
+          { $match: { assignedOfficer: { $in: officerIds } } },
+          {
+            $group: {
+              _id: '$assignedOfficer',
+              activeCount: {
+                $sum: { $cond: [{ $in: ['$status', activeStatuses] }, 1, 0] }
+              },
+              totalAssigned: { $sum: 1 },
+              escalatedCount: {
+                $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] }
+              },
+              resolvedCount: {
+                $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+              },
+              totalResolutionMs: {
+                $sum: {
+                  $cond: [
+                    { $eq: ['$status', 'resolved'] },
+                    { $subtract: ['$updatedAt', '$createdAt'] },
+                    0
+                  ]
+                }
+              }
+            }
+          }
+        ]);
+
+        const statsMap = new Map();
+        for (const s of statsAgg) {
+          statsMap.set(s._id.toString(), s);
+        }
+
         let bestOfficer = null;
         let bestScore = -1;
 
         for (const officer of officers) {
-          // Calculate score factors
-          const activeComplaintsCount = await Complaint.countDocuments({
-            assignedOfficer: officer._id,
-            status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] }
-          });
+          const stats = statsMap.get(officer._id.toString()) || {
+            activeCount: 0, totalAssigned: 0, escalatedCount: 0, resolvedCount: 0, totalResolutionMs: 0
+          };
 
           let workloadScore = 0;
-          if (activeComplaintsCount <= 2) workloadScore = 100;
-          else if (activeComplaintsCount <= 5) workloadScore = 80;
-          else if (activeComplaintsCount <= 9) workloadScore = 60;
+          if (stats.activeCount <= 2) workloadScore = 100;
+          else if (stats.activeCount <= 5) workloadScore = 80;
+          else if (stats.activeCount <= 9) workloadScore = 60;
           else workloadScore = 30;
 
-          const resolvedComplaints = await Complaint.find({ assignedOfficer: officer._id, status: 'resolved' });
           let avgResolutionDays = 3;
-          if (resolvedComplaints.length > 0) {
-            let totalDiff = 0;
-            let count = 0;
-            for (const comp of resolvedComplaints) {
-              if (comp.updatedAt && comp.createdAt) {
-                totalDiff += (comp.updatedAt - comp.createdAt) / (1000 * 60 * 60 * 24);
-                count++;
-              }
-            }
-            if (count > 0) avgResolutionDays = totalDiff / count;
+          if (stats.resolvedCount > 0) {
+            avgResolutionDays = Math.max(0.1, (stats.totalResolutionMs / stats.resolvedCount) / (1000 * 60 * 60 * 24));
           }
 
           let speedScore = 0;
@@ -350,9 +376,7 @@ const createComplaint = asyncHandler(async (req, res) => {
           else if (avgResolutionDays <= 7) speedScore = 60;
           else speedScore = 30;
 
-          const totalAssigned = await Complaint.countDocuments({ assignedOfficer: officer._id });
-          const escalatedCount = await Complaint.countDocuments({ assignedOfficer: officer._id, status: 'escalated' });
-          const escalationRate = totalAssigned > 0 ? (escalatedCount / totalAssigned) : 0;
+          const escalationRate = stats.totalAssigned > 0 ? (stats.escalatedCount / stats.totalAssigned) : 0;
           const emailSum = officer.email.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
           const basePerformance = 80 + (emailSum % 18);
           const performanceScore = Math.max(40, Math.round(basePerformance - (escalationRate * 40)));
@@ -415,22 +439,28 @@ const createComplaint = asyncHandler(async (req, res) => {
     logger.error('Failed to update hotspot clustering', { message: geoError.message, stack: geoError.stack });
   }
 
-  // Notify nearby citizens within 1km
+  // Notify nearby citizens within 1km using geo-spatial index
   try {
-    const users = await User.find({ role: 'citizen' });
     let notifiedCount = 0;
-    for (const u of users) {
-      if (u._id.toString() === req.user._id.toString()) continue;
-      if (u.latitude && u.longitude) {
-        const dist = getDistanceInKm(latitude, longitude, u.latitude, u.longitude);
-        if (dist <= 1.0) {
-          notifiedCount++;
-          logger.info('Nearby citizen notified for complaint validation', {
-            complaintId: complaint._id.toString(),
-            citizenName: u.name,
-            citizenEmail: u.email,
-          });
+    if (latitude && longitude && isFinite(latitude) && isFinite(longitude)) {
+      const nearbyCitizens = await User.find({
+        role: 'citizen',
+        _id: { $ne: req.user._id },
+        geoPoint: {
+          $near: {
+            $geometry: { type: 'Point', coordinates: [longitude, latitude] },
+            $maxDistance: 1000 // 1km in meters
+          }
         }
+      }).select('name email').limit(100);
+
+      notifiedCount = nearbyCitizens.length;
+      for (const u of nearbyCitizens) {
+        logger.info('Nearby citizen notified for complaint validation', {
+          complaintId: complaint._id.toString(),
+          citizenName: u.name,
+          citizenEmail: u.email,
+        });
       }
     }
     logger.info('Nearby citizen notifications sent', {
@@ -472,11 +502,14 @@ const createComplaint = asyncHandler(async (req, res) => {
 });
 
 const uploadComplaintImages = asyncHandler(async (req, res) => {
-  if (!req.files || req.files.length === 0) {
+  // Support both upload.single (req.file) and upload.array (req.files)
+  const files = req.files && req.files.length > 0 ? req.files : (req.file ? [req.file] : []);
+
+  if (files.length === 0) {
     throw new AppError('Please upload at least one image', 400);
   }
 
-  const images = req.files.map((file) => ({
+  const images = files.map((file) => ({
     url: `/uploads/complaints/${file.filename}`,
     filename: file.filename,
     originalName: file.originalname,
@@ -703,11 +736,15 @@ const checkDuplicate = asyncHandler(async (req, res) => {
   const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
   
   try {
+    const abortController = new AbortController();
+    const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
+
     const aiResponse = await fetch(`${AI_SERVICE_URL}/check-duplicate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: abortController.signal,
       body: JSON.stringify({
         title,
         description,
@@ -717,6 +754,8 @@ const checkDuplicate = asyncHandler(async (req, res) => {
         existing_complaints: existingComplaintsPayload,
       }),
     });
+
+    clearTimeout(fetchTimeout);
 
     if (!aiResponse.ok) {
       const errText = await aiResponse.text();
@@ -789,43 +828,73 @@ const getNearbyComplaints = asyncHandler(async (req, res) => {
     throw new AppError('Latitude and longitude parameters are required', 400);
   }
 
-  const allComplaints = await Complaint.find({
-    status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] }
-  })
-    .populate('department', 'name')
-    .populate('citizen', 'firstName lastName email phone currentAddress permanentAddress age gender occupation aadhaarNumber');
-
-  const nearbyList = [];
   const host = req.get('host');
   const protocol = req.protocol;
 
-  for (const c of allComplaints) {
-    if (!c.location || !c.location.latitude || !c.location.longitude) continue;
-    
-    if (c.citizen && c.citizen._id.toString() === req.user._id.toString()) continue;
-
-    const dist = getDistanceInKm(lat, lng, c.location.latitude, c.location.longitude);
-    if (dist <= 1.0) {
-      const cObj = c.toObject();
-      cObj.distance = Math.round(dist * 1000);
-
-      if (cObj.image) {
-        const imagePath = cObj.image.startsWith('/') ? cObj.image.slice(1) : cObj.image;
-        cObj.imageUrl = `${protocol}://${host}/${imagePath}`;
-      } else {
-        cObj.imageUrl = '';
+  // Use $geoNear aggregation for efficient 2dsphere-indexed proximity search
+  const nearbyComplaints = await Complaint.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [lng, lat] },
+        distanceField: 'distanceMeters',
+        maxDistance: 1000, // 1km in meters
+        spherical: true,
+        key: 'location.geoPoint',
+        query: {
+          status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
+          citizen: { $ne: req.user._id }
+        }
       }
+    },
+    { $sort: { distanceMeters: 1 } },
+    { $limit: 50 },
+    {
+      $lookup: {
+        from: 'departments',
+        localField: 'department',
+        foreignField: '_id',
+        as: 'departmentDoc'
+      }
+    },
+    { $unwind: { path: '$departmentDoc', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'citizen',
+        foreignField: '_id',
+        as: 'citizenDoc',
+        pipeline: [
+          { $project: { firstName: 1, lastName: 1, email: 1, phone: 1, currentAddress: 1, permanentAddress: 1, age: 1, gender: 1, occupation: 1, aadhaarNumber: 1 } }
+        ]
+      }
+    },
+    { $unwind: { path: '$citizenDoc', preserveNullAndEmptyArrays: true } }
+  ]);
 
-      const totalVotes = (cObj.communityVotes?.confirm || 0) + (cObj.communityVotes?.reject || 0) + (cObj.communityVotes?.worse || 0);
-      cObj.validationScore = totalVotes > 0 
-        ? Math.round(((cObj.communityVotes?.confirm || 0) + (cObj.communityVotes?.worse || 0)) / totalVotes * 100) 
-        : 100;
-      
-      cObj.hasValidated = c.validators && c.validators.some(v => v.toString() === req.user._id.toString());
+  const nearbyList = nearbyComplaints.map(c => {
+    c.distance = Math.round(c.distanceMeters);
+    c.department = c.departmentDoc || c.department;
+    c.citizen = c.citizenDoc || c.citizen;
+    delete c.departmentDoc;
+    delete c.citizenDoc;
+    delete c.distanceMeters;
 
-      nearbyList.push(cObj);
+    if (c.image) {
+      const imagePath = c.image.startsWith('/') ? c.image.slice(1) : c.image;
+      c.imageUrl = `${protocol}://${host}/${imagePath}`;
+    } else {
+      c.imageUrl = '';
     }
-  }
+
+    const totalVotes = (c.communityVotes?.confirm || 0) + (c.communityVotes?.reject || 0) + (c.communityVotes?.worse || 0);
+    c.validationScore = totalVotes > 0 
+      ? Math.round(((c.communityVotes?.confirm || 0) + (c.communityVotes?.worse || 0)) / totalVotes * 100) 
+      : 100;
+    
+    c.hasValidated = c.validators && c.validators.some(v => v.toString() === req.user._id.toString());
+
+    return c;
+  });
 
   sendSuccess(res, 200, 'Nearby complaints retrieved successfully', {
     count: nearbyList.length,

@@ -72,19 +72,20 @@ async function reverseGeocode(lat, lng) {
 async function detectAndProcessHotspots() {
   const { Complaint, Hotspot } = require('../models');
 
-  // Fetch all open/active complaints with valid locations
-  const activeComplaints = await Complaint.find({
-    status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
-    'location.latitude': { $ne: null },
-    'location.longitude': { $ne: null }
-  });
-
   // Clear previous hotspots to recalculate clustering
   await Hotspot.deleteMany({});
 
   const threshold = 3; // 3 or more complaints within 500m creates a hotspot
   const radius = 500;  // 500 meters radius
-  
+
+  // Fetch active complaint locations with geoPoint for clustering
+  const activeComplaints = await Complaint.find({
+    status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
+    'location.geoPoint.coordinates': { $exists: true }
+  }).select('_id location priority');
+
+  if (activeComplaints.length === 0) return [];
+
   const processed = new Set();
   const hotspotsCreated = [];
 
@@ -94,18 +95,23 @@ async function detectAndProcessHotspots() {
 
     const lat1 = c1.location.latitude;
     const lon1 = c1.location.longitude;
+    if (lat1 == null || lon1 == null) continue;
 
-    // Find all unvisited active complaints within 500m
+    // Use $geoNear-equivalent: find all complaints within radius of this complaint
+    const nearbyIds = [];
     const cluster = [c1];
+
     for (let j = 0; j < activeComplaints.length; j++) {
       if (i === j) continue;
       const c2 = activeComplaints[j];
-      const lat2 = c2.location.latitude;
-      const lon2 = c2.location.longitude;
+      const lat2 = c2.location?.latitude;
+      const lon2 = c2.location?.longitude;
+      if (lat2 == null || lon2 == null) continue;
 
       const distance = calculateDistance(lat1, lon1, lat2, lon2);
       if (distance <= radius) {
         cluster.push(c2);
+        nearbyIds.push(c2._id);
       }
     }
 
@@ -139,21 +145,25 @@ async function detectAndProcessHotspots() {
 
       hotspotsCreated.push(hotspot);
 
-      // Dynamically elevate priority of all complaints within this hotspot
+      // Bulk-update priorities for complaints in this hotspot
+      const complaintIds = cluster.map(c => c._id);
       for (const comp of cluster) {
         processed.add(comp._id.toString());
-        
-        let currentPriority = comp.priority || 'medium';
-        let newPriority = currentPriority;
-        if (currentPriority === 'low') newPriority = 'medium';
-        else if (currentPriority === 'medium') newPriority = 'high';
-        else if (currentPriority === 'high') newPriority = 'urgent';
-
-        if (newPriority !== currentPriority) {
-          comp.priority = newPriority;
-          await comp.save();
-        }
       }
+
+      // Elevate low→medium, medium→high, high→urgent in bulk
+      await Complaint.updateMany(
+        { _id: { $in: complaintIds }, priority: 'low' },
+        { $set: { priority: 'medium' } }
+      );
+      await Complaint.updateMany(
+        { _id: { $in: complaintIds }, priority: 'medium' },
+        { $set: { priority: 'high' } }
+      );
+      await Complaint.updateMany(
+        { _id: { $in: complaintIds }, priority: 'high' },
+        { $set: { priority: 'urgent' } }
+      );
     }
   }
 

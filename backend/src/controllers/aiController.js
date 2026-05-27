@@ -17,7 +17,7 @@ const analyzeImage = asyncHandler(async (req, res) => {
     confidence: prediction?.confidence,
   });
 
-  res.json(prediction);
+  sendSuccess(res, 200, 'AI analysis complete', prediction);
 });
 
 const predictResolutionController = asyncHandler(async (req, res) => {
@@ -56,7 +56,7 @@ const predictResolutionController = asyncHandler(async (req, res) => {
     confidence: prediction?.confidence,
   });
 
-  res.json(prediction);
+  sendSuccess(res, 200, 'Resolution prediction complete', prediction);
 });
 
 const getSeverityController = asyncHandler(async (req, res) => {
@@ -85,7 +85,7 @@ const getSeverityController = asyncHandler(async (req, res) => {
     confidence: analysis?.confidence,
   });
 
-  res.json(analysis);
+  sendSuccess(res, 200, 'Severity analysis complete', analysis);
 });
 
 const User = require('../models/User');
@@ -136,16 +136,60 @@ const recommendOfficerController = asyncHandler(async (req, res) => {
     });
   }
 
+  const officerIds = officers.map(o => o._id);
+  const activeStatuses = ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'];
+
+  // Single aggregation: compute workload, resolved stats, total assigned, and escalated count per officer
+  const statsAgg = await Complaint.aggregate([
+    {
+      $match: {
+        assignedOfficer: { $in: officerIds }
+      }
+    },
+    {
+      $group: {
+        _id: '$assignedOfficer',
+        activeCount: {
+          $sum: { $cond: [{ $in: ['$status', activeStatuses] }, 1, 0] }
+        },
+        totalAssigned: { $sum: 1 },
+        escalatedCount: {
+          $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] }
+        },
+        resolvedCount: {
+          $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+        },
+        totalResolutionMs: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', 'resolved'] },
+              { $subtract: ['$updatedAt', '$createdAt'] },
+              0
+            ]
+          }
+        }
+      }
+    }
+  ]);
+
+  // Build a lookup map: officerId -> stats
+  const statsMap = new Map();
+  for (const s of statsAgg) {
+    statsMap.set(s._id.toString(), s);
+  }
+
   const candidates = [];
 
   for (const officer of officers) {
+    const oid = officer._id.toString();
+    const stats = statsMap.get(oid) || {
+      activeCount: 0, totalAssigned: 0, escalatedCount: 0, resolvedCount: 0, totalResolutionMs: 0
+    };
+
     const deptMatch = String(officer.department?._id || officer.department) === String(complaint.department?._id || complaint.department);
     const deptScore = deptMatch ? 100 : 0;
 
-    const activeComplaintsCount = await Complaint.countDocuments({
-      assignedOfficer: officer._id,
-      status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] }
-    });
+    const activeComplaintsCount = stats.activeCount;
 
     let workloadScore = 0;
     let workloadLabel = 'Low workload';
@@ -163,25 +207,9 @@ const recommendOfficerController = asyncHandler(async (req, res) => {
       workloadLabel = 'Overloaded';
     }
 
-    const resolvedComplaints = await Complaint.find({
-      assignedOfficer: officer._id,
-      status: 'resolved'
-    });
-    
     let avgResolutionDays = 3;
-    if (resolvedComplaints.length > 0) {
-      let totalDiff = 0;
-      let count = 0;
-      for (const comp of resolvedComplaints) {
-        if (comp.updatedAt && comp.createdAt) {
-          const diff = (comp.updatedAt - comp.createdAt) / (1000 * 60 * 60 * 24);
-          totalDiff += Math.max(0.1, diff);
-          count++;
-        }
-      }
-      if (count > 0) {
-        avgResolutionDays = totalDiff / count;
-      }
+    if (stats.resolvedCount > 0) {
+      avgResolutionDays = Math.max(0.1, (stats.totalResolutionMs / stats.resolvedCount) / (1000 * 60 * 60 * 24));
     } else {
       const nameSum = officer.name.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
       avgResolutionDays = 2 + (nameSum % 4);
@@ -203,13 +231,10 @@ const recommendOfficerController = asyncHandler(async (req, res) => {
       speedLabel = 'Slow resolution';
     }
 
-    const totalAssigned = await Complaint.countDocuments({ assignedOfficer: officer._id });
-    const escalatedCount = await Complaint.countDocuments({ assignedOfficer: officer._id, status: 'escalated' });
-    const escalationRate = totalAssigned > 0 ? (escalatedCount / totalAssigned) : 0;
+    const escalationRate = stats.totalAssigned > 0 ? (stats.escalatedCount / stats.totalAssigned) : 0;
 
-    let basePerformance = 85;
     const emailSum = officer.email.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
-    basePerformance = 80 + (emailSum % 18);
+    const basePerformance = 80 + (emailSum % 18);
 
     const performanceScore = Math.max(40, Math.round(basePerformance - (escalationRate * 40)));
     let performanceLabel = 'High performance';

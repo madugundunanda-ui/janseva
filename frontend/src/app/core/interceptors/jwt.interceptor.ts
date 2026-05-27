@@ -18,11 +18,27 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error) => {
-      if (error instanceof HttpErrorResponse && error.status === 401) {
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          window.location.href = '/auth/login';
+      if (error instanceof HttpErrorResponse && typeof window !== 'undefined') {
+        if (error.status === 401) {
+          // Invalid/expired token — clear session and redirect to login
+          try {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          } catch {}
+          try {
+            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search || '/');
+            window.location.href = `/auth/login?returnUrl=${returnUrl}`;
+          } catch {
+            window.location.href = '/auth/login';
+          }
+          return throwError(() => error);
+        }
+        if (error.status === 403) {
+          // Authenticated but not authorized for this resource — redirect to dashboard
+          try {
+            window.location.href = '/dashboard';
+          } catch {}
+          return throwError(() => error);
         }
       }
       return throwError(() => error);

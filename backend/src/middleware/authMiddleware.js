@@ -5,7 +5,7 @@ const { User } = require('../models');
 const logger = require('../utils/logger');
 
 const protect = asyncHandler(async (req, res, next) => {
-  if (process.env.BYPASS_AUTH === 'true') {
+  if (process.env.BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'test') {
     let user = await User.findOne({ role: 'citizen' });
     if (!user) {
       user = await User.findOne({});

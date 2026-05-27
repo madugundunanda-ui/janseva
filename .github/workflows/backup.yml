@@ -1,0 +1,58 @@
+name: Database Backup
+
+on:
+  schedule:
+    # Run at 02:00 UTC (07:30 IST) every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual execution via GitHub UI
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install MongoDB Database Tools
+        run: |
+          sudo apt-get update
+          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
+          sudo apt-get install -y mongodb-database-tools
+
+      - name: Run Backup Script
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+          BACKUP_DIR: ${{ github.workspace }}/backups
+          BACKUP_RETENTION_DAYS: 14
+          BACKUP_WEBHOOK_URL: ${{ secrets.BACKUP_WEBHOOK_URL }}
+        run: |
+          cd backend
+          npm ci
+          node src/scripts/backup.js
+
+      - name: Compress Backup Artifacts
+        run: |
+          zip -r database-backup.zip backups/
+
+      - name: Upload Backup to AWS S3
+        if: env.AWS_ACCESS_KEY_ID != ''
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --follow-symlinks --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_S3_BUCKET }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: 'ap-south-1'
+          SOURCE_DIR: 'backups'
+          DEST_DIR: 'database-backups'

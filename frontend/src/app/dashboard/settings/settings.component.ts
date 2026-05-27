@@ -7,6 +7,7 @@ import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-settings',
+  standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
     <div class="glass-panel p-6 rounded-xl border border-var space-y-6 pb-12 max-w-4xl">
@@ -25,13 +26,12 @@ import { TranslationService } from '../../core/services/translation.service';
         <div class="md:col-span-4 flex flex-col items-center space-y-6 border-r border-white/5 pr-0 md:pr-8">
           <div class="relative group">
             <div class="w-32 h-32 rounded-full border-2 border-cyan-500/40 p-1 bg-cyan-950/20 shadow-[0_0_20px_rgba(6,182,212,0.15)] flex items-center justify-center overflow-hidden">
-              @if (profileData.profilePhotoUrl) {
-                <img [src]="profileData.profilePhotoUrl" class="w-full h-full object-cover rounded-full">
-              } @else {
+              <img *ngIf="profileData.profilePhotoUrl; else initials" [src]="profileData.profilePhotoUrl" class="w-full h-full object-cover rounded-full">
+              <ng-template #initials>
                 <div class="w-full h-full rounded-full bg-gradient-to-tr from-cyan-500 to-blue-500 flex items-center justify-center font-bold font-mono text-black text-3xl uppercase">
                   {{ (profileData.firstName || 'C')[0] }}
                 </div>
-              }
+              </ng-template>
             </div>
             
             <div class="absolute inset-0 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center cursor-pointer">
@@ -46,21 +46,19 @@ import { TranslationService } from '../../core/services/translation.service';
           </div>
 
           <!-- Trust score dashboard metric (for citizens) -->
-          @if (authService.currentUser()?.role === 'citizen') {
-            <div class="w-full p-4 rounded-xl border border-cyan-500/10 bg-cyan-950/5 font-mono text-[9.5px] uppercase space-y-1.5">
-              <div class="flex justify-between">
-                <span class="text-muted-var">CIVIC TRUST SCORE:</span>
-                <span class="text-cyan-400 font-bold">{{ authService.currentUser()?.trustScore ?? 100 }}/100</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-muted-var">TRUST LEVEL:</span>
-                <span class="text-emerald-400 font-bold">{{ authService.currentUser()?.trustLevel ?? 'Trusted' }}</span>
-              </div>
-              <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-2">
-                <div class="bg-cyan-500 h-full" [style.width.%]="authService.currentUser()?.trustScore ?? 100"></div>
-              </div>
+          <div *ngIf="authService.currentUser()?.role === 'citizen'" class="w-full p-4 rounded-xl border border-cyan-500/10 bg-cyan-950/5 font-mono text-[9.5px] uppercase space-y-1.5">
+            <div class="flex justify-between">
+              <span class="text-muted-var">CIVIC TRUST SCORE:</span>
+              <span class="text-cyan-400 font-bold">{{ authService.currentUser()?.trustScore ?? 100 }}/100</span>
             </div>
-          }
+            <div class="flex justify-between">
+              <span class="text-muted-var">TRUST LEVEL:</span>
+              <span class="text-emerald-400 font-bold">{{ authService.currentUser()?.trustLevel ?? 'Trusted' }}</span>
+            </div>
+            <div class="w-full bg-white/5 h-1 rounded-full overflow-hidden mt-2">
+              <div class="bg-cyan-500 h-full" [style.width.%]="authService.currentUser()?.trustScore ?? 100"></div>
+            </div>
+          </div>
         </div>
 
         <!-- Right Column: Profile Form Fields -->

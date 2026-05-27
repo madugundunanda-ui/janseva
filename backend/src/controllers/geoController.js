@@ -28,30 +28,58 @@ const getNearbyIssues = asyncHandler(async (req, res) => {
   const userLat = parseFloat(lat);
   const userLng = parseFloat(lng);
 
-  // Fetch active/open complaints
-  const activeComplaints = await Complaint.find({
-    status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
-    'location.latitude': { $ne: null },
-    'location.longitude': { $ne: null }
-  }).populate('department', 'name').populate('citizen', 'firstName lastName email phone currentAddress permanentAddress age gender occupation aadhaarNumber');
-
-  const radius = 500; // 500 meters
-  const nearby = [];
-
-  for (const c of activeComplaints) {
-    const cLat = c.location.latitude;
-    const cLng = c.location.longitude;
-    const distance = geoService.calculateDistance(userLat, userLng, cLat, cLng);
-
-    if (distance <= radius) {
-      const cObj = c.toObject();
-      cObj.distance = Math.round(distance);
-      nearby.push(cObj);
-    }
+  if (isNaN(userLat) || isNaN(userLng)) {
+    throw new AppError('lat and lng must be valid numbers', 400);
   }
 
-  // Sort by distance (nearest first)
-  nearby.sort((a, b) => a.distance - b.distance);
+  const radius = 500; // 500 meters
+
+  // Use $geoNear aggregation for efficient 2dsphere-indexed proximity search
+  const nearby = await Complaint.aggregate([
+    {
+      $geoNear: {
+        near: { type: 'Point', coordinates: [userLng, userLat] },
+        distanceField: 'distance',
+        maxDistance: radius,
+        spherical: true,
+        key: 'location.geoPoint',
+        query: {
+          status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] }
+        }
+      }
+    },
+    { $sort: { distance: 1 } },
+    { $limit: 50 },
+    {
+      $lookup: {
+        from: 'departments',
+        localField: 'department',
+        foreignField: '_id',
+        as: 'departmentDoc'
+      }
+    },
+    { $unwind: { path: '$departmentDoc', preserveNullAndEmptyArrays: true } },
+    {
+      $lookup: {
+        from: 'users',
+        localField: 'citizen',
+        foreignField: '_id',
+        as: 'citizenDoc',
+        pipeline: [
+          { $project: { firstName: 1, lastName: 1, email: 1, phone: 1, currentAddress: 1, permanentAddress: 1, age: 1, gender: 1, occupation: 1, aadhaarNumber: 1 } }
+        ]
+      }
+    },
+    { $unwind: { path: '$citizenDoc', preserveNullAndEmptyArrays: true } },
+    {
+      $addFields: {
+        distance: { $round: ['$distance', 0] },
+        department: { $ifNull: ['$departmentDoc', '$department'] },
+        citizen: { $ifNull: ['$citizenDoc', '$citizen'] }
+      }
+    },
+    { $project: { departmentDoc: 0, citizenDoc: 0 } }
+  ]);
 
   sendSuccess(res, 200, 'Nearby active complaints fetched successfully', {
     count: nearby.length,

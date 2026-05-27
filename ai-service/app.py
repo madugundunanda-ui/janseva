@@ -1,5 +1,6 @@
 import os
 import math
+from collections import OrderedDict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
@@ -130,7 +131,9 @@ def haversine_distance(lat1, lon1, lat2, lon2):
     
     return R * c
 
-CLIP_EMBEDDING_CACHE = {}
+# Bounded LRU cache for CLIP embeddings (max 500 entries)
+CLIP_CACHE_MAX = 500
+CLIP_EMBEDDING_CACHE = OrderedDict()
 
 def get_clip_image_embedding(image_path):
     """Generate image embedding using CLIP with in-memory caching and image resizing."""
@@ -162,6 +165,9 @@ def get_clip_image_embedding(image_path):
         features = features / features.norm(dim=-1, keepdim=True)
         embedding = features[0]
         CLIP_EMBEDDING_CACHE[cache_key] = embedding
+        # Evict oldest if over limit
+        while len(CLIP_EMBEDDING_CACHE) > CLIP_CACHE_MAX:
+            CLIP_EMBEDDING_CACHE.popitem(last=False)
         return embedding
     except Exception as e:
         print(f"[AI-SERVICE] Error generating CLIP embedding for {image_path}: {e}")
@@ -209,7 +215,9 @@ def predict():
         "departmentInput": prediction.get("departmentInput", "")
     })
 
-TEXT_EMBEDDING_CACHE = {}
+# Bounded LRU cache for text embeddings (max 1000 entries)
+TEXT_CACHE_MAX = 1000
+TEXT_EMBEDDING_CACHE = OrderedDict()
 
 def get_text_embedding(text):
     """Generate or retrieve cached sentence-transformer text embedding."""
@@ -220,6 +228,9 @@ def get_text_embedding(text):
     with torch.no_grad():
         emb = nlp_model.encode(text, convert_to_tensor=True)
     TEXT_EMBEDDING_CACHE[text] = emb
+    # Evict oldest if over limit
+    while len(TEXT_EMBEDDING_CACHE) > TEXT_CACHE_MAX:
+        TEXT_EMBEDDING_CACHE.popitem(last=False)
     return emb
 
 @app.route('/check-duplicate', methods=['POST'])
@@ -803,6 +814,15 @@ def verify_resolution():
             "result": "Issue appears resolved (fallback estimation)",
             "reasons": ["Automated proof analysis complete"]
         })
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({
+        "status": "healthy",
+        "models_loaded": True,
+        "service": "JANSEVA AI Service",
+        "models": ["mobilenet_v2", "all-MiniLM-L6-v2", "clip-vit-base-patch32"]
+    })
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000)

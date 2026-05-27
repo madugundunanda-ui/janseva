@@ -111,6 +111,10 @@ const complaintSchema = new mongoose.Schema(
         lat: Number,
         lng: Number,
       },
+      geoPoint: {
+        type: { type: String, enum: ['Point'] },
+        coordinates: { type: [Number] },
+      },
     },
     feedback: {
       type: mongoose.Schema.Types.ObjectId,
@@ -210,5 +214,21 @@ const complaintSchema = new mongoose.Schema(
 complaintSchema.index({ status: 1, department: 1, priority: 1 });
 complaintSchema.index({ citizen: 1, createdAt: -1 });
 complaintSchema.index({ assignedOfficer: 1, assignedSupervisor: 1 });
+complaintSchema.index({ 'location.geoPoint': '2dsphere' });
+
+// Auto-populate geoPoint from latitude/longitude on save
+complaintSchema.pre('save', function setGeoPoint(next) {
+  const lat = this.location?.latitude;
+  const lng = this.location?.longitude;
+  if (lat != null && lng != null && isFinite(lat) && isFinite(lng)) {
+    this.location.geoPoint = {
+      type: 'Point',
+      coordinates: [lng, lat]
+    };
+  } else if (this.location) {
+    this.location.geoPoint = undefined;
+  }
+  next();
+});
 
 module.exports = mongoose.model('Complaint', complaintSchema);

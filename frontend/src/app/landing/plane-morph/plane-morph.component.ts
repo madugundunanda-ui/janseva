@@ -4,18 +4,20 @@ import { ImagePreloaderService } from '../../core/services/image-preloader.servi
 
 @Component({
   selector: 'app-plane-morph',
+  standalone: true,
+  imports: [],
   template: `
     <section #sectionContainer class="h-[250vh] relative w-full bg-[#050505]">
       <!-- Preloader overlay -->
       @if (preloader.isLoading() && activeSequence) {
-        <div class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md">
-          <div class="w-24 h-[1px] bg-white/10 mb-4 relative overflow-hidden">
-            <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="preloader.loadingProgress()"></div>
-          </div>
-          <span class="font-mono text-[9px] tracking-widest text-blue-400 uppercase">
-            MORPH INDEXING ({{ preloader.loadingProgress() }}%)
-          </span>
+      <div class="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/75 backdrop-blur-md">
+        <div class="w-24 h-[1px] bg-white/10 mb-4 relative overflow-hidden">
+          <div class="h-full bg-blue-500 transition-all duration-300" [style.width.%]="preloader.loadingProgress()"></div>
         </div>
+        <span class="font-mono text-[9px] tracking-widest text-blue-400 uppercase">
+          MORPH INDEXING ({{ preloader.loadingProgress() }}%)
+        </span>
+      </div>
       }
 
       <div class="sticky top-0 h-screen w-full flex items-center justify-center overflow-hidden">

@@ -559,3 +559,4 @@
 {"level":"info","message":"WebSocket client disconnected","service":"citizen-grievance-backend","timestamp":"2026-05-26 19:38:07"}
 {"level":"info","message":"Citizen Grievance Backend running on port 5000","service":"citizen-grievance-backend","timestamp":"2026-05-26 20:00:30"}
 {"level":"info","message":"MongoDB connected: 127.0.0.1","service":"citizen-grievance-backend","timestamp":"2026-05-26 20:00:30"}
+{"level":"info","message":"MongoDB connected: 127.0.0.1","service":"citizen-grievance-backend","timestamp":"2026-05-26 23:10:55"}

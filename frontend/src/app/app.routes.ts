@@ -50,18 +50,21 @@ export const routes: Routes = [
       {
         path: 'officers',
         loadComponent: () => import('./dashboard/officers/officers.component').then(m => m.OfficersComponent),
+        canActivate: [authGuard],
         title: 'Officer Workloads',
         data: { roles: ['admin', 'supervisor', 'officer'] }
       },
       {
         path: 'citizens',
         loadComponent: () => import('./dashboard/citizens/citizens.component').then(m => m.CitizensComponent),
+        canActivate: [authGuard],
         title: 'Citizen Directory',
         data: { roles: ['admin', 'supervisor'] }
       },
       {
         path: 'reports',
         loadComponent: () => import('./dashboard/reports/reports.component').then(m => m.ReportsComponent),
+        canActivate: [authGuard],
         title: 'Intelligence Reports',
         data: { roles: ['admin', 'supervisor'] }
       },
@@ -78,24 +81,28 @@ export const routes: Routes = [
       {
         path: 'citizen',
         loadComponent: () => import('./dashboard/citizen/citizen.component').then(m => m.CitizenComponent),
+        canActivate: [authGuard],
         title: 'Citizen Dashboard',
         data: { roles: ['citizen', 'admin'] }
       },
       {
         path: 'officer',
         loadComponent: () => import('./dashboard/officer/officer.component').then(m => m.OfficerComponent),
+        canActivate: [authGuard],
         title: 'Officer Operations Dashboard',
         data: { roles: ['officer', 'admin'] }
       },
       {
         path: 'supervisor',
         loadComponent: () => import('./dashboard/supervisor/supervisor.component').then(m => m.SupervisorComponent),
+        canActivate: [authGuard],
         title: 'Governance Management Dashboard',
         data: { roles: ['supervisor', 'admin'] }
       },
       {
         path: 'admin',
         loadComponent: () => import('./dashboard/admin/admin.component').then(m => m.AdminComponent),
+        canActivate: [authGuard],
         title: 'State Intelligence Control Center',
         data: { roles: ['admin'] }
       },

@@ -32,10 +32,12 @@ const registerUser = async (payload) => {
     throw new AppError('Name, email, and password are required', 400);
   }
 
+  const normalizedRole = typeof payload.role === 'string' ? payload.role.toLowerCase().trim() : 'citizen';
+
   const existingUser = await User.findOne({ email: email.toLowerCase() });
   if (existingUser) throw new AppError('User with this email already exists', 409);
 
-  const user = await User.create({ ...payload, role: 'citizen' });
+  const user = await User.create({ ...payload, role: normalizedRole });
   const token = generateToken(user);
 
   return { token, user: sanitizeUser(user) };

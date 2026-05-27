@@ -47,8 +47,13 @@ const register = asyncHandler(async (req, res) => {
     }
   }
 
+  const orConditions = [{ email: normalizedEmail }];
+  if (normalizedAadhaarNumber) {
+    orConditions.push({ aadhaarNumber: normalizedAadhaarNumber });
+  }
+
   const existingUser = await User.findOne({
-    $or: [{ email: normalizedEmail }, { aadhaarNumber: normalizedAadhaarNumber }],
+    $or: orConditions,
   });
 
   if (existingUser) {
