@@ -132,4 +132,33 @@ describe('AI API Endpoints & Circuit Breaker', () => {
       expect(res.body.data.estimatedDays).toBe(3);
     });
   });
+
+  describe('POST /api/ai/feedback', () => {
+    it('should submit feedback using mocked AI service', async () => {
+      const { token } = await setupAiTestCase();
+
+      fetchSpy.mockImplementation(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            success: true,
+            message: 'Feedback logged successfully'
+          })
+        })
+      );
+
+      const res = await request(app)
+        .post('/api/ai/feedback')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          originalPrediction: 'Tobacco Issue',
+          correctedCategory: 'Garbage / Waste',
+          imagePath: '/uploads/complaints/test.jpg'
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.success).toBe(true);
+    });
+  });
 });

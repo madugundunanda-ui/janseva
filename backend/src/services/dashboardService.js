@@ -25,12 +25,14 @@ const statusMap = {
 const getDashboardStats = async (user) => {
   const filter = {};
 
-  if (user.role === 'citizen') {
-    filter.citizen = user._id;
-  } else if (user.role === 'officer') {
-    filter.assignedOfficer = user._id;
-  } else if (user.role === 'supervisor') {
-    filter.department = user.department;
+  if (user) {
+    if (user.role === 'citizen') {
+      filter.citizen = user._id;
+    } else if (user.role === 'officer') {
+      filter.assignedOfficer = user._id;
+    } else if (user.role === 'supervisor') {
+      filter.department = user.department;
+    }
   }
 
   const [totalComplaints, breakdown] = await Promise.all([
@@ -57,7 +59,7 @@ const getDashboardStats = async (user) => {
     else mapped.pending += item.count;
   });
 
-  if (user.role === 'admin') {
+  if (user && user.role === 'admin') {
     const { User, Announcement } = require('../models');
     const [officers, supervisors, departments, recentComplaints, recentAnnouncements, mostAffectedIssues, problematicAreas, spamCount, blockedCount, totalCitizens, trustedCount, normalCount, warningCount, restrictedCount] = await Promise.all([
       User.countDocuments({ role: 'officer', activeStatus: true }),

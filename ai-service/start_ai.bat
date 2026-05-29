@@ -3,16 +3,21 @@ setlocal
 
 cd /d "%~dp0"
 
-if not exist ".venv\Scripts\python.exe" (
+set VENV_DIR=.venv
+if exist "venv\Scripts\python.exe" (
+  set VENV_DIR=venv
+)
+
+if not exist "%VENV_DIR%\Scripts\python.exe" (
   echo [AI-SERVICE] Creating virtual environment...
-  py -3 -m venv .venv
+  py -3 -m venv %VENV_DIR%
   if errorlevel 1 (
     echo [AI-SERVICE] Failed to create venv using 'py -3'. Ensure Python is installed.
     exit /b 1
   )
 )
 
-call ".venv\Scripts\activate.bat"
+call "%VENV_DIR%\Scripts\activate.bat"
 if errorlevel 1 (
   echo [AI-SERVICE] Failed to activate virtual environment.
   exit /b 1

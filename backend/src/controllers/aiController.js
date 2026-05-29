@@ -1,23 +1,115 @@
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { sendSuccess } = require('../utils/apiResponse');
-const { analyzeComplaintImage, predictResolution, calculateSeverity } = require('../services/aiService');
+const { analyzeComplaintImage, predictResolution, calculateSeverity, submitFeedback } = require('../services/aiService');
 const Complaint = require('../models/Complaint');
 const logger = require('../utils/logger');
+
+const aiJobManager = require('../utils/aiJobManager');
 
 const analyzeImage = asyncHandler(async (req, res) => {
   if (!req.file) {
     throw new AppError('Image file is required', 400);
   }
 
-  const prediction = await analyzeComplaintImage(req.file);
-  logger.info('AI Analysis complete', {
-    department: prediction?.department || prediction?.predicted_department,
-    priority: prediction?.priority || prediction?.predicted_priority,
-    confidence: prediction?.confidence,
+  const { location, lat, lng } = req.body;
+  const jobId = aiJobManager.createJob(req.file, location, lat, lng);
+  
+  logger.info('AI Analysis background job created', {
+    jobId,
+    filename: req.file.filename,
+    location,
   });
 
-  sendSuccess(res, 200, 'AI analysis complete', prediction);
+  sendSuccess(res, 202, 'AI analysis job initialized', {
+    success: true,
+    analysisId: jobId,
+    tempImagePath: `/uploads/complaints/${req.file.filename}`
+  });
+});
+
+const analyzeImageStream = (req, res) => {
+  const { analysisId } = req.params;
+  const job = aiJobManager.getJob(analysisId);
+
+  if (!job) {
+    return res.status(404).json({ success: false, message: 'Analysis job not found' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Prevent proxy buffering
+  res.flushHeaders();
+
+  // Send initial job status
+  res.write(`data: ${JSON.stringify({ status: job.status, progress: job.progress, ...job.results })}\n\n`);
+
+  if (job.status === 'completed' || job.status === 'failed') {
+    res.end();
+    return;
+  }
+
+  const listener = (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+    if (event.status === 'completed' || event.status === 'failed') {
+      res.end();
+      aiJobManager.off(analysisId, listener);
+    }
+  };
+
+  aiJobManager.on(analysisId, listener);
+
+  req.on('close', () => {
+    aiJobManager.off(analysisId, listener);
+  });
+};
+
+const getAiHealth = asyncHandler(async (req, res) => {
+  let aiServiceStatus = 'Offline';
+  let models = [];
+  let flaskMemory = 0;
+  let responseTime = 0;
+
+  const start = Date.now();
+  try {
+    const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(`${aiUrl}/health`, { signal: controller.signal });
+    clearTimeout(timeout);
+    responseTime = Date.now() - start;
+
+    if (response.ok) {
+      const data = await response.json();
+      const activeCount = Array.from(aiJobManager.jobs.values()).filter(j => j.status === 'queued' || j.status === 'processing').length;
+      aiServiceStatus = activeCount > 3 ? 'Busy' : 'Online';
+      models = data.models || [];
+      flaskMemory = data.memory_usage_mb || 0;
+    }
+  } catch (err) {
+    aiServiceStatus = 'Offline';
+  }
+
+  const memUsage = process.memoryUsage();
+  
+  res.json({
+    success: true,
+    status: aiServiceStatus,
+    queueSize: Array.from(aiJobManager.jobs.values()).filter(j => j.status === 'queued' || j.status === 'processing').length,
+    models,
+    responseTimeMs: responseTime,
+    system: {
+      nodeMemoryMB: Math.round(memUsage.rss / 1024 / 1024),
+      pythonMemoryMB: flaskMemory,
+      activeJobs: Array.from(aiJobManager.jobs.values()).slice(-10).map(j => ({
+        id: j.id,
+        status: j.status,
+        progress: j.progress,
+        createdAt: j.createdAt
+      }))
+    }
+  });
 });
 
 const predictResolutionController = asyncHandler(async (req, res) => {
@@ -554,8 +646,26 @@ const verifyResolutionController = asyncHandler(async (req, res) => {
   res.json(result);
 });
 
+const aiFeedbackController = asyncHandler(async (req, res) => {
+  const { originalPrediction, correctedCategory, imagePath } = req.body;
+  
+  const result = await submitFeedback({
+    original_prediction: originalPrediction,
+    corrected_category: correctedCategory,
+    image_path: imagePath
+  });
+  
+  if (!result || !result.success) {
+    throw new AppError(result?.error || 'Failed to submit feedback to AI service', 500);
+  }
+  
+  sendSuccess(res, 200, 'AI feedback correction logged successfully', result);
+});
+
 module.exports = {
   analyzeImage,
+  analyzeImageStream,
+  getAiHealth,
   predictResolutionController,
   getSeverityController,
   recommendOfficerController,
@@ -564,4 +674,5 @@ module.exports = {
   detectSpamController,
   spamActionController,
   verifyResolutionController,
+  aiFeedbackController,
 };

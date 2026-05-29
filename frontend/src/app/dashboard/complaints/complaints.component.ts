@@ -51,7 +51,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
         }
 
         <!-- Grievances Feed List -->
-        <div class="glass-panel rounded-xl border border-var overflow-hidden max-h-[600px] overflow-y-auto">
+        <div data-lenis-prevent class="glass-panel rounded-xl border border-var overflow-hidden max-h-[600px] overflow-y-auto">
           <div class="p-5 border-b border-var flex items-center justify-between">
             <span class="font-mono text-[10px] tracking-widest text-muted-var uppercase">{{ translationService.t('GRIEVANCE_STACK') }} ({{ filteredComplaints.length }})</span>
             
@@ -385,37 +385,89 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
     <!-- Modal: Register New Complaint -->
     @if (showNewComplaintModal) {
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-white/65 backdrop-blur-md p-6">
-        <div class="w-full max-w-2xl glass-panel glow-card rounded-2xl p-8 relative max-h-[90vh] overflow-y-auto">
+        <div data-lenis-prevent class="w-full max-w-2xl glass-panel glow-card rounded-2xl p-8 relative max-h-[90vh] overflow-y-auto">
           <button (click)="closeNewComplaintModal()" class="absolute top-4 right-4 text-muted-var hover:text-primary-var font-mono text-xs uppercase cursor-pointer">
             [CLOSE ESC]
           </button>
 
-          <div class="inline-flex items-center gap-2 mb-2">
-            <span class="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
-            <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">AI-ASSISTED CIVIC INTAKE</span>
+          <div class="flex justify-between items-center mb-2">
+            <div class="inline-flex items-center gap-2">
+              <span class="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
+              <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">AI-ASSISTED CIVIC INTAKE</span>
+            </div>
+            <div class="font-mono text-[9px] uppercase flex items-center gap-1.5">
+              <span class="text-muted-var">AI CORE NETWORK:</span>
+              <span class="font-bold" [ngClass]="{
+                'text-emerald-400': aiHealthStatus === 'Online',
+                'text-amber-400': aiHealthStatus === 'Busy',
+                'text-red-400 animate-pulse': aiHealthStatus === 'Offline'
+              }">{{ aiHealthStatus }}</span>
+            </div>
           </div>
           <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mb-6 font-mono">Register New Grievance</h3>
 
           <!-- Form elements -->
           <div class="space-y-4 mb-6">
             <!-- Image upload with AI analysis status -->
-            <div class="p-5 rounded-xl border border-dashed border-var bg-white/2 text-center relative flex flex-col items-center">
-              @if (analyzingImage) {
-                <div class="flex flex-col items-center justify-center p-6">
-                  <div class="w-full max-w-[200px] bg-black/10 h-1.5 rounded-full overflow-hidden mb-3 relative border border-var">
-                    <div class="bg-cyan-500 h-full rounded-full animate-progress absolute left-0 top-0 w-full"></div>
-                  </div>
-                  <span class="font-mono text-[9px] tracking-widest text-cyan-500 uppercase font-bold animate-pulse-progress">RUNNING VIT SCROLL ANALYZER...</span>
-                </div>
-              }
-
+            <div (click)="fileInput.click()" class="p-5 rounded-xl border border-dashed border-var bg-white/2 hover:bg-white/5 transition-colors duration-200 text-center relative flex flex-col items-center cursor-pointer">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-muted-var mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               
-              <input type="file" (change)="onComplaintFileSelected($event)" class="font-mono text-[10px] text-muted-var mb-2">
+              <input #fileInput type="file" (change)="onComplaintFileSelected($event)" (click)="$event.stopPropagation()" class="font-mono text-[10px] text-muted-var mb-2">
               <span class="text-[9px] font-mono text-muted-var uppercase">AUTO-FILL ENGINE: AI WILL INSTANTLY DETECT DEPT, PRIORITY, AND TITLE SUGGESTIONS ON ATTACHMENT.</span>
             </div>
+
+            <!-- Progressive AI Analysis Steps -->
+            @if (showAiStatusSteps) {
+              <div class="p-5 rounded-xl border border-cyan-500/25 bg-cyan-950/10 space-y-3 font-mono text-[10px] uppercase text-left">
+                <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span class="font-bold text-cyan-400">AI PIPELINE REALTIME STATUS</span>
+                  <span class="text-[9px] text-cyan-400 font-bold">{{ aiProgress }}%</span>
+                </div>
+                
+                <div class="space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span>✓ Image compressed & uploaded</span>
+                    <span class="text-cyan-400 font-bold">DONE</span>
+                  </div>
+                  
+                  <div class="flex items-center justify-between">
+                    <span>{{ aiStepDetecting ? '● Detecting Civic Issue & Dept...' : (aiStepDetectingDone ? '✓ Issue & Dept Identified' : '○ Detecting Civic Issue & Dept') }}</span>
+                    <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepDetecting, 'text-cyan-400 font-bold': aiStepDetectingDone, 'text-muted-var': !aiStepDetecting && !aiStepDetectingDone}">
+                      {{ aiStepDetecting ? 'RUNNING' : (aiStepDetectingDone ? 'DONE' : 'PENDING') }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <span>{{ aiStepSeverity ? '● Estimating Severity & Priority...' : (aiStepSeverityDone ? '✓ Severity & Priority Calculated' : '○ Estimating Severity & Priority') }}</span>
+                    <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepSeverity, 'text-cyan-400 font-bold': aiStepSeverityDone, 'text-muted-var': !aiStepSeverity && !aiStepSeverityDone}">
+                      {{ aiStepSeverity ? 'RUNNING' : (aiStepSeverityDone ? 'DONE' : 'PENDING') }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <span>{{ aiStepETA ? '● Estimating SLA & Delay Risks...' : (aiStepETADone ? '✓ ETA & Resolution Calculated' : '○ Estimating SLA & Delay Risks') }}</span>
+                    <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepETA, 'text-cyan-400 font-bold': aiStepETADone, 'text-muted-var': !aiStepETA && !aiStepETADone}">
+                      {{ aiStepETA ? 'RUNNING' : (aiStepETADone ? 'DONE' : 'PENDING') }}
+                    </span>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <span>{{ aiStepDuplicate ? '● Scanning Duplicate Complaints...' : (aiStepDuplicateDone ? '✓ Duplicate Check Complete' : '○ Scanning Duplicate Complaints') }}</span>
+                    <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepDuplicate, 'text-cyan-400 font-bold': aiStepDuplicateDone, 'text-muted-var': !aiStepDuplicate && !aiStepDuplicateDone}">
+                      {{ aiStepDuplicate ? 'RUNNING' : (aiStepDuplicateDone ? 'DONE' : 'PENDING') }}
+                    </span>
+                  </div>
+                </div>
+
+                @if (aiTimeoutMessage) {
+                  <div class="text-amber-400 font-bold border-t border-white/5 pt-2 flex items-center gap-1.5 animate-pulse">
+                    ⚠️ {{ aiTimeoutMessage }}
+                  </div>
+                }
+              </div>
+            }
 
             <!-- GPS Capture & Geofencing Proximity Landmark panel -->
             <div class="p-4 rounded-xl border border-var bg-white/2 space-y-3 font-mono text-[10px] uppercase">
@@ -525,6 +577,22 @@ export class ComplaintsComponent implements OnInit {
   analyzingImage = false;
   loadingSubmit = false;
 
+  // Progressive AI states
+  showAiStatusSteps = false;
+  aiProgress = 0;
+  aiStepDetecting = false;
+  aiStepDetectingDone = false;
+  aiStepSeverity = false;
+  aiStepSeverityDone = false;
+  aiStepETA = false;
+  aiStepETADone = false;
+  aiStepDuplicate = false;
+  aiStepDuplicateDone = false;
+  aiTimeoutMessage = '';
+  aiHealthStatus = 'Offline';
+  private aiStreamSub: any = null;
+  private aiTimeoutTimer: any = null;
+
   // Geolocation & Voice states
   gpsCapturing = false;
   gpsCaptured = false;
@@ -534,6 +602,9 @@ export class ComplaintsComponent implements OnInit {
   capturedCoordinates = { lat: 12.9716, lng: 77.5946 };
   offlineDraftsCount = 0;
   impactResidents = 126;
+  tempImagePath = '';
+  aiPredictedCategory = '';
+  aiPredictedDepartment = '';
 
   // New Complaint fields
   newComplaintData = {
@@ -542,7 +613,13 @@ export class ComplaintsComponent implements OnInit {
     department: '',
     address: 'Ward 12 Main Road',
     ward: '12',
-    file: null as File | null
+    file: null as File | null,
+    priority: 'medium',
+    severityScore: 0,
+    severityReason: [] as string[],
+    estimatedDays: 0,
+    delayRisk: 'Low',
+    duplicateDetected: false
   };
 
   // Operations fields
@@ -641,39 +718,187 @@ export class ComplaintsComponent implements OnInit {
     this.newComplaintData.title = '';
     this.newComplaintData.description = '';
     this.newComplaintData.file = null;
+    this.newComplaintData.priority = 'medium';
+    this.newComplaintData.severityScore = 0;
+    this.newComplaintData.severityReason = [];
+    this.newComplaintData.estimatedDays = 0;
+    this.newComplaintData.delayRisk = 'Low';
+    this.newComplaintData.duplicateDetected = false;
     this.gpsCaptured = false;
     this.nearbyLandmark = '';
+    
+    // Reset steps
+    this.showAiStatusSteps = false;
+    this.aiProgress = 0;
+    this.aiTimeoutMessage = '';
+    this.tempImagePath = '';
+    this.aiPredictedCategory = '';
+    this.aiPredictedDepartment = '';
+
+    // Check health
+    this.aiHealthStatus = 'Checking...';
+    this.aiService.getAiHealthStatus().subscribe({
+      next: (health: any) => {
+        this.aiHealthStatus = health.status || 'Online';
+      },
+      error: () => {
+        this.aiHealthStatus = 'Offline';
+      }
+    });
   }
 
   closeNewComplaintModal() {
     this.showNewComplaintModal = false;
+    if (this.aiStreamSub) {
+      this.aiStreamSub.unsubscribe();
+    }
+    if (this.aiTimeoutTimer) {
+      clearTimeout(this.aiTimeoutTimer);
+    }
   }
 
   async onComplaintFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
-      this.analyzingImage = true;
+      this.showAiStatusSteps = true;
+      this.aiProgress = 10;
+      this.aiStepDetecting = true;
+      this.aiStepDetectingDone = false;
+      this.aiStepSeverity = false;
+      this.aiStepSeverityDone = false;
+      this.aiStepETA = false;
+      this.aiStepETADone = false;
+      this.aiStepDuplicate = false;
+      this.aiStepDuplicateDone = false;
+      this.aiTimeoutMessage = '';
+
       let fileToUpload = file;
       try {
-        fileToUpload = await this.imageCompressionService.compress(file, 300, 300, 0.65);
+        fileToUpload = await this.imageCompressionService.compress(file, 1280, 1024, 0.72);
       } catch (err) {
         console.error('Image compression failed, using original file:', err);
       }
       this.newComplaintData.file = fileToUpload;
 
-      this.aiService.analyzeImage(fileToUpload).subscribe({
-        next: (analysis) => {
-          this.newComplaintData.title = analysis.title || 'Civic Issue';
-          this.newComplaintData.description = `Detected ${this.newComplaintData.title} with AI confidence of ${analysis.confidence}%. Request resolution dispatch at address.`;
-          
-          const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (analysis.department || analysis.suggestedDepartment || '').toLowerCase());
-          if (matchedDept) {
-            this.newComplaintData.department = matchedDept.id;
-          }
-          this.analyzingImage = false;
+      // 1. Post to initiate job
+      const formData = new FormData();
+      formData.append('image', fileToUpload);
+      formData.append('location', this.newComplaintData.address);
+      formData.append('lat', String(this.capturedCoordinates.lat));
+      formData.append('lng', String(this.capturedCoordinates.lng));
+
+      // Clear any old subscriptions and timers
+      if (this.aiStreamSub) this.aiStreamSub.unsubscribe();
+      if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
+
+      this.apiService.postForm<{ success: boolean; analysisId: string; tempImagePath: string }>('/ai/analyze', formData).subscribe({
+        next: (res) => {
+          const analysisId = res.analysisId;
+          this.tempImagePath = res.tempImagePath;
+          this.aiProgress = 20;
+
+          // Start fallback timeout timer (10 seconds)
+          this.aiTimeoutTimer = setTimeout(() => {
+            this.aiTimeoutMessage = 'AI suggestions taking longer than expected.';
+          }, 10000);
+
+          // 2. Connect to SSE stream
+          this.aiStreamSub = this.aiService.analyzeImageStream(analysisId).subscribe({
+            next: (event: any) => {
+              this.aiProgress = event.progress || this.aiProgress;
+              
+              if (event.status === 'detecting_issue') {
+                this.aiStepDetecting = false;
+                this.aiStepDetectingDone = true;
+                this.aiStepSeverity = true;
+                
+                this.aiPredictedCategory = event.category || '';
+                this.aiPredictedDepartment = event.department || '';
+
+                if (event.low_confidence) {
+                  this.newComplaintData.title = '';
+                  this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
+                  this.newComplaintData.department = '';
+                  this.aiPredictedCategory = '';
+                  this.aiPredictedDepartment = '';
+                } else {
+                  this.newComplaintData.title = event.title || this.newComplaintData.title;
+                  this.newComplaintData.description = event.description || this.newComplaintData.description;
+                  
+                  const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                  if (matchedDept) {
+                    this.newComplaintData.department = matchedDept.id;
+                  }
+                }
+              }
+              
+              if (event.status === 'estimating_severity') {
+                this.aiStepSeverity = false;
+                this.aiStepSeverityDone = true;
+                this.aiStepETA = true;
+                
+                this.newComplaintData.priority = event.priority || 'medium';
+                this.newComplaintData.severityScore = event.severityScore || 50;
+                this.newComplaintData.severityReason = event.reasons || [];
+              }
+
+              if (event.status === 'generating_recommendations') {
+                this.aiStepETA = false;
+                this.aiStepETADone = true;
+                this.aiStepDuplicate = true;
+
+                this.newComplaintData.estimatedDays = event.estimatedDays || 3;
+                this.newComplaintData.delayRisk = event.delayRisk || 'Low';
+              }
+
+              if (event.status === 'duplicate_checked') {
+                this.aiStepDuplicate = false;
+                this.aiStepDuplicateDone = true;
+                this.newComplaintData.duplicateDetected = !!event.duplicateDetected;
+              }
+
+              if (event.status === 'completed') {
+                if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
+                this.aiStepDetecting = false;
+                this.aiStepDetectingDone = true;
+                this.aiStepSeverity = false;
+                this.aiStepSeverityDone = true;
+                this.aiStepETA = false;
+                this.aiStepETADone = true;
+                this.aiStepDuplicate = false;
+                this.aiStepDuplicateDone = true;
+                
+                if (event.low_confidence) {
+                  this.newComplaintData.title = '';
+                  this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
+                  this.newComplaintData.department = '';
+                  this.aiPredictedCategory = '';
+                  this.aiPredictedDepartment = '';
+                } else {
+                  this.newComplaintData.title = event.title || this.newComplaintData.title;
+                  this.newComplaintData.description = event.description || this.newComplaintData.description;
+                  const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                  if (matchedDept) {
+                    this.newComplaintData.department = matchedDept.id;
+                  }
+                  this.newComplaintData.priority = event.priority || this.newComplaintData.priority;
+                  this.newComplaintData.severityScore = event.severityScore || this.newComplaintData.severityScore;
+                  this.newComplaintData.severityReason = event.reasons || this.newComplaintData.severityReason;
+                  this.aiPredictedCategory = event.category || '';
+                  this.aiPredictedDepartment = event.department || '';
+                }
+              }
+            },
+            error: (err) => {
+              console.error('AI streaming connection failed:', err);
+              if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
+              this.aiTimeoutMessage = 'AI suggestions offline/taking longer than expected.';
+            }
+          });
         },
-        error: () => {
-          this.analyzingImage = false;
+        error: (err) => {
+          console.error('Failed to initialize AI analysis job:', err);
+          this.aiTimeoutMessage = 'Failed to initiate AI suggestions.';
         }
       });
     }
@@ -688,10 +913,32 @@ export class ComplaintsComponent implements OnInit {
       return;
     }
 
+    // Call AI feedback loop if category/department was corrected by citizen
+    const selectedDeptObj = this.departmentsList.find(d => d.id === this.newComplaintData.department);
+    const selectedDeptName = selectedDeptObj ? selectedDeptObj.name : '';
+
+    if (this.aiPredictedCategory && this.aiPredictedDepartment && selectedDeptName &&
+        selectedDeptName.toLowerCase() !== this.aiPredictedDepartment.toLowerCase()) {
+      const feedbackPayload = {
+        originalPrediction: this.aiPredictedCategory,
+        correctedCategory: selectedDeptName,
+        imagePath: this.tempImagePath
+      };
+
+      this.apiService.post('/ai/feedback', feedbackPayload).subscribe({
+        next: (fbRes) => console.log('AI feedback loop: correction successfully logged', fbRes),
+        error: (fbErr) => console.error('AI feedback loop: failed to log correction', fbErr)
+      });
+    }
+
     const formData = new FormData();
     formData.append('title', this.newComplaintData.title);
     formData.append('description', this.newComplaintData.description);
     formData.append('department', this.newComplaintData.department);
+    formData.append('priority', this.newComplaintData.priority);
+    formData.append('severityScore', String(this.newComplaintData.severityScore));
+    formData.append('severityReason', JSON.stringify(this.newComplaintData.severityReason));
+    formData.append('aiIssue', this.newComplaintData.title);
     
     const locationObj = {
       address: this.newComplaintData.address,

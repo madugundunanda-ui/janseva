@@ -322,9 +322,37 @@ const verifyResolutionProof = async (beforeImagePath, afterFile) => {
   }
 };
 
+const submitFeedback = async (payload) => {
+  if (circuitBreaker.isOpen()) {
+    logger.warn('[AI-SERVICE] Circuit breaker open — bypassing feedback submission');
+    return { success: false, message: 'AI service offline' };
+  }
+
+  try {
+    const response = await fetchWithTimeout(`${AI_SERVICE_URL}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }, 10000);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('AI feedback submission failed', { errorText });
+      return { success: false, error: 'Failed to save feedback in AI service' };
+    }
+
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    logger.error('AI feedback request error', { message: error.message });
+    return { success: false, error: error.message };
+  }
+};
+
 module.exports = {
   analyzeComplaintImage,
   predictResolution,
   calculateSeverity,
   verifyResolutionProof,
+  submitFeedback,
 };

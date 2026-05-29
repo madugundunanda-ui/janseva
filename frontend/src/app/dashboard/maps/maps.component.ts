@@ -89,7 +89,7 @@ interface WardScore {
           <div class="space-y-4">
             <h3 class="font-mono text-[10px] tracking-widest text-[#6AA9FF] uppercase font-bold">WARD CIVIC HEALTH INDEX</h3>
             
-            <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+            <div data-lenis-prevent class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
               @for (w of wardScores; track w.ward) {
                 <div class="p-3 rounded-lg border border-var bg-white/2 space-y-2">
                   <div class="flex justify-between items-center font-mono text-[9.5px]">

@@ -5,19 +5,24 @@ const { validate } = require('../middleware/validate');
 const { recommendOfficerSchema, detectSpamSchema, spamActionSchema, updateSettingsSchema } = require('../validators');
 const { 
   analyzeImage, 
-  predictResolutionController, 
+  analyzeImageStream,
+  getAiHealth,
+  predictResolutionController,
   getSeverityController,
   recommendOfficerController,
   getSettingsController,
   updateSettingsController,
   detectSpamController,
   spamActionController,
-  verifyResolutionController
+  verifyResolutionController,
+  aiFeedbackController
 } = require('../controllers/aiController');
 
 const router = express.Router();
 
 router.post('/analyze', protect, upload.single('image'), analyzeImage);
+router.get('/analyze-stream/:analysisId', protect, analyzeImageStream);
+router.get('/health', protect, getAiHealth);
 router.post('/predict-resolution', protect, predictResolutionController);
 router.post('/severity', protect, getSeverityController);
 router.post('/recommend-officer', protect, validate(recommendOfficerSchema), recommendOfficerController);
@@ -26,5 +31,6 @@ router.post('/settings', protect, validate(updateSettingsSchema), updateSettings
 router.post('/spam-detect', protect, validate(detectSpamSchema), detectSpamController);
 router.post('/spam-action', protect, validate(spamActionSchema), spamActionController);
 router.post('/verify-resolution', protect, upload.single('afterImage'), verifyResolutionController);
+router.post('/feedback', protect, aiFeedbackController);
 
 module.exports = router;

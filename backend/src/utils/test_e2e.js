@@ -61,7 +61,7 @@ async function runTests() {
     
     const severityData = await severityResponse.json();
     console.log('   AI Severity Result:', JSON.stringify(severityData));
-    if (severityData.severityScore) {
+    if (severityData.data && severityData.data.severityScore) {
       console.log('   [PASS] AI Severity prediction endpoint functional.');
     } else {
       throw new Error('AI Severity API response structure mismatch.');
@@ -83,7 +83,7 @@ async function runTests() {
     
     const resolutionData = await resolutionResponse.json();
     console.log('   AI Resolution Prediction Result:', JSON.stringify(resolutionData));
-    if (resolutionData.estimatedDays) {
+    if (resolutionData.data && resolutionData.data.estimatedDays) {
       console.log('   [PASS] AI Resolution prediction endpoint functional.');
     } else {
       throw new Error('AI Resolution API response structure mismatch.');
@@ -100,8 +100,8 @@ async function runTests() {
     formData.append('description', 'Severe drainage blockage causing wastewater overflow onto school access road.');
     formData.append('department', 'Waste Management'); // Will resolve to the ID in controller
     formData.append('priority', 'high');
-    formData.append('severityScore', String(severityData.severityScore || 65));
-    formData.append('severityReason', JSON.stringify(severityData.reason || ['Standard school zone issue']));
+    formData.append('severityScore', String(severityData.data?.severityScore || 65));
+    formData.append('severityReason', JSON.stringify(severityData.data?.reason || ['Standard school zone issue']));
     formData.append('location', JSON.stringify({
       address: 'J.P. Nagar, Ward 4',
       ward: 'WARD-04',

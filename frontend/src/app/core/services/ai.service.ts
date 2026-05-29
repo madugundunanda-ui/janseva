@@ -31,6 +31,50 @@ export class AiService {
     return this.analyzeImage(file);
   }
 
+  analyzeImageStream(analysisId: string): Observable<any> {
+    return new Observable((observer) => {
+      if (typeof window === 'undefined') {
+        observer.complete();
+        return;
+      }
+
+      const token = localStorage.getItem('token') || '';
+      const url = `${this.apiService.apiUrl}/ai/analyze-stream/${analysisId}?token=${token}`;
+      
+      const eventSource = new EventSource(url);
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          observer.next(data);
+          if (data.status === 'completed') {
+            eventSource.close();
+            observer.complete();
+          } else if (data.status === 'failed') {
+            eventSource.close();
+            observer.error(new Error(data.message || 'AI analysis job failed'));
+          }
+        } catch (err) {
+          observer.error(err);
+        }
+      };
+
+      eventSource.onerror = (err) => {
+        console.error('EventSource connection error:', err);
+        eventSource.close();
+        observer.error(err);
+      };
+
+      return () => {
+        eventSource.close();
+      };
+    });
+  }
+
+  getAiHealthStatus(): Observable<any> {
+    return this.apiService.get<any>('/ai/health');
+  }
+
   calculateSeverity(payload: Record<string, unknown>): Observable<SeverityAnalysisResult> {
     return this.apiService.getSeverityAI(payload);
   }

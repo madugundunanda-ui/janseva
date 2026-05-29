@@ -192,12 +192,16 @@ export class LoginComponent implements OnInit {
     // Auto-fill template placeholders for quick testing of officer and supervisor
     if (role === 'admin') {
       this.credentials.email = 'admin@janseva.gov.in';
+      this.credentials.password = 'admin123';
     } else if (role === 'supervisor') {
       this.credentials.email = 'supervisor@works.janseva.gov.in';
+      this.credentials.password = 'super123';
     } else if (role === 'officer') {
       this.credentials.email = 'officer@sanitation.janseva.gov.in';
+      this.credentials.password = 'off123';
     } else {
-      this.credentials.email = '';
+      this.credentials.email = 'citizen@gmail.com';
+      this.credentials.password = 'cit123';
     }
   }
 

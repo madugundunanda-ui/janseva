@@ -5,7 +5,12 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 import torch
-torch.set_num_threads(2)
+# Allow PyTorch to auto-scale thread count optimally on multicore host CPUs
+if torch.get_num_threads() < 4:
+    try:
+        torch.set_num_threads(4)
+    except Exception:
+        pass
 import torch.nn.functional as F
 
 try:
@@ -25,95 +30,258 @@ CORS(app)
 
 # Load models once on startup
 print("Loading AI models...")
-print("1. Loading ViT image classifier...")
-classifier = pipeline("image-classification", model="google/mobilenet_v2_1.0_224")
+device_idx = 0 if torch.cuda.is_available() else -1
+device_name = "cuda" if torch.cuda.is_available() else "cpu"
+print(f"Device target: {device_name}")
 
-print("2. Loading NLP sentence-transformer (all-MiniLM-L6-v2)...")
-nlp_model = SentenceTransformer('all-MiniLM-L6-v2')
+print("1. Loading NLP sentence-transformer (all-MiniLM-L6-v2)...")
+nlp_model = SentenceTransformer('all-MiniLM-L6-v2', device=device_name)
 
-print("3. Loading CLIP image embedder (openai/clip-vit-base-patch32)...")
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+print("2. Loading CLIP image embedder (openai/clip-vit-base-patch32)...")
+clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device_name)
 clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 print("All AI models loaded successfully!")
 
-# Mapping Layer for image prediction
-MAPPING = {
-    "Waste Management": [
-        "garbage", "trash", "waste", "overflow", "dumpster", "refuse",
-        "ashcan", "bin", "plastic bag", "litter", "rubbish", "container", "hamper"
-    ],
-    "Water Supply": ["water", "pipe", "leak", "flood", "faucet", "hydrant"],
-    "Roads & Transport": [
-        "street", "road", "pothole", "asphalt", "highway", "pavement",
-        "crack", "obstruction", "barrier", "street sign", "motor vehicle"
-    ],
-    "Electricity": [
-        "light", "electric", "pole", "wire", "lamp", "utility pole",
-        "electric wire", "transmission tower", "power lines", "transformer",
-        "conduit", "streetlight"
-    ],
-    "Drainage": ["drain", "sewage", "manhole", "gutter", "culvert"],
-    "Public Health": ["mosquito", "dirty water", "sanitation", "insect"]
-}
-
-SUGGESTIONS = {
-    "Waste Management": {
-        "title": "Garbage Overflow Near Road",
-        "description": "Garbage accumulation detected near roadside causing sanitation concern.",
-        "priority": "medium"
+# Civic Governance Categories Definition
+CIVIC_CATEGORIES = {
+    "Garbage / Waste": {
+        "prompts": [
+            "garbage dumped on the roadside",
+            "overflowing trash dumpster in public street",
+            "pile of waste bags and litter on pavement"
+        ],
+        "broad": "sanitation",
+        "department": "Waste Management",
+        "title": "Garbage and Waste Pileup",
+        "description": "Garbage accumulation detected in public space causing sanitation concern.",
+        "priority": "medium",
+        "reasons": [
+            "Visible garbage pile detected in public area",
+            "Sanitation concerns from accumulated waste",
+            "Potential health risk from roadside litter"
+        ]
     },
-    "Water Supply": {
-        "title": "Water Leakage or Pipe Burst",
-        "description": "Water accumulation or leakage detected which may indicate a pipe burst or supply issue.",
-        "priority": "medium"
+    "Road Damage": {
+        "prompts": [
+            "pothole in the middle of asphalt road",
+            "cracked and heavily damaged road surface",
+            "broken road asphalt and missing road chunks"
+        ],
+        "broad": "roads",
+        "department": "Roads & Transport",
+        "title": "Road Surface Damage / Pothole",
+        "description": "Potholes or cracked asphalt detected, posing risk to vehicles and pedestrians.",
+        "priority": "medium",
+        "reasons": [
+            "Pothole or cracked asphalt detected on the street",
+            "Potential hazard for traffic and pedestrian safety",
+            "Requires immediate road repair attention"
+        ]
     },
-    "Roads & Transport": {
-        "title": "Broken Road / Pothole",
-        "description": "Damage to the road surface detected, posing a risk to vehicles and pedestrians.",
-        "priority": "low"
+    "Water Leakage": {
+        "prompts": [
+            "water leaking and spraying from municipal pipe",
+            "flooded street due to broken water supply line",
+            "water pool from leaking public utility water pipe"
+        ],
+        "broad": "water",
+        "department": "Water Supply",
+        "title": "Water Utility Pipeline Leakage",
+        "description": "Water leaking or line burst detected causing municipal water waste.",
+        "priority": "medium",
+        "reasons": [
+            "Pressurized water leak from public pipe detected",
+            "Significant water wastage and local pooling risk",
+            "Water supply infrastructure issue identified"
+        ]
     },
-    "Electricity": {
-        "title": "Street Light / Electrical Issue",
-        "description": "Issue with electrical infrastructure or street lighting detected.",
-        "priority": "high"
+    "Drainage Issue": {
+        "prompts": [
+            "overflowing sewer manhole with dirty sewage water",
+            "blocked drainage gutter overflowing onto street",
+            "black smelly wastewater overflowing from drain inlet"
+        ],
+        "broad": "drainage",
+        "department": "Drainage",
+        "title": "Blocked Drainage / Sewage Overflow",
+        "description": "Blocked sewer line or stormwater drain causing dirty wastewater overflow.",
+        "priority": "high",
+        "reasons": [
+            "Wastewater overflow from drainage inlet or manhole",
+            "Public health concern due to exposed sewage water",
+            "Drainage system blockage identified"
+        ]
     },
-    "Drainage": {
-        "title": "Drain Blockage / Sewage Overflow",
-        "description": "Blocked drainage or sewage overflow detected causing local issues.",
-        "priority": "high"
+    "Electricity Problem": {
+        "prompts": [
+            "damaged electric transformer with exposed wires",
+            "loose hanging power lines and electrical cables near road",
+            "sparking electrical wires on utility pole"
+        ],
+        "broad": "electricity",
+        "department": "Electricity",
+        "title": "Electrical Infrastructure Problem",
+        "description": "Electrical hazard, hanging cables, or transformer fault posing safety threat.",
+        "priority": "high",
+        "reasons": [
+            "Electrical line or grid equipment damage detected",
+            "High-risk open wiring or transformer fault",
+            "Imminent safety hazard to nearby citizens"
+        ]
     },
-    "Public Health": {
-        "title": "Public Health / Sanitation Concern",
-        "description": "Environmental condition detected that may pose a public health risk.",
-        "priority": "low"
+    "Street Light Failure": {
+        "prompts": [
+            "broken street light lamp fixture on utility pole",
+            "unlit dark street light post at night",
+            "damaged public street light lamp cover"
+        ],
+        "broad": "electricity",
+        "department": "Street Lighting",
+        "title": "Street Light Failure / Outage",
+        "description": "Broken or non-functioning street lighting causing dark public space.",
+        "priority": "low",
+        "reasons": [
+            "Non-functioning or broken public street lamp fixture",
+            "Dark public zone due to lighting outage",
+            "Requires municipal lighting maintenance"
+        ]
+    },
+    "Illegal Dumping": {
+        "prompts": [
+            "construction waste debris dumped illegally on vacant land",
+            "large scale unauthorized garbage heap in open plot",
+            "bulk furniture and industrial waste dumped on roadside"
+        ],
+        "broad": "sanitation",
+        "department": "Waste Management",
+        "title": "Illegal Trash & Debris Dumping",
+        "description": "Unauthorized commercial or industrial dumping of waste materials on empty land.",
+        "priority": "medium",
+        "reasons": [
+            "Illegal bulk dumping of debris or scrap detected",
+            "Nuisance pileup on unauthorized public/private plot",
+            "Environmental hazard from construction/demolition waste"
+        ]
+    },
+    "Traffic Obstruction": {
+        "prompts": [
+            "fallen tree blocking traffic lanes on street",
+            "large object or barrier obstructing vehicle path",
+            "illegally parked commercial truck blocking road access"
+        ],
+        "broad": "roads",
+        "department": "Roads & Transport",
+        "title": "Street Traffic Obstruction",
+        "description": "Obstruction in traffic lanes blocking vehicles and transit flow.",
+        "priority": "medium",
+        "reasons": [
+            "Fallen tree, debris, or barrier blocking road access",
+            "Vehicle flow or street transit blocked",
+            "High traffic accident risk due to street obstruction"
+        ]
+    },
+    "Public Health Hazard": {
+        "prompts": [
+            "stagnant green swampy water pool breeding mosquitoes",
+            "open chemical container or toxic waste in public area",
+            "dead animal body lying on public street"
+        ],
+        "broad": "emergency",
+        "department": "Public Health",
+        "title": "Public Health Risk / Biohazard",
+        "description": "Stagnant water, bio-waste, or dead animal body posing general health risk.",
+        "priority": "high",
+        "reasons": [
+            "Biological hazard or vector-breeding conditions detected",
+            "Disease vector concern from stagnant water or waste",
+            "Poses direct environmental health risk to neighborhood"
+        ]
+    },
+    "Sanitation Issue": {
+        "prompts": [
+            "dirty public restroom or toilet with trash and filth",
+            "clogged public urinal leaking dirty urine",
+            "unclean public park or marketplace floor with litter"
+        ],
+        "broad": "sanitation",
+        "department": "Sanitation",
+        "title": "Public Toilet / Sanitation Issue",
+        "description": "Filthy public restroom or municipal sanitation facility requiring cleaning.",
+        "priority": "medium",
+        "reasons": [
+            "Unhygienic municipal public restroom facility",
+            "Lack of basic cleanliness and regular cleaning",
+            "Poor sanitary conditions for public use"
+        ]
+    },
+    "Broken Infrastructure": {
+        "prompts": [
+            "broken public park bench or fence structure",
+            "damaged guardrail or traffic barrier on road bridge",
+            "collapsed concrete wall or paving slabs in public square"
+        ],
+        "broad": "roads",
+        "department": "Roads & Transport",
+        "title": "Broken Municipal Asset / Infrastructure",
+        "description": "Broken fence, park bench, guardrail, or municipal asset needing repair.",
+        "priority": "low",
+        "reasons": [
+            "Municipal asset damage or structural decay detected",
+            "Broken fence, bench, or railing in public area",
+            "Requires asset maintenance and structural repair"
+        ]
+    },
+    "Emergency Hazard": {
+        "prompts": [
+            "active fire burning on street or building",
+            "collapsed building structure or deep sinkhole in street",
+            "utility pole collapsed and fallen across street"
+        ],
+        "broad": "emergency",
+        "department": "Public Safety",
+        "title": "Active Public Safety Emergency",
+        "description": "Active fire, structure collapse, or severe hazard requiring immediate response.",
+        "priority": "urgent",
+        "reasons": [
+            "Life-safety emergency or structural failure threat",
+            "Requires immediate public safety team dispatch",
+            "Active hazard blocking transit or building access"
+        ]
     }
 }
 
-def get_prediction_details(label, score):
-    label_text = str(label or "").lower().strip()
-    detected_dept = "General Inquiry"
-    
-    # Simple keyword matching for mapping
-    for dept, keywords in MAPPING.items():
-        if any(keyword in label_text for keyword in keywords):
-            detected_dept = dept
-            break
-            
-    suggestion = SUGGESTIONS.get(detected_dept, {
-        "title": f"{label_text.capitalize()} Issue",
-        "description": f"AI detected {label_text} related issue from the image.",
-        "priority": "low"
-    })
-    priority = suggestion.get("priority", "low")
-    
-    return {
-        "title": suggestion["title"],
-        "description": suggestion["description"],
-        "priority": priority,
-        "department": detected_dept,
-        "departmentInput": detected_dept,
-        "confidence": int(score * 100)
-    }
+NON_CIVIC_PROMPTS = [
+    "a portrait photo of a person's face",
+    "a document, text page, screenshot, page of a book, paper",
+    "a pet animal like a dog, cat, or bird",
+    "an indoor room, bedroom, living room, office, furniture",
+    "a consumer product, packaging, food, tobacco packet, cigarettes, alcohol bottle",
+    "abstract pattern, color shapes, digital graphic, web interface",
+    "scenic nature landscape, empty mountains, forest, ocean without any infrastructure",
+    "close up of clothing, shoes, fashion accessories",
+    "a blank screen, dark image, noise, blurry out of focus photo"
+]
+
+# Pre-compile prompts and pre-encode features at startup
+all_prompts = []
+prompt_categories = []  # mapping index to category name (or 'Non-Civic')
+
+for cat, info in CIVIC_CATEGORIES.items():
+    for p in info["prompts"]:
+        all_prompts.append(p)
+        prompt_categories.append(cat)
+
+for p in NON_CIVIC_PROMPTS:
+    all_prompts.append(p)
+    prompt_categories.append("Non-Civic")
+
+print("Pre-encoding CLIP text features...")
+inputs_text = clip_processor(text=all_prompts, padding=True, return_tensors="pt").to(device_name)
+with torch.no_grad():
+    text_features = clip_model.get_text_features(**inputs_text)
+    # Normalize features
+    text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+print(f"Pre-encoded {len(all_prompts)} CLIP prompts successfully.")
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points on the earth in meters."""
@@ -183,36 +351,76 @@ def predict():
     
     file = request.files['image']
     t1 = time.time()
-    img = Image.open(file.stream).convert('RGB').resize((224, 224))
+    try:
+        img = Image.open(file.stream).convert('RGB')
+    except Exception as e:
+        return jsonify({"error": f"Failed to read image: {str(e)}"}), 400
     t2 = time.time()
     
-    # AI Inference
+    # Preprocess (resize to 224x224 for CLIP)
+    img_resized = img.resize((224, 224))
+    
+    # Run CLIP inference
+    inputs_img = clip_processor(images=img_resized, return_tensors="pt").to(device_name)
     with torch.no_grad():
-        results = classifier(img)
+        image_features = clip_model.get_image_features(**inputs_img)
+        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
     t3 = time.time()
     
-    top_result = results[0]
+    # Compute similarity logits
+    logits = torch.matmul(image_features, text_features.t()) * 100.0
+    probs = F.softmax(logits, dim=-1)[0]
     
-    prediction = get_prediction_details(top_result['label'], top_result['score'])
+    # Aggregate probabilities by category
+    category_probs = {}
+    for i, prob in enumerate(probs):
+        cat = prompt_categories[i]
+        category_probs[cat] = category_probs.get(cat, 0.0) + float(prob.item())
+        
+    # Get highest scoring category
+    sorted_categories = sorted(category_probs.items(), key=lambda x: x[1], reverse=True)
+    best_cat, best_prob = sorted_categories[0]
+    
+    # Determine confidence and validity
+    non_civic_prob = category_probs.get("Non-Civic", 0.0)
+    
+    civic_categories_probs = {c: p for c, p in category_probs.items() if c != "Non-Civic"}
+    best_civic_cat, best_civic_prob = sorted(civic_categories_probs.items(), key=lambda x: x[1], reverse=True)[0]
+    
+    # Low confidence threshold checks
+    is_low_confidence = (non_civic_prob > 0.45) or (best_civic_prob < 0.22) or (best_cat == "Non-Civic")
     
     duration = time.time() - start_time
     print(f"[AI-SERVICE] predict completed in {duration:.4f}s. (FileRead={t2-t1:.4f}s, Inference={t3-t2:.4f}s)")
+    print(f"[AI-SERVICE] Best Category: {best_cat} ({best_prob:.2f}), Non-Civic: {non_civic_prob:.2f}")
     
-    print({
-        "title": prediction.get("title", ""),
-        "description": prediction.get("description", ""),
-        "department": prediction.get("department", ""),
-        "confidence": prediction.get("confidence", 0)
-    })
-
+    if is_low_confidence:
+        return jsonify({
+            "success": True,
+            "title": "",
+            "description": "Unable to confidently identify issue type. Please select the category and fill details manually.",
+            "department": "General Inquiry",
+            "confidence": 0,
+            "priority": "low",
+            "departmentInput": "General Inquiry",
+            "reasons": ["AI model confidence below reliability threshold", "Image contains non-civic or ambiguous elements"],
+            "low_confidence": True
+        })
+        
+    # Valid civic prediction details
+    info = CIVIC_CATEGORIES[best_civic_cat]
+    
     return jsonify({
         "success": True,
-        "title": prediction.get("title", ""),
-        "description": prediction.get("description", ""),
-        "department": prediction.get("department", ""),
-        "confidence": prediction.get("confidence", 0),
-        "priority": prediction.get("priority", "low"),
-        "departmentInput": prediction.get("departmentInput", "")
+        "title": info["title"],
+        "description": info["description"],
+        "department": info["department"],
+        "confidence": int(best_civic_prob * 100),
+        "priority": info["priority"],
+        "departmentInput": info["department"],
+        "reasons": info["reasons"],
+        "low_confidence": False,
+        "category": best_civic_cat
     })
 
 # Bounded LRU cache for text embeddings (max 1000 entries)
@@ -328,15 +536,7 @@ def check_duplicate():
         d_sim = max(0.0, float(desc_sims[i].item()) * 100.0)
         text_score = (t_sim + d_sim) / 2.0
         
-        # B. Image Similarity
-        image_score = 0.0
-        if new_img_emb is not None and c_img_path:
-            ext_img_emb = get_clip_image_embedding(c_img_path)
-            if ext_img_emb is not None:
-                cos_sim = torch.dot(new_img_emb, ext_img_emb).item()
-                image_score = max(0.0, cos_sim * 100.0)
-                
-        # C. Location Match (Proximity)
+        # B. Location Match (Proximity) - CALCULATED FIRST
         distance_meters = 999999.0
         location_score = 0.0
         if new_lat is not None and new_lng is not None and c_lat is not None and c_lng is not None:
@@ -347,6 +547,16 @@ def check_duplicate():
                 location_score = 100.0 - (distance_meters / 500.0) * 20.0
             else:
                 location_score = max(0.0, 80.0 - ((distance_meters - 500.0) / 1000.0) * 80.0)
+                
+        # C. Image Similarity - COMPUTED ONLY IF GEOGRAPHICALLY NEAR AND TEXT MATCHES PARTIALLY
+        image_score = 0.0
+        if distance_meters <= 1500.0 and text_score >= 35.0:
+            if new_img_emb is not None and c_img_path:
+                ext_img_emb = get_clip_image_embedding(c_img_path)
+                if ext_img_emb is not None:
+                    # Perform dot product (on device)
+                    cos_sim = torch.dot(new_img_emb, ext_img_emb).item()
+                    image_score = max(0.0, cos_sim * 100.0)
                 
         # D. Weighted Final Score: 40% text, 30% image, 30% location
         final_score = (0.4 * text_score) + (0.3 * image_score) + (0.3 * location_score)
@@ -815,13 +1025,99 @@ def verify_resolution():
             "reasons": ["Automated proof analysis complete"]
         })
 
+@app.route('/feedback', methods=['POST'])
+def feedback():
+    import json
+    data = request.get_json() or {}
+    original = data.get('original_prediction', '')
+    corrected = data.get('corrected_category', '')
+    image_path = data.get('image_path', '')
+    
+    # Resolve absolute path and calculate embedding if image exists
+    resolved_path = resolve_image_path(image_path)
+    embedding = None
+    if resolved_path and os.path.exists(resolved_path):
+        emb_tensor = get_clip_image_embedding(resolved_path)
+        if emb_tensor is not None:
+            embedding = emb_tensor.tolist()
+            
+    # Save correction feedback entry
+    feedback_file = os.path.join(os.path.dirname(__file__), 'feedback_corrections.json')
+    feedback_data = []
+    if os.path.exists(feedback_file):
+        try:
+            with open(feedback_file, 'r') as f:
+                feedback_data = json.load(f)
+        except Exception:
+            feedback_data = []
+            
+    entry = {
+        "original_prediction": original,
+        "corrected_category": corrected,
+        "image_path": image_path,
+        "embedding": embedding,
+        "timestamp": time.time() if 'time' in globals() else 0.0
+    }
+    feedback_data.append(entry)
+    
+    try:
+        with open(feedback_file, 'w') as f:
+            json.dump(feedback_data, f, indent=2)
+    except Exception as e:
+        print(f"[AI-SERVICE] Error saving feedback: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+        
+    return jsonify({"success": True, "message": "Feedback logged successfully"})
+
 @app.route('/health', methods=['GET'])
 def health():
+    import ctypes
+    
+    # Calculate memory usage (cross-platform Windows ctypes / Linux resource fallback)
+    memory_mb = 0
+    try:
+        class PROCESS_MEMORY_COUNTERS(ctypes.Structure):
+            _fields_ = [
+                ("cb", ctypes.c_ulong),
+                ("PageFaultCount", ctypes.c_ulong),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+        process_handle = ctypes.windll.kernel32.GetCurrentProcess()
+        counters = PROCESS_MEMORY_COUNTERS()
+        ctypes.windll.psapi.GetProcessMemoryInfo(
+            process_handle,
+            ctypes.byref(counters),
+            ctypes.sizeof(counters)
+        )
+        memory_mb = round(counters.WorkingSetSize / (1024 * 1024), 2)
+    except Exception:
+        try:
+            import resource
+            memory_mb = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 2)
+        except Exception:
+            pass
+
+    # Verify model loaded status (dropped classifier, checking nlp_model and clip_model)
+    models_ready = (
+        nlp_model is not None and 
+        clip_model is not None and 
+        clip_processor is not None
+    )
+
     return jsonify({
-        "status": "healthy",
-        "models_loaded": True,
+        "status": "healthy" if models_ready else "degraded",
+        "models_loaded": models_ready,
         "service": "JANSEVA AI Service",
-        "models": ["mobilenet_v2", "all-MiniLM-L6-v2", "clip-vit-base-patch32"]
+        "models": ["all-MiniLM-L6-v2", "clip-vit-base-patch32"],
+        "memory_usage_mb": memory_mb,
+        "inference_readiness": "ready" if models_ready else "not_ready"
     })
 
 if __name__ == '__main__':
