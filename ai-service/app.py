@@ -1,10 +1,13 @@
 import os
 import math
+import time
 from collections import OrderedDict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from PIL import Image
 import torch
+from concurrent.futures import ThreadPoolExecutor
+
 # Allow PyTorch to auto-scale thread count optimally on multicore host CPUs
 if torch.get_num_threads() < 4:
     try:
@@ -28,19 +31,44 @@ except ModuleNotFoundError as exc:
 app = Flask(__name__)
 CORS(app)
 
-# Load models once on startup
+# Global variables to preserve the loaded state in RAM/VRAM memory
+GLOBAL_VISION_MODEL = None
+GLOBAL_VISION_PROCESSOR = None
+GLOBAL_NLP_MODEL = None
+GLOBAL_TEXT_FEATURES = None
+
+# Initialize global thread pool for running inference tasks asynchronously / in parallel threads
+INFERENCE_EXECUTOR = ThreadPoolExecutor(max_workers=4)
+
+# Load models once on startup in the global runtime initialization block
 print("Loading AI models...")
 device_idx = 0 if torch.cuda.is_available() else -1
 device_name = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"Device target: {device_name}")
 
 print("1. Loading NLP sentence-transformer (all-MiniLM-L6-v2)...")
-nlp_model = SentenceTransformer('all-MiniLM-L6-v2', device=device_name)
+GLOBAL_NLP_MODEL = SentenceTransformer('all-MiniLM-L6-v2', device=device_name)
 
 print("2. Loading CLIP image embedder (openai/clip-vit-base-patch32)...")
-clip_model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device_name)
-clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+GLOBAL_VISION_MODEL = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(device_name)
+GLOBAL_VISION_PROCESSOR = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
 print("All AI models loaded successfully!")
+
+# Thread-pool wrapper functions to handle inference strictly via thread pools
+def run_vision_inference(image):
+    """Extract normalized CLIP features for an image inside the global thread pool."""
+    inputs = GLOBAL_VISION_PROCESSOR(images=image, return_tensors="pt").to(device_name)
+    with torch.no_grad():
+        outputs = GLOBAL_VISION_MODEL.get_image_features(**inputs)
+        features = outputs.pooler_output if hasattr(outputs, 'pooler_output') else outputs
+        features = features / features.norm(dim=-1, keepdim=True)
+    return features
+
+def run_nlp_inference(text):
+    """Generate SentenceTransformer embedding inside the global thread pool."""
+    with torch.no_grad():
+        emb = GLOBAL_NLP_MODEL.encode(text, convert_to_tensor=True)
+    return emb
 
 # Civic Governance Categories Definition
 CIVIC_CATEGORIES = {
@@ -262,6 +290,15 @@ NON_CIVIC_PROMPTS = [
     "a blank screen, dark image, noise, blurry out of focus photo"
 ]
 
+# Governance-only prediction guardrails
+TOP_K_VALIDATION = 5
+MIN_CIVIC_CONFIDENCE = 0.35
+MAX_NON_CIVIC_PROB = 0.30
+MIN_MARGIN_OVER_NON_CIVIC = 0.12
+MIN_SHARPNESS_RATIO = 1.18
+MIN_LAPLACIAN_VARIANCE = 20.0
+LOW_LIGHT_MEAN_THRESHOLD = 25.0
+
 # Pre-compile prompts and pre-encode features at startup
 all_prompts = []
 prompt_categories = []  # mapping index to category name (or 'Non-Civic')
@@ -276,12 +313,17 @@ for p in NON_CIVIC_PROMPTS:
     prompt_categories.append("Non-Civic")
 
 print("Pre-encoding CLIP text features...")
-inputs_text = clip_processor(text=all_prompts, padding=True, return_tensors="pt").to(device_name)
+inputs_text = GLOBAL_VISION_PROCESSOR(text=all_prompts, padding=True, return_tensors="pt").to(device_name)
 with torch.no_grad():
-    text_features = clip_model.get_text_features(**inputs_text)
+    GLOBAL_TEXT_FEATURES = GLOBAL_VISION_MODEL.get_text_features(**inputs_text)
     # Normalize features
-    text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+    GLOBAL_TEXT_FEATURES = GLOBAL_TEXT_FEATURES / GLOBAL_TEXT_FEATURES.norm(dim=-1, keepdim=True)
 print(f"Pre-encoded {len(all_prompts)} CLIP prompts successfully.")
+
+# Prompt index map for top-k validation and reranking
+CATEGORY_PROMPT_INDICES = {}
+for idx, cat in enumerate(prompt_categories):
+    CATEGORY_PROMPT_INDICES.setdefault(cat, []).append(idx)
 
 def haversine_distance(lat1, lon1, lat2, lon2):
     """Calculate the great circle distance between two points on the earth in meters."""
@@ -324,14 +366,10 @@ def get_clip_image_embedding(image_path):
         if img.width > 224 or img.height > 224:
             img = img.resize((224, 224))
             
-        inputs = clip_processor(images=img, return_tensors="pt")
-        with torch.no_grad():
-            outputs = clip_model.get_image_features(**inputs)
-            # Extract tensor from BaseModelOutputWithPooling if needed
-            features = outputs.pooler_output if hasattr(outputs, 'pooler_output') else outputs
-        # Normalize the embedding
-        features = features / features.norm(dim=-1, keepdim=True)
+        future = INFERENCE_EXECUTOR.submit(run_vision_inference, img)
+        features = future.result()
         embedding = features[0]
+        
         CLIP_EMBEDDING_CACHE[cache_key] = embedding
         # Evict oldest if over limit
         while len(CLIP_EMBEDDING_CACHE) > CLIP_CACHE_MAX:
@@ -342,9 +380,39 @@ def get_clip_image_embedding(image_path):
         return None
 
 
+def preprocess_for_clip(img):
+    """Apply robust preprocessing for low-light/blur inputs before CLIP inference."""
+    np_img = np.array(img.convert('RGB'))
+    gray = np.mean(np_img, axis=2)
+    brightness_mean = float(np.mean(gray))
+
+    # Lightweight blur estimate with gradient variance proxy.
+    gx = np.abs(np.diff(gray, axis=1))
+    gy = np.abs(np.diff(gray, axis=0))
+    lap_var = float(np.var(gx) + np.var(gy))
+
+    blurred = lap_var < MIN_LAPLACIAN_VARIANCE
+    low_light = brightness_mean < LOW_LIGHT_MEAN_THRESHOLD
+
+    # Adaptive contrast equalization-like stretch using percentiles.
+    p_low = np.percentile(np_img, 2)
+    p_high = np.percentile(np_img, 98)
+    if p_high > p_low:
+        stretched = np.clip((np_img - p_low) * (255.0 / (p_high - p_low)), 0, 255).astype(np.uint8)
+        np_img = stretched
+
+    processed = Image.fromarray(np_img).resize((224, 224))
+    quality = {
+        "blurred": blurred,
+        "low_light": low_light,
+        "brightness_mean": round(brightness_mean, 2),
+        "blur_score": round(lap_var, 2),
+    }
+    return processed, quality
+
+
 @app.route('/predict', methods=['POST'])
 def predict():
-    import time
     start_time = time.time()
     if 'image' not in request.files:
         return jsonify({"error": "No image uploaded"}), 400
@@ -357,18 +425,16 @@ def predict():
         return jsonify({"error": f"Failed to read image: {str(e)}"}), 400
     t2 = time.time()
     
-    # Preprocess (resize to 224x224 for CLIP)
-    img_resized = img.resize((224, 224))
+    # Robust preprocessing (contrast + quality signals + resize)
+    img_resized, quality = preprocess_for_clip(img)
     
-    # Run CLIP inference
-    inputs_img = clip_processor(images=img_resized, return_tensors="pt").to(device_name)
-    with torch.no_grad():
-        image_features = clip_model.get_image_features(**inputs_img)
-        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+    # Run CLIP inference via global ThreadPoolExecutor
+    future = INFERENCE_EXECUTOR.submit(run_vision_inference, img_resized)
+    image_features = future.result()
     t3 = time.time()
     
     # Compute similarity logits
-    logits = torch.matmul(image_features, text_features.t()) * 100.0
+    logits = torch.matmul(image_features, GLOBAL_TEXT_FEATURES.t()) * 100.0
     probs = F.softmax(logits, dim=-1)[0]
     
     # Aggregate probabilities by category
@@ -376,23 +442,55 @@ def predict():
     for i, prob in enumerate(probs):
         cat = prompt_categories[i]
         category_probs[cat] = category_probs.get(cat, 0.0) + float(prob.item())
-        
-    # Get highest scoring category
-    sorted_categories = sorted(category_probs.items(), key=lambda x: x[1], reverse=True)
-    best_cat, best_prob = sorted_categories[0]
-    
-    # Determine confidence and validity
+
+    # Stage 1: Governance-related vs non-civic gating
     non_civic_prob = category_probs.get("Non-Civic", 0.0)
-    
     civic_categories_probs = {c: p for c, p in category_probs.items() if c != "Non-Civic"}
-    best_civic_cat, best_civic_prob = sorted(civic_categories_probs.items(), key=lambda x: x[1], reverse=True)[0]
-    
-    # Low confidence threshold checks
-    is_low_confidence = (non_civic_prob > 0.45) or (best_civic_prob < 0.22) or (best_cat == "Non-Civic")
+    civic_sorted = sorted(civic_categories_probs.items(), key=lambda x: x[1], reverse=True)
+    best_civic_cat, best_civic_prob = civic_sorted[0]
+    second_civic_prob = civic_sorted[1][1] if len(civic_sorted) > 1 else 0.0
+    civic_margin = best_civic_prob - second_civic_prob
+
+    # Stage 2 + 3: Top-k civic prompt validation and reranking
+    topk_vals, topk_indices = torch.topk(probs, k=min(TOP_K_VALIDATION, len(probs)))
+    topk_items = []
+    topk_civic_votes = {}
+    for rank in range(topk_indices.shape[0]):
+        idx = int(topk_indices[rank].item())
+        score = float(topk_vals[rank].item())
+        category = prompt_categories[idx]
+        prompt_text = all_prompts[idx]
+        topk_items.append({
+            "rank": rank + 1,
+            "category": category,
+            "prompt": prompt_text,
+            "score": round(score, 4)
+        })
+        if category != "Non-Civic":
+            topk_civic_votes[category] = topk_civic_votes.get(category, 0.0) + score
+
+    if topk_civic_votes:
+        reranked_civic = sorted(topk_civic_votes.items(), key=lambda x: x[1], reverse=True)[0][0]
+    else:
+        reranked_civic = best_civic_cat
+
+    if reranked_civic != best_civic_cat:
+        best_civic_cat = reranked_civic
+        best_civic_prob = civic_categories_probs.get(best_civic_cat, best_civic_prob)
+
+    # Confidence reliability checks (hallucination prevention)
+    confidence_ratio = best_civic_prob / (non_civic_prob + 1e-6)
+    is_low_confidence = (
+        quality["blurred"] or
+        (non_civic_prob > MAX_NON_CIVIC_PROB) or
+        (best_civic_prob < MIN_CIVIC_CONFIDENCE) or
+        ((best_civic_prob - non_civic_prob) < MIN_MARGIN_OVER_NON_CIVIC) or
+        (confidence_ratio < MIN_SHARPNESS_RATIO)
+    )
     
     duration = time.time() - start_time
     print(f"[AI-SERVICE] predict completed in {duration:.4f}s. (FileRead={t2-t1:.4f}s, Inference={t3-t2:.4f}s)")
-    print(f"[AI-SERVICE] Best Category: {best_cat} ({best_prob:.2f}), Non-Civic: {non_civic_prob:.2f}")
+    print(f"[AI-SERVICE] Best Civic Category: {best_civic_cat} ({best_civic_prob:.2f}), Non-Civic: {non_civic_prob:.2f}, Margin: {civic_margin:.3f}")
     
     if is_low_confidence:
         return jsonify({
@@ -403,8 +501,15 @@ def predict():
             "confidence": 0,
             "priority": "low",
             "departmentInput": "General Inquiry",
-            "reasons": ["AI model confidence below reliability threshold", "Image contains non-civic or ambiguous elements"],
-            "low_confidence": True
+            "reasons": [
+                "AI confidence is below governance reliability threshold",
+                "Image appears non-civic, blurry, low-light, or semantically ambiguous"
+            ],
+            "low_confidence": True,
+            "category": "",
+            "broad_category": "",
+            "quality_checks": quality,
+            "top_k_predictions": topk_items
         })
         
     # Valid civic prediction details
@@ -420,7 +525,10 @@ def predict():
         "departmentInput": info["department"],
         "reasons": info["reasons"],
         "low_confidence": False,
-        "category": best_civic_cat
+        "category": best_civic_cat,
+        "broad_category": info["broad"],
+        "quality_checks": quality,
+        "top_k_predictions": topk_items
     })
 
 # Bounded LRU cache for text embeddings (max 1000 entries)
@@ -433,8 +541,11 @@ def get_text_embedding(text):
         text = ""
     if text in TEXT_EMBEDDING_CACHE:
         return TEXT_EMBEDDING_CACHE[text]
-    with torch.no_grad():
-        emb = nlp_model.encode(text, convert_to_tensor=True)
+    
+    # Run NLP encoding via global ThreadPoolExecutor
+    future = INFERENCE_EXECUTOR.submit(run_nlp_inference, text)
+    emb = future.result()
+    
     TEXT_EMBEDDING_CACHE[text] = emb
     # Evict oldest if over limit
     while len(TEXT_EMBEDDING_CACHE) > TEXT_CACHE_MAX:
@@ -468,7 +579,6 @@ def check_duplicate():
       ]
     }
     """
-    import time
     start_time = time.time()
     
     data = request.get_json() or {}
@@ -968,19 +1078,13 @@ def verify_resolution():
         }), 400
 
     try:
-        # Before image embedding
-        inputs_before = clip_processor(images=before_img, return_tensors="pt")
-        with torch.no_grad():
-            outputs_before = clip_model.get_image_features(**inputs_before)
-            feat_before = outputs_before.pooler_output if hasattr(outputs_before, 'pooler_output') else outputs_before
-        feat_before = feat_before / feat_before.norm(dim=-1, keepdim=True)
+        # Before image embedding run via global ThreadPoolExecutor
+        future_before = INFERENCE_EXECUTOR.submit(run_vision_inference, before_img)
+        feat_before = future_before.result()
         
-        # After image embedding
-        inputs_after = clip_processor(images=after_img, return_tensors="pt")
-        with torch.no_grad():
-            outputs_after = clip_model.get_image_features(**inputs_after)
-            feat_after = outputs_after.pooler_output if hasattr(outputs_after, 'pooler_output') else outputs_after
-        feat_after = feat_after / feat_after.norm(dim=-1, keepdim=True)
+        # After image embedding run via global ThreadPoolExecutor
+        future_after = INFERENCE_EXECUTOR.submit(run_vision_inference, after_img)
+        feat_after = future_after.result()
         
         # Calculate Cosine Similarity
         cosine_sim = torch.dot(feat_before[0], feat_after[0]).item()
@@ -1104,11 +1208,11 @@ def health():
         except Exception:
             pass
 
-    # Verify model loaded status (dropped classifier, checking nlp_model and clip_model)
+    # Verify model loaded status
     models_ready = (
-        nlp_model is not None and 
-        clip_model is not None and 
-        clip_processor is not None
+        GLOBAL_NLP_MODEL is not None and 
+        GLOBAL_VISION_MODEL is not None and 
+        GLOBAL_VISION_PROCESSOR is not None
     )
 
     return jsonify({

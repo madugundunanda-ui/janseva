@@ -393,10 +393,10 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
           <div class="flex justify-between items-center mb-2">
             <div class="inline-flex items-center gap-2">
               <span class="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
-              <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">AI-ASSISTED CIVIC INTAKE</span>
+              <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">{{ translationService.t('AI_ASSISTED_CIVIC_INTAKE') }}</span>
             </div>
             <div class="font-mono text-[9px] uppercase flex items-center gap-1.5">
-              <span class="text-muted-var">AI CORE NETWORK:</span>
+              <span class="text-muted-var">{{ translationService.t('AI_CORE_NETWORK') }}:</span>
               <span class="font-bold" [ngClass]="{
                 'text-emerald-400': aiHealthStatus === 'Online',
                 'text-amber-400': aiHealthStatus === 'Busy',
@@ -404,7 +404,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               }">{{ aiHealthStatus }}</span>
             </div>
           </div>
-          <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mb-6 font-mono">Register New Grievance</h3>
+          <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mb-6 font-mono">{{ translationService.t('REGISTER_NEW_GRIEVANCE') }}</h3>
 
           <!-- Form elements -->
           <div class="space-y-4 mb-6">
@@ -415,48 +415,48 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               </svg>
               
               <input #fileInput type="file" (change)="onComplaintFileSelected($event)" (click)="$event.stopPropagation()" class="font-mono text-[10px] text-muted-var mb-2">
-              <span class="text-[9px] font-mono text-muted-var uppercase">AUTO-FILL ENGINE: AI WILL INSTANTLY DETECT DEPT, PRIORITY, AND TITLE SUGGESTIONS ON ATTACHMENT.</span>
+              <span class="text-[9px] font-mono text-muted-var uppercase">{{ translationService.t('AUTO_FILL_INFO') }}</span>
             </div>
 
             <!-- Progressive AI Analysis Steps -->
             @if (showAiStatusSteps) {
               <div class="p-5 rounded-xl border border-cyan-500/25 bg-cyan-950/10 space-y-3 font-mono text-[10px] uppercase text-left">
                 <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                  <span class="font-bold text-cyan-400">AI PIPELINE REALTIME STATUS</span>
+                  <span class="font-bold text-cyan-400">{{ translationService.t('AI_PIPELINE_STATUS') }}</span>
                   <span class="text-[9px] text-cyan-400 font-bold">{{ aiProgress }}%</span>
                 </div>
                 
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
-                    <span>✓ Image compressed & uploaded</span>
-                    <span class="text-cyan-400 font-bold">DONE</span>
+                    <span>✓ {{ translationService.t('AI_STEP_1_TITLE') }} ({{ translationService.t('IMAGE_UPLOADED_SUCCESS') }})</span>
+                    <span class="text-cyan-400 font-bold">{{ translationService.t('DONE') }}</span>
                   </div>
                   
                   <div class="flex items-center justify-between">
-                    <span>{{ aiStepDetecting ? '● Detecting Civic Issue & Dept...' : (aiStepDetectingDone ? '✓ Issue & Dept Identified' : '○ Detecting Civic Issue & Dept') }}</span>
+                    <span>{{ aiStepDetecting ? '● ' + translationService.t('AI_STEP_2_RUNNING') : (aiStepDetectingDone ? '✓ ' + translationService.t('AI_STEP_2_DONE') : '○ ' + translationService.t('AI_STEP_2_PENDING')) }}</span>
                     <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepDetecting, 'text-cyan-400 font-bold': aiStepDetectingDone, 'text-muted-var': !aiStepDetecting && !aiStepDetectingDone}">
-                      {{ aiStepDetecting ? 'RUNNING' : (aiStepDetectingDone ? 'DONE' : 'PENDING') }}
+                      {{ aiStepDetecting ? translationService.t('RUNNING') : (aiStepDetectingDone ? translationService.t('DONE') : translationService.t('PENDING')) }}
                     </span>
                   </div>
 
                   <div class="flex items-center justify-between">
-                    <span>{{ aiStepSeverity ? '● Estimating Severity & Priority...' : (aiStepSeverityDone ? '✓ Severity & Priority Calculated' : '○ Estimating Severity & Priority') }}</span>
+                    <span>{{ aiStepSeverity ? '● ' + translationService.t('AI_STEP_3_RUNNING') : (aiStepSeverityDone ? '✓ ' + translationService.t('AI_STEP_3_DONE') : '○ ' + translationService.t('AI_STEP_3_PENDING')) }}</span>
                     <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepSeverity, 'text-cyan-400 font-bold': aiStepSeverityDone, 'text-muted-var': !aiStepSeverity && !aiStepSeverityDone}">
-                      {{ aiStepSeverity ? 'RUNNING' : (aiStepSeverityDone ? 'DONE' : 'PENDING') }}
+                      {{ aiStepSeverity ? translationService.t('RUNNING') : (aiStepSeverityDone ? translationService.t('DONE') : translationService.t('PENDING')) }}
                     </span>
                   </div>
 
                   <div class="flex items-center justify-between">
-                    <span>{{ aiStepETA ? '● Estimating SLA & Delay Risks...' : (aiStepETADone ? '✓ ETA & Resolution Calculated' : '○ Estimating SLA & Delay Risks') }}</span>
+                    <span>{{ aiStepETA ? '● ' + translationService.t('AI_STEP_4_RUNNING') : (aiStepETADone ? '✓ ' + translationService.t('AI_STEP_4_DONE') : '○ ' + translationService.t('AI_STEP_4_PENDING')) }}</span>
                     <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepETA, 'text-cyan-400 font-bold': aiStepETADone, 'text-muted-var': !aiStepETA && !aiStepETADone}">
-                      {{ aiStepETA ? 'RUNNING' : (aiStepETADone ? 'DONE' : 'PENDING') }}
+                      {{ aiStepETA ? translationService.t('RUNNING') : (aiStepETADone ? translationService.t('DONE') : translationService.t('PENDING')) }}
                     </span>
                   </div>
 
                   <div class="flex items-center justify-between">
-                    <span>{{ aiStepDuplicate ? '● Scanning Duplicate Complaints...' : (aiStepDuplicateDone ? '✓ Duplicate Check Complete' : '○ Scanning Duplicate Complaints') }}</span>
+                    <span>{{ aiStepDuplicate ? '● ' + translationService.t('AI_STEP_5_RUNNING') : (aiStepDuplicateDone ? '✓ ' + translationService.t('AI_STEP_5_DONE') : '○ ' + translationService.t('AI_STEP_5_PENDING')) }}</span>
                     <span [ngClass]="{'text-yellow-400 animate-pulse font-bold': aiStepDuplicate, 'text-cyan-400 font-bold': aiStepDuplicateDone, 'text-muted-var': !aiStepDuplicate && !aiStepDuplicateDone}">
-                      {{ aiStepDuplicate ? 'RUNNING' : (aiStepDuplicateDone ? 'DONE' : 'PENDING') }}
+                      {{ aiStepDuplicate ? translationService.t('RUNNING') : (aiStepDuplicateDone ? translationService.t('DONE') : translationService.t('PENDING')) }}
                     </span>
                   </div>
                 </div>
@@ -474,7 +474,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               <div class="flex justify-between items-center">
                 <span>{{ translationService.t('GPS_LOCATION') }}</span>
                 <button (click)="captureLocation()" [disabled]="gpsCapturing" class="px-3 py-1.5 rounded bg-[#06b6d4] text-black font-bold hover:bg-[#0891b2] transition-colors">
-                  @if (gpsCapturing) { CAPTURING... } @else { CAPTURE GPS }
+                  @if (gpsCapturing) { {{ translationService.t('CAPTURING') }} } @else { {{ translationService.t('CAPTURE_GPS') }} }
                 </button>
               </div>
 
@@ -510,20 +510,20 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
                 </div>
               </div>
               @if (voiceRecognizing) {
-                <div class="text-red-400 font-bold animate-pulse text-[9px]">MICROPHONE OPEN: SPEAK NOW IN SELECTED LANGUAGE...</div>
+                <div class="text-red-400 font-bold animate-pulse text-[9px]">{{ translationService.t('SPEAK_NOW') }}</div>
               }
             </div>
 
             <!-- Title & description -->
             <div class="flex flex-col">
-              <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Grievance Title</label>
-              <input type="text" [(ngModel)]="newComplaintData.title" class="glass-input" placeholder="Detected Title auto-fills...">
+              <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('GRIEVANCE_TITLE') }}</label>
+              <input type="text" [(ngModel)]="newComplaintData.title" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" placeholder="Detected Title auto-fills...">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div class="flex flex-col">
-                <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Target Department</label>
-                <select [(ngModel)]="newComplaintData.department" class="glass-input font-mono text-[10px]">
+                <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('TARGET_DEPARTMENT') }}</label>
+                <select [(ngModel)]="newComplaintData.department" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input font-mono text-[10px]">
                   @for (d of departmentsList; track d.id) {
                     <option [value]="d.id">{{ d.name }}</option>
                   }
@@ -531,23 +531,23 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               </div>
 
               <div class="flex flex-col">
-                <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Location Address</label>
-                <input type="text" [(ngModel)]="newComplaintData.address" class="glass-input" placeholder="Ward 12 Main St">
+                <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('LOCATION_ADDRESS') }}</label>
+                <input type="text" [(ngModel)]="newComplaintData.address" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" placeholder="Ward 12 Main St">
               </div>
             </div>
 
             <div class="flex flex-col">
-              <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Detailed Narrative</label>
-              <textarea [(ngModel)]="newComplaintData.description" rows="3" class="glass-input" placeholder="Detail the issue..."></textarea>
+              <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('DETAILED_NARRATIVE') }}</label>
+              <textarea [(ngModel)]="newComplaintData.description" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" rows="3" class="glass-input" placeholder="Detail the issue..."></textarea>
             </div>
           </div>
 
           <div class="flex justify-end gap-4">
             <button (click)="closeNewComplaintModal()" class="px-5 py-2.5 rounded border border-var hover:bg-white/5 text-primary-var font-mono text-[10px] uppercase">
-              CANCEL
+              {{ translationService.t('CANCEL') }}
             </button>
-            <button (click)="submitComplaint()" [disabled]="loadingSubmit" class="px-6 py-2.5 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-[10px] uppercase shadow-[0_0_20px_rgba(6,182,212,0.25)]">
-              INITIALIZE TICKET DISPATCH
+            <button (click)="submitComplaint()" [disabled]="loadingSubmit || (showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage)" class="px-6 py-2.5 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-[10px] uppercase shadow-[0_0_20px_rgba(6,182,212,0.25)]">
+              {{ translationService.t('INITIALIZE_TICKET_DISPATCH') }}
             </button>
           </div>
         </div>
@@ -760,6 +760,10 @@ export class ComplaintsComponent implements OnInit {
   async onComplaintFileSelected(event: any) {
     const file = event.target.files[0];
     if (file) {
+      // Clear any old subscriptions and timers
+      if (this.aiStreamSub) this.aiStreamSub.unsubscribe();
+      if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
+
       this.showAiStatusSteps = true;
       this.aiProgress = 10;
       this.aiStepDetecting = true;
@@ -771,6 +775,13 @@ export class ComplaintsComponent implements OnInit {
       this.aiStepDuplicate = false;
       this.aiStepDuplicateDone = false;
       this.aiTimeoutMessage = '';
+
+      // Start fallback timeout timer (exactly 8 seconds)
+      this.aiTimeoutTimer = setTimeout(() => {
+        if (!this.aiStepDuplicateDone) {
+          this.aiTimeoutMessage = this.translationService.t('AI_TIMEOUT_WARN');
+        }
+      }, 8000);
 
       let fileToUpload = file;
       try {
@@ -787,20 +798,11 @@ export class ComplaintsComponent implements OnInit {
       formData.append('lat', String(this.capturedCoordinates.lat));
       formData.append('lng', String(this.capturedCoordinates.lng));
 
-      // Clear any old subscriptions and timers
-      if (this.aiStreamSub) this.aiStreamSub.unsubscribe();
-      if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
-
       this.apiService.postForm<{ success: boolean; analysisId: string; tempImagePath: string }>('/ai/analyze', formData).subscribe({
         next: (res) => {
           const analysisId = res.analysisId;
           this.tempImagePath = res.tempImagePath;
-          this.aiProgress = 20;
-
-          // Start fallback timeout timer (10 seconds)
-          this.aiTimeoutTimer = setTimeout(() => {
-            this.aiTimeoutMessage = 'AI suggestions taking longer than expected.';
-          }, 10000);
+          if (this.aiProgress < 20) this.aiProgress = 20;
 
           // 2. Connect to SSE stream
           this.aiStreamSub = this.aiService.analyzeImageStream(analysisId).subscribe({
@@ -898,6 +900,7 @@ export class ComplaintsComponent implements OnInit {
         },
         error: (err) => {
           console.error('Failed to initialize AI analysis job:', err);
+          if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
           this.aiTimeoutMessage = 'Failed to initiate AI suggestions.';
         }
       });

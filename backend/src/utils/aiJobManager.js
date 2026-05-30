@@ -101,43 +101,57 @@ class AIJobManager extends EventEmitter {
       job.progress = 10;
       this.emit(jobId, { status: 'upload_complete', progress: 10, message: 'Image uploaded successfully' });
 
-      // Step 1: Run Category and Department Classification (sequential prerequisite for title/description)
-      logger.info('Starting Category Classification (ViT)', { jobId });
-      const prediction = await analyzeComplaintImage(job.file);
-      
-      // Merge results
-      job.results = {
-        title: prediction.title || 'Civic Issue',
-        description: prediction.description || `AI detected a ${prediction.title || 'civic'} issue.`,
-        department: prediction.department || 'General Inquiry',
-        confidence: prediction.confidence || 75
-      };
-      
-      job.progress = 40;
-      this.emit(jobId, { 
-        status: 'detecting_issue', 
-        progress: 40, 
-        title: job.results.title,
-        department: job.results.department,
-        confidence: job.results.confidence
+      logger.info('Starting concurrent inference pipeline...', { jobId });
+
+      // Run core prediction, severity calculation, and resolution prediction in parallel
+      const predictionPromise = analyzeComplaintImage(job.file).then(prediction => {
+        job.results = {
+          ...job.results,
+          title: prediction.title || '',
+          description: prediction.description || 'Unable to confidently identify issue type. Please select the category and fill details manually.',
+          department: prediction.department || 'General Inquiry',
+          confidence: Number.isFinite(prediction.confidence) ? prediction.confidence : 0,
+          low_confidence: !!prediction.low_confidence,
+          category: prediction.category || '',
+          broadCategory: prediction.broad_category || '',
+          classificationReasons: Array.isArray(prediction.reasons) ? prediction.reasons : [],
+          qualityChecks: prediction.quality_checks || {},
+          topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : []
+        };
+        
+        this.emit(jobId, { 
+          status: 'detecting_issue', 
+          progress: 40, 
+          title: job.results.title,
+          description: job.results.description,
+          department: job.results.department,
+          confidence: job.results.confidence,
+          low_confidence: job.results.low_confidence,
+          category: job.results.category,
+          broad_category: job.results.broadCategory,
+          reasons: job.results.classificationReasons,
+          quality_checks: job.results.qualityChecks,
+          top_k_predictions: job.results.topKPredictions
+        });
+        return prediction;
       });
 
-      // Step 2: Execute remaining AI endpoints in parallel
-      logger.info('Executing parallel inference calls...', { jobId });
-
       const severityPromise = calculateSeverity({
-        title: job.results.title,
-        description: job.results.description,
+        title: job.locationStr || 'Civic Issue',
+        description: job.locationStr || 'Civic Issue',
         location: job.locationStr,
-        department: job.results.department,
+        department: 'General Operations',
         activeComplaints: 0,
         areaComplaints: 0,
         peopleAffected: 1,
         image: job.file.filename
       }).then(severity => {
-        job.results.severityScore = severity.severityScore || 50;
-        job.results.priority = severity.priority || 'medium';
-        job.results.reasons = severity.reason || ['Standard analysis completed'];
+        job.results = {
+          ...job.results,
+          severityScore: severity.severityScore || 50,
+          priority: severity.priority || 'medium',
+          reasons: severity.reason || ['Standard analysis completed']
+        };
         
         this.emit(jobId, {
           status: 'estimating_severity',
@@ -146,19 +160,21 @@ class AIJobManager extends EventEmitter {
           priority: job.results.priority,
           reasons: job.results.reasons
         });
-      }).catch(err => {
-        logger.error('Parallel severity check failed', { jobId, error: err.message });
+        return severity;
       });
 
       const resolutionPromise = predictResolution({
-        department: job.results.department,
+        department: 'General Operations',
         priority: 'medium',
         activeComplaints: Math.floor(Math.random() * 8) + 1,
         areaComplaints: Math.floor(Math.random() * 12) + 2
       }).then(resPrediction => {
-        job.results.estimatedDays = resPrediction.estimatedDays || 4;
-        job.results.delayRisk = resPrediction.delayRisk || 'Medium';
-        job.results.escalationProbability = resPrediction.escalationProbability || 35;
+        job.results = {
+          ...job.results,
+          estimatedDays: resPrediction.estimatedDays || 4,
+          delayRisk: resPrediction.delayRisk || 'Medium',
+          escalationProbability: resPrediction.escalationProbability || 35
+        };
         
         this.emit(jobId, {
           status: 'generating_recommendations',
@@ -166,27 +182,23 @@ class AIJobManager extends EventEmitter {
           estimatedDays: job.results.estimatedDays,
           delayRisk: job.results.delayRisk
         });
-      }).catch(err => {
-        logger.error('Parallel resolution prediction failed', { jobId, error: err.message });
+        return resPrediction;
       });
 
-      const duplicatePromise = this._checkDuplicatesInternal(job)
-        .then(dupResult => {
-          job.results.duplicateDetected = dupResult.duplicateDetected;
-          job.results.bestMatch = dupResult.bestMatch;
-          
-          this.emit(jobId, {
-            status: 'duplicate_checked',
-            progress: 100,
-            duplicateDetected: job.results.duplicateDetected,
-            bestMatch: job.results.bestMatch
-          });
-        }).catch(err => {
-          logger.error('Parallel duplicate check failed', { jobId, error: err.message });
-        });
+      // Execute primary jobs concurrently
+      await Promise.all([predictionPromise, severityPromise, resolutionPromise]);
 
-      // Wait for all parallel promises to finish
-      await Promise.all([severityPromise, resolutionPromise, duplicatePromise]);
+      // Execute duplicate check using the resolved department
+      const duplicateResult = await this._checkDuplicatesInternal(job);
+      job.results.duplicateDetected = duplicateResult.duplicateDetected;
+      job.results.bestMatch = duplicateResult.bestMatch;
+      
+      this.emit(jobId, {
+        status: 'duplicate_checked',
+        progress: 100,
+        duplicateDetected: job.results.duplicateDetected,
+        bestMatch: job.results.bestMatch
+      });
 
       job.status = 'completed';
       job.progress = 100;

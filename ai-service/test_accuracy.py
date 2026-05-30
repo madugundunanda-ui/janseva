@@ -28,30 +28,56 @@ def run_accuracy_tests():
     
     client = app.test_client()
     
-    # Locate sample garbage images in the backend directory
+    # Locate sample civic images in the backend directory
     parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     complaints_dir = os.path.join(parent_dir, "backend", "src", "uploads", "complaints")
-    
-    garbage_images = []
+
+    file_to_category_hints = {
+        "garbage": ["Garbage / Waste", "Illegal Dumping", "Sanitation Issue"],
+        "waste": ["Garbage / Waste", "Illegal Dumping", "Sanitation Issue"],
+        "pothole": ["Road Damage", "Broken Infrastructure"],
+        "road": ["Road Damage", "Traffic Obstruction", "Broken Infrastructure"],
+        "drain": ["Drainage Issue"],
+        "sewage": ["Drainage Issue", "Public Health Hazard"],
+        "water": ["Water Leakage", "Drainage Issue"],
+        "pipe": ["Water Leakage", "Drainage Issue"],
+        "electric": ["Electricity Problem", "Street Light Failure"],
+        "light": ["Street Light Failure", "Electricity Problem"],
+        "traffic": ["Traffic Obstruction"],
+        "hazard": ["Emergency Hazard", "Public Health Hazard"],
+        "fire": ["Emergency Hazard", "Electricity Problem"],
+        "sanitation": ["Sanitation Issue", "Garbage / Waste"],
+    }
+
+    civic_images = []
     if os.path.exists(complaints_dir):
         for f in os.listdir(complaints_dir):
-            if "Garbage" in f and f.endswith((".jpg", ".png", ".jpeg")):
-                path = os.path.join(complaints_dir, f)
-                if os.path.getsize(path) > 100:  # verify it's not a placeholder
-                    garbage_images.append(path)
-                    
-    print(f"Found {len(garbage_images)} real garbage/waste images in backend uploads.")
+            if not f.lower().endswith((".jpg", ".png", ".jpeg")):
+                continue
+            path = os.path.join(complaints_dir, f)
+            if os.path.getsize(path) <= 100:
+                continue
+            fname = f.lower()
+            expected = None
+            for key, labels in file_to_category_hints.items():
+                if key in fname:
+                    expected = labels
+                    break
+            if expected:
+                civic_images.append((path, expected))
+
+    print(f"Found {len(civic_images)} hint-labeled civic images in backend uploads.")
     
     test_cases = []
     
-    # 1. Add real civic garbage image test cases
-    for i, img_path in enumerate(garbage_images[:5]):
+    # 1. Add real civic image test cases from filename hints
+    for i, (img_path, expected_labels) in enumerate(civic_images[:25]):
         test_cases.append({
-            "name": f"Real Garbage Image #{i+1}",
-            "type": "civic_garbage",
+            "name": f"Real Civic Image #{i+1}",
+            "type": "civic",
             "source": "file",
             "path": img_path,
-            "expected_category": ["Garbage / Waste", "Illegal Dumping"]
+            "expected_category": expected_labels
         })
         
     # 2. Add synthetic non-civic/low-confidence test cases
@@ -123,7 +149,7 @@ def run_accuracy_tests():
             "passed": False
         }
         
-        if tc["type"] == "civic_garbage":
+        if tc["type"] == "civic":
             # We check if it predicted the correct category or at least successfully classified with confidence
             allowed = tc["expected_category"]
             correct_cat = (predicted_cat in allowed)
@@ -145,7 +171,7 @@ def run_accuracy_tests():
     accuracy = (passed_runs / total_runs) * 100 if total_runs > 0 else 0
     avg_time_ms = np.mean(inference_times) * 1000 if inference_times else 0
     
-    civic_cases = [r for r in results if r["type"] == "civic_garbage"]
+    civic_cases = [r for r in results if r["type"] == "civic"]
     non_civic_cases = [r for r in results if r["type"] == "non_civic"]
     
     civic_passed = sum(1 for r in civic_cases if r["passed"])
@@ -162,7 +188,7 @@ def run_accuracy_tests():
     feedback_payload = {
         "original_prediction": "Tobacco Issue",
         "corrected_category": "Garbage / Waste",
-        "image_path": garbage_images[0] if garbage_images else "backend/src/uploads/complaints/1779988572570-871f98fb-f7f7-4e89-905f-557c888ef878.jpg"
+        "image_path": civic_images[0][0] if civic_images else "backend/src/uploads/complaints/1779988572570-871f98fb-f7f7-4e89-905f-557c888ef878.jpg"
     }
     
     fb_response = client.post(

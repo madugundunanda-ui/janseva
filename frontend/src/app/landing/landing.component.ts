@@ -6,7 +6,8 @@ import { HowItWorksComponent } from './how-it-works/how-it-works.component';
 import { DepartmentsShowcaseComponent } from './departments-showcase/departments-showcase.component';
 import { GovernanceIntelligenceCenterComponent } from './governance-intelligence-center/governance-intelligence-center.component';
 import { AiShowcaseComponent } from './ai-showcase/ai-showcase.component';
-import { SmartMapComponent } from './smart-map/smart-map.component';
+import { CitizenEmpowermentComponent } from './citizen-empowerment/citizen-empowerment.component';
+import { GovernanceTransparencyComponent } from './governance-transparency/governance-transparency.component';
 import { DashboardShowcaseComponent } from './dashboard-showcase/dashboard-showcase.component';
 import { GlobeFooterComponent } from './globe-footer/globe-footer.component';
 import { CtaComponent } from './cta/cta.component';
@@ -23,7 +24,8 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
     DepartmentsShowcaseComponent,
     GovernanceIntelligenceCenterComponent,
     AiShowcaseComponent,
-    SmartMapComponent,
+    CitizenEmpowermentComponent,
+    GovernanceTransparencyComponent,
     DashboardShowcaseComponent,
     GlobeFooterComponent,
     CtaComponent
@@ -49,9 +51,10 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
             <a href="#problem" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('THE_CONFLICT') }}</a>
             <a href="#journey" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('JOURNEY') }}</a>
             <a href="#departments" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('ECOSYSTEM') }}</a>
+            <a href="#transparency" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('GOV_TRANSPARENCY_TITLE') }}</a>
             <a href="#intelligence" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('INTELLIGENCE') }}</a>
             <a href="#showcase" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('AI_FEATURES') }}</a>
-            <a href="#map" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('MAP') }}</a>
+            <a href="#empowerment" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('CITIZEN_EMPOWERMENT_TITLE') }}</a>
             <a href="#dashboard" class="hover:text-[#6AA9FF] transition-colors duration-200 uppercase">{{ translationService.t('CONSOLE') }}</a>
           </nav>
 
@@ -238,11 +241,14 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
       <!-- Section 5: Government Departments Ecosystem -->
       <app-departments-showcase id="departments"></app-departments-showcase>
 
+      <!-- Section 6: Governance Transparency -->
+      <app-governance-transparency id="transparency"></app-governance-transparency>
+
       <!-- Section 7: AI Showcase -->
       <app-ai-showcase id="showcase"></app-ai-showcase>
 
-      <!-- Section 8: Smart Governance Map -->
-      <app-smart-map id="map"></app-smart-map>
+      <!-- Section 8: Citizen Empowerment -->
+      <app-citizen-empowerment id="empowerment"></app-citizen-empowerment>
 
       <!-- Section 9: Dashboard Showcase -->
       <app-dashboard-showcase id="dashboard"></app-dashboard-showcase>
