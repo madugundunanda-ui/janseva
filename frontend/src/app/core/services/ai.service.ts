@@ -1,42 +1,59 @@
 import { Injectable, signal } from '@angular/core';
-import { Observable, timeout, catchError, of, throwError, map } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
+import { map, catchError, timeout } from 'rxjs/operators';
 import { ApiService } from './api.service';
-import { AiResult, DuplicateDetectionResult, ResolutionPredictionResult, SeverityAnalysisResult } from '../models/ai-result.model';
+import {
+  AiResult,
+  DuplicateDetectionResult,
+  ResolutionPredictionResult,
+  SeverityAnalysisResult,
+} from '../models/ai-result.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AiService {
-  // High-performance operational step trackers
-  public pipelineProgress = signal<number>(10);
-  public classificationStatus = signal<string>('PENDING');
+  /** UI state trackers – they are updated as soon as the request is sent,
+   * because the backend now returns a 202 Accepted response and continues
+   * processing in the background.
+   */
+  public pipelineProgress = signal<number>(0);
+  public classificationStatus = signal<string>('IDLE');
 
   constructor(private apiService: ApiService) {}
 
   /**
-   * FIXED: Replaced fragile EventSource streams with a robust HTTP POST architecture
+   * Upload an image and trigger the backend "analyze-pipeline" endpoint.
+   * The backend responds immediately with **202 Accepted** while the heavy AI
+   * work runs in the background. UI signals are set instantly to reflect that
+   * the request has been handed off.
    */
-  public analyzeComplaintTokens(imageFile: File): Observable<any> {
+  public uploadAndAnalyze(image: File): Observable<AiResult> {
     const formData = new FormData();
-    formData.append('image', imageFile);
+    formData.append('image', image, image.name);
 
+    // UI shows that the request is in flight
     this.pipelineProgress.set(30);
     this.classificationStatus.set('RUNNING');
 
-    return this.apiService.postForm<any>('/ai/analyze-pipeline', formData).pipe(
-      map((res: any) => {
-        this.pipelineProgress.set(100);
-        this.classificationStatus.set('PROCESSING_BACKGROUND');
-        return res;
-      }),
-      catchError((error) => {
-        this.classificationStatus.set('FAILED');
-        return throwError(() => new Error(error.message || 'Pipeline tracking dropped.'));
-      })
-    );
+    return this.apiService
+      .postForm<any>('/ai/analyze-pipeline', formData)
+      .pipe(
+        map((res) => {
+          // Backend accepted the job – move UI to "background processing"
+          this.pipelineProgress.set(100);
+          this.classificationStatus.set('PROCESSING_BACKGROUND');
+          return res as AiResult;
+        }),
+        catchError((err) => {
+          this.classificationStatus.set('FAILED');
+          return throwError(() => new Error(err.message ?? 'Analysis pipeline failed'));
+        })
+      );
   }
 
-  analyzeImage(file: File): Observable<AiResult> {
+  /** Direct image‑analysis endpoint (kept for compatibility). */
+  public analyzeImage(file: File): Observable<AiResult> {
     this.pipelineProgress.set(30);
     this.classificationStatus.set('RUNNING');
 
@@ -45,7 +62,7 @@ export class AiService {
       map((res: any) => {
         this.pipelineProgress.set(100);
         this.classificationStatus.set('PROCESSING_BACKGROUND');
-        return res;
+        return res as AiResult;
       }),
       catchError((error) => {
         console.error('AI image analysis timed out or failed, using fallback:', error);
@@ -53,56 +70,42 @@ export class AiService {
         return of({
           success: true,
           title: 'Civic Infrastructure Issue',
-          description: 'Grievance registered. AI analysis fallback applied due to response timeout.',
+          description:
+            'Grievance registered. AI analysis fallback applied due to response timeout.',
           department: 'Roads & Transport',
           confidence: 70,
           priority: 'low',
-          departmentInput: 'Roads & Transport'
+          departmentInput: 'Roads & Transport',
         } as AiResult);
       })
     );
   }
 
-  analyzeComplaintImage(file: File): Observable<AiResult> {
+  /** Alias for backward compatibility */
+  public analyzeComplaintImage(file: File): Observable<AiResult> {
     return this.analyzeImage(file);
   }
 
-  analyzeImageStream(analysisId: string): Observable<any> {
-    this.pipelineProgress.set(100);
-    this.classificationStatus.set('PROCESSING_BACKGROUND');
-    return of({
-      status: 'completed',
-      progress: 100,
-      title: 'Processing visual analysis...',
-      description: 'AI engine is evaluating department categories asynchronously.',
-      department: 'General Inquiry',
-      priority: 'medium',
-      severityScore: 30,
-      reasons: ['Visual analysis pending background categorization'],
-      estimatedDays: 3,
-      delayRisk: 'Low',
-      duplicateDetected: false,
-      bestMatch: null
-    });
-  }
-
-  getAiHealthStatus(): Observable<any> {
+  // ---------------------------------------------------------------------
+  // Helper / utility endpoints – unchanged from the previous implementation
+  // ---------------------------------------------------------------------
+  public getAiHealthStatus(): Observable<any> {
     return this.apiService.get<any>('/ai/health');
   }
 
-  calculateSeverity(payload: Record<string, unknown>): Observable<SeverityAnalysisResult> {
+  public calculateSeverity(payload: Record<string, unknown>): Observable<SeverityAnalysisResult> {
     return this.apiService.getSeverityAI(payload);
   }
 
-  predictResolution(payload: Record<string, unknown>): Observable<ResolutionPredictionResult> {
+  public predictResolution(payload: Record<string, unknown>): Observable<ResolutionPredictionResult> {
     return this.apiService.predictResolutionAI(payload);
   }
 
-  detectDuplicate(payload: Record<string, unknown>): Observable<DuplicateDetectionResult> {
+  public detectDuplicate(payload: Record<string, unknown>): Observable<DuplicateDetectionResult> {
     return this.apiService.post<DuplicateDetectionResult>('/ai/spam-detect', payload);
   }
 
-  verifyResolution(formData: FormData): Observable<unknown> {
+  public verifyResolution(formData: FormData): Observable<unknown> {
     return this.apiService.postForm<unknown>('/ai/verify-resolution', formData);
   }
 }
