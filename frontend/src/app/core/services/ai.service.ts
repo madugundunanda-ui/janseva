@@ -1,5 +1,5 @@
-import { Injectable } from '@angular/core';
-import { Observable, timeout, catchError, of } from 'rxjs';
+import { Injectable, signal } from '@angular/core';
+import { Observable, timeout, catchError, of, throwError } from 'rxjs';
 import { ApiService } from './api.service';
 import { AiResult, DuplicateDetectionResult, ResolutionPredictionResult, SeverityAnalysisResult } from '../models/ai-result.model';
 
@@ -7,7 +7,29 @@ import { AiResult, DuplicateDetectionResult, ResolutionPredictionResult, Severit
   providedIn: 'root',
 })
 export class AiService {
+  // High-performance operational step trackers
+  public pipelineProgress = signal<number>(10);
+  public classificationStatus = signal<string>('PENDING');
+
   constructor(private apiService: ApiService) {}
+
+  /**
+   * FIXED: Replaced fragile EventSource streams with a robust HTTP POST architecture
+   */
+  public analyzeComplaintTokens(imageFile: File): Observable<any> {
+    const formData = new FormData();
+    formData.append('image', imageFile);
+
+    this.pipelineProgress.set(30);
+    this.classificationStatus.set('RUNNING');
+
+    return this.apiService.postForm<any>('/ai/analyze-pipeline', formData).pipe(
+      catchError((error) => {
+        this.classificationStatus.set('FAILED');
+        return throwError(() => new Error(error.message || 'Pipeline tracking dropped.'));
+      })
+    );
+  }
 
   analyzeImage(file: File): Observable<AiResult> {
     return this.apiService.analyzeImageAI(file).pipe(
@@ -43,29 +65,41 @@ export class AiService {
       
       const eventSource = new EventSource(url);
 
+      // 10-second timeout: if no completion within 10s, close and error
+      const streamTimeout = setTimeout(() => {
+        console.warn('[AI-SERVICE] Stream timeout after 10s — closing connection');
+        eventSource.close();
+        observer.error(new Error('AI analysis stream timed out after 10 seconds'));
+      }, 10000);
+
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           observer.next(data);
           if (data.status === 'completed') {
+            clearTimeout(streamTimeout);
             eventSource.close();
             observer.complete();
           } else if (data.status === 'failed') {
+            clearTimeout(streamTimeout);
             eventSource.close();
             observer.error(new Error(data.message || 'AI analysis job failed'));
           }
         } catch (err) {
+          clearTimeout(streamTimeout);
           observer.error(err);
         }
       };
 
       eventSource.onerror = (err) => {
         console.error('EventSource connection error:', err);
+        clearTimeout(streamTimeout);
         eventSource.close();
         observer.error(err);
       };
 
       return () => {
+        clearTimeout(streamTimeout);
         eventSource.close();
       };
     });

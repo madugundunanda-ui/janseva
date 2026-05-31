@@ -284,7 +284,12 @@ const createComplaint = asyncHandler(async (req, res) => {
       isSpam,
       status: spamStatus
     },
-    status: spamStatus === 'held' ? 'under_review' : 'submitted'
+    status: spamStatus === 'held' ? 'under_review' : 'submitted',
+    aiVerification: {
+      verificationStatus: 'Pending',
+      predictedDepartment: '',
+      confidenceScore: 0
+    }
   });
 
   logger.info('Complaint created', {
@@ -297,180 +302,6 @@ const createComplaint = asyncHandler(async (req, res) => {
     spamRisk: risk,
   });
 
-  // Trigger AI Auto Assign if enabled
-  try {
-    const fs = require('fs');
-    const settingsPath = path.join(__dirname, '../data/settings.json');
-    let autoAssignEnabled = false;
-    if (fs.existsSync(settingsPath)) {
-      const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-      autoAssignEnabled = !!settings.autoAssign;
-    }
-
-    if (autoAssignEnabled && spamStatus !== 'held') {
-      logger.info('AI auto-assignment enabled. Attempting best candidate', {
-        complaintId: complaint._id.toString(),
-      });
-      // Get all active officers in this department
-      const officers = await User.find({ role: 'officer', department: departmentId, activeStatus: true });
-      if (officers.length > 0) {
-        const officerIds = officers.map(o => o._id);
-        const activeStatuses = ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'];
-
-        // Single aggregation to get all officer stats in one query
-        const statsAgg = await Complaint.aggregate([
-          { $match: { assignedOfficer: { $in: officerIds } } },
-          {
-            $group: {
-              _id: '$assignedOfficer',
-              activeCount: {
-                $sum: { $cond: [{ $in: ['$status', activeStatuses] }, 1, 0] }
-              },
-              totalAssigned: { $sum: 1 },
-              escalatedCount: {
-                $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] }
-              },
-              resolvedCount: {
-                $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-              },
-              totalResolutionMs: {
-                $sum: {
-                  $cond: [
-                    { $eq: ['$status', 'resolved'] },
-                    { $subtract: ['$updatedAt', '$createdAt'] },
-                    0
-                  ]
-                }
-              }
-            }
-          }
-        ]);
-
-        const statsMap = new Map();
-        for (const s of statsAgg) {
-          statsMap.set(s._id.toString(), s);
-        }
-
-        let bestOfficer = null;
-        let bestScore = -1;
-
-        for (const officer of officers) {
-          const stats = statsMap.get(officer._id.toString()) || {
-            activeCount: 0, totalAssigned: 0, escalatedCount: 0, resolvedCount: 0, totalResolutionMs: 0
-          };
-
-          let workloadScore = 0;
-          if (stats.activeCount <= 2) workloadScore = 100;
-          else if (stats.activeCount <= 5) workloadScore = 80;
-          else if (stats.activeCount <= 9) workloadScore = 60;
-          else workloadScore = 30;
-
-          let avgResolutionDays = 3;
-          if (stats.resolvedCount > 0) {
-            avgResolutionDays = Math.max(0.1, (stats.totalResolutionMs / stats.resolvedCount) / (1000 * 60 * 60 * 24));
-          }
-
-          let speedScore = 0;
-          if (avgResolutionDays <= 2) speedScore = 100;
-          else if (avgResolutionDays <= 4) speedScore = 85;
-          else if (avgResolutionDays <= 7) speedScore = 60;
-          else speedScore = 30;
-
-          const escalationRate = stats.totalAssigned > 0 ? (stats.escalatedCount / stats.totalAssigned) : 0;
-          const emailSum = officer.email.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
-          const basePerformance = 80 + (emailSum % 18);
-          const performanceScore = Math.max(40, Math.round(basePerformance - (escalationRate * 40)));
-
-          let locScore = 75;
-          if (officer.latitude && officer.longitude && latitude && longitude) {
-            const R = 6371;
-            const dLat = (latitude - officer.latitude) * Math.PI / 180;
-            const dLng = (longitude - officer.longitude) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(officer.latitude * Math.PI / 180) * Math.cos(latitude * Math.PI / 180) *
-                      Math.sin(dLng/2) * Math.sin(dLng/2);
-            const cVal = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            const dist = R * cVal;
-            if (dist <= 2) locScore = 100;
-            else if (dist <= 5) locScore = 85;
-            else if (dist <= 12) locScore = 60;
-            else locScore = 30;
-          }
-
-          // Since they are all in the same department, department match is 100% (35 points)
-          const matchScore = Math.round(
-            35 + 
-            (0.25 * workloadScore) +
-            (0.15 * speedScore) +
-            (0.15 * performanceScore) +
-            (0.10 * locScore)
-          );
-
-          if (matchScore > bestScore) {
-            bestScore = matchScore;
-            bestOfficer = officer;
-          }
-        }
-
-        if (bestOfficer) {
-          complaint.assignedOfficer = bestOfficer._id;
-          complaint.status = 'assigned';
-          complaint.assignedByAI = true;
-          await complaint.save();
-          logger.info(`Complaint ${complaint._id} assigned to Officer ${bestOfficer.name}`, {
-            complaintId: complaint._id.toString(),
-            officerId: bestOfficer._id.toString(),
-            officerName: bestOfficer.name,
-            matchScore: bestScore,
-          });
-        }
-      }
-    }
-  } catch (autoAssignErr) {
-    logger.error('AI auto-assignment failed', { message: autoAssignErr.message, stack: autoAssignErr.stack });
-  }
-
-  // Trigger hotspot detection and update dynamic priorities
-  try {
-    const geoService = require('../services/geoService');
-    await geoService.detectAndProcessHotspots();
-    logger.info('Hotspot clustering updated successfully');
-  } catch (geoError) {
-    logger.error('Failed to update hotspot clustering', { message: geoError.message, stack: geoError.stack });
-  }
-
-  // Notify nearby citizens within 1km using geo-spatial index
-  try {
-    let notifiedCount = 0;
-    if (latitude && longitude && isFinite(latitude) && isFinite(longitude)) {
-      const nearbyCitizens = await User.find({
-        role: 'citizen',
-        _id: { $ne: req.user._id },
-        geoPoint: {
-          $near: {
-            $geometry: { type: 'Point', coordinates: [longitude, latitude] },
-            $maxDistance: 1000 // 1km in meters
-          }
-        }
-      }).select('name email').limit(100);
-
-      notifiedCount = nearbyCitizens.length;
-      for (const u of nearbyCitizens) {
-        logger.info('Nearby citizen notified for complaint validation', {
-          complaintId: complaint._id.toString(),
-          citizenName: u.name,
-          citizenEmail: u.email,
-        });
-      }
-    }
-    logger.info('Nearby citizen notifications sent', {
-      complaintId: complaint._id.toString(),
-      notifiedCount,
-    });
-  } catch (notifyErr) {
-    logger.error('Failed to notify nearby citizens', { message: notifyErr.message, stack: notifyErr.stack });
-  }
-
   const host = req.get('host');
   const protocol = req.protocol;
   const cObj = complaint.toObject();
@@ -481,23 +312,261 @@ const createComplaint = asyncHandler(async (req, res) => {
     cObj.imageUrl = '';
   }
 
-  const broadcast = req.app.get('wssBroadcast');
-  if (broadcast) {
-    const dept = await Department.findById(departmentId);
-    const deptName = dept ? dept.name : 'General';
-    broadcast([{
-      id: complaint._id.toString(),
-      timestamp: complaint.createdAt,
-      department: deptName,
-      message: `Grievance filed: "${complaint.title}" at ${complaint.location?.address || 'Ward ' + (complaint.location?.ward || 'Unknown')}`,
-      severity: complaint.priority === 'critical' || complaint.priority === 'urgent' ? 'warning' : 'info',
-      ward: complaint.location?.ward,
-      source: 'complaints'
-    }]);
-  }
-
-  sendSuccess(res, 201, 'Complaint created successfully', {
+  res.status(202).json({
+    success: true,
+    message: "Complaint recorded. Advanced AI analysis is running in the background.",
     complaint: cObj,
+    data: {
+      complaint: cObj,
+    }
+  });
+
+  setImmediate(async () => {
+    try {
+      const axios = require('axios');
+      const fs = require('fs');
+      const { Blob } = require('buffer');
+
+      // Resolve image absolute path
+      const relativeImagePath = complaint.image.replace(/^\/uploads\//, '/src/uploads/');
+      const absImagePath = path.isAbsolute(relativeImagePath) 
+        ? relativeImagePath 
+        : path.resolve(path.join(__dirname, '../..', relativeImagePath));
+
+      if (!fs.existsSync(absImagePath)) {
+        throw new Error(`Image file not found: ${absImagePath}`);
+      }
+
+      const fileBuffer = fs.readFileSync(absImagePath);
+      const formData = new FormData();
+      formData.append('image', new Blob([fileBuffer], { type: req.file.mimetype }), req.file.originalname);
+
+      // Perform the fast microservice prediction fetch here
+      const aiUrl = (process.env.AI_SERVICE_URL || 'http://localhost:8000') + '/predict';
+      const response = await axios.post(aiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const prediction = response.data;
+      logger.info('Background AI image detection completed', { prediction });
+
+      let resolvedDeptId = departmentId;
+      if (prediction.department) {
+        resolvedDeptId = await resolveDepartmentId(prediction.department);
+        if (!resolvedDeptId) {
+          resolvedDeptId = departmentId;
+        }
+      }
+
+      // Update the complaint document
+      complaint.aiVerification = {
+        verificationStatus: 'Completed',
+        predictedDepartment: prediction.department || 'General Inquiry',
+        confidenceScore: prediction.confidence || 0
+      };
+
+      complaint.department = resolvedDeptId;
+      if (prediction.priority) {
+        complaint.priority = prediction.priority.toLowerCase();
+      }
+      
+      // Save changes
+      await complaint.save();
+
+      // Trigger AI Auto Assign if enabled
+      try {
+        const settingsPath = path.join(__dirname, '../data/settings.json');
+        let autoAssignEnabled = false;
+        if (fs.existsSync(settingsPath)) {
+          const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+          autoAssignEnabled = !!settings.autoAssign;
+        }
+
+        if (autoAssignEnabled && spamStatus !== 'held') {
+          logger.info('AI auto-assignment enabled. Attempting best candidate', {
+            complaintId: complaint._id.toString(),
+          });
+          const officers = await User.find({ role: 'officer', department: resolvedDeptId, activeStatus: true });
+          if (officers.length > 0) {
+            const officerIds = officers.map(o => o._id);
+            const activeStatuses = ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'];
+
+            const statsAgg = await Complaint.aggregate([
+              { $match: { assignedOfficer: { $in: officerIds } } },
+              {
+                $group: {
+                  _id: '$assignedOfficer',
+                  activeCount: {
+                    $sum: { $cond: [{ $in: ['$status', activeStatuses] }, 1, 0] }
+                  },
+                  totalAssigned: { $sum: 1 },
+                  escalatedCount: {
+                    $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] }
+                  },
+                  resolvedCount: {
+                    $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
+                  },
+                  totalResolutionMs: {
+                    $sum: {
+                      $cond: [
+                        { $eq: ['$status', 'resolved'] },
+                        { $subtract: ['$updatedAt', '$createdAt'] },
+                        0
+                      ]
+                    }
+                  }
+                }
+              }
+            ]);
+
+            const statsMap = new Map();
+            for (const s of statsAgg) {
+              statsMap.set(s._id.toString(), s);
+            }
+
+            let bestOfficer = null;
+            let bestScore = -1;
+
+            for (const officer of officers) {
+              const stats = statsMap.get(officer._id.toString()) || {
+                activeCount: 0, totalAssigned: 0, escalatedCount: 0, resolvedCount: 0, totalResolutionMs: 0
+              };
+
+              let workloadScore = 0;
+              if (stats.activeCount <= 2) workloadScore = 100;
+              else if (stats.activeCount <= 5) workloadScore = 80;
+              else if (stats.activeCount <= 9) workloadScore = 60;
+              else workloadScore = 30;
+
+              let avgResolutionDays = 3;
+              if (stats.resolvedCount > 0) {
+                avgResolutionDays = Math.max(0.1, (stats.totalResolutionMs / stats.resolvedCount) / (1000 * 60 * 60 * 24));
+              }
+
+              let speedScore = 0;
+              if (avgResolutionDays <= 2) speedScore = 100;
+              else if (avgResolutionDays <= 4) speedScore = 85;
+              else if (avgResolutionDays <= 7) speedScore = 60;
+              else speedScore = 30;
+
+              const escalationRate = stats.totalAssigned > 0 ? (stats.escalatedCount / stats.totalAssigned) : 0;
+              const emailSum = officer.email.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
+              const basePerformance = 80 + (emailSum % 18);
+              const performanceScore = Math.max(40, Math.round(basePerformance - (escalationRate * 40)));
+
+              let locScore = 75;
+              if (officer.latitude && officer.longitude && latitude && longitude) {
+                const dist = getDistanceInKm(latitude, longitude, officer.latitude, officer.longitude);
+                if (dist <= 2) locScore = 100;
+                else if (dist <= 5) locScore = 85;
+                else if (dist <= 12) locScore = 60;
+                else locScore = 30;
+              }
+
+              const matchScore = Math.round(
+                35 + 
+                (0.25 * workloadScore) +
+                (0.15 * speedScore) +
+                (0.15 * performanceScore) +
+                (0.10 * locScore)
+              );
+
+              if (matchScore > bestScore) {
+                bestScore = matchScore;
+                bestOfficer = officer;
+              }
+            }
+
+            if (bestOfficer) {
+              complaint.assignedOfficer = bestOfficer._id;
+              complaint.status = 'assigned';
+              complaint.assignedByAI = true;
+              await complaint.save();
+              logger.info(`Complaint ${complaint._id} assigned to Officer ${bestOfficer.name}`, {
+                complaintId: complaint._id.toString(),
+                officerId: bestOfficer._id.toString(),
+                officerName: bestOfficer.name,
+                matchScore: bestScore,
+              });
+            }
+          }
+        }
+      } catch (autoAssignErr) {
+        logger.error('AI auto-assignment failed', { message: autoAssignErr.message, stack: autoAssignErr.stack });
+      }
+
+      // Trigger hotspot detection and update dynamic priorities
+      try {
+        const geoService = require('../services/geoService');
+        await geoService.detectAndProcessHotspots();
+        logger.info('Hotspot clustering updated successfully');
+      } catch (geoError) {
+        logger.error('Failed to update hotspot clustering', { message: geoError.message, stack: geoError.stack });
+      }
+
+      // Notify nearby citizens within 1km using geo-spatial index
+      try {
+        let notifiedCount = 0;
+        if (latitude && longitude && isFinite(latitude) && isFinite(longitude)) {
+          const nearbyCitizens = await User.find({
+            role: 'citizen',
+            _id: { $ne: req.user._id },
+            geoPoint: {
+              $near: {
+                $geometry: { type: 'Point', coordinates: [longitude, latitude] },
+                $maxDistance: 1000 // 1km in meters
+              }
+            }
+          }).select('name email').limit(100);
+
+          notifiedCount = nearbyCitizens.length;
+          for (const u of nearbyCitizens) {
+            logger.info('Nearby citizen notified for complaint validation', {
+              complaintId: complaint._id.toString(),
+              citizenName: u.name,
+              citizenEmail: u.email,
+            });
+          }
+        }
+        logger.info('Nearby citizen notifications sent', {
+          complaintId: complaint._id.toString(),
+          notifiedCount,
+        });
+      } catch (notifyErr) {
+        logger.error('Failed to notify nearby citizens', { message: notifyErr.message, stack: notifyErr.stack });
+      }
+
+      // Send WebSocket broadcast
+      const broadcast = req.app.get('wssBroadcast');
+      if (broadcast) {
+        const dept = await Department.findById(resolvedDeptId);
+        const deptName = dept ? dept.name : 'General';
+        broadcast([{
+          id: complaint._id.toString(),
+          timestamp: complaint.createdAt,
+          department: deptName,
+          message: `Grievance filed: "${complaint.title}" at ${complaint.location?.address || 'Ward ' + (complaint.location?.ward || 'Unknown')}`,
+          severity: complaint.priority === 'critical' || complaint.priority === 'urgent' ? 'warning' : 'info',
+          ward: complaint.location?.ward,
+          source: 'complaints'
+        }]);
+      }
+
+    } catch (err) {
+      console.error("Background AI routing error:", err);
+      try {
+        complaint.aiVerification = {
+          verificationStatus: 'Failed',
+          predictedDepartment: 'General Inquiry',
+          confidenceScore: 0
+        };
+        await complaint.save();
+      } catch (saveErr) {
+        console.error("Failed to save failed status:", saveErr);
+      }
+    }
   });
 });
 

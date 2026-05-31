@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { catchError, forkJoin, map, Observable, of, tap } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, tap, delay } from 'rxjs';
 import { ApiService } from './api.service';
 import { Complaint } from '../models/complaint.model';
 import { DashboardStats } from '../models/dashboard.model';
@@ -17,7 +17,8 @@ export class TimelineService {
   getTimeline(): Observable<TimelineResponse> {
     return this.apiService.get<TimelineResponse>('/governance/timeline').pipe(
       tap((value) => this.timeline.set(value)),
-      catchError(() => this.buildFallbackTimeline())
+      catchError(() => this.buildFallbackTimeline()),
+      delay(0)
     );
   }
 

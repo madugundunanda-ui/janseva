@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Blob } = require('buffer');
+const axios = require('axios');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 
@@ -120,7 +121,52 @@ const analyzeComplaintImage = async (file) => {
     };
   }
 
-  const fileBuffer = fs.readFileSync(filePath);
+  // Health pre-check: verify Python AI service is alive before sending image
+  try {
+    const healthController = new AbortController();
+    const healthTimeout = setTimeout(() => healthController.abort(), 2000);
+    const healthRes = await fetch(`${AI_SERVICE_URL}/health`, { signal: healthController.signal });
+    clearTimeout(healthTimeout);
+    if (!healthRes.ok) {
+      logger.warn('[AI-SERVICE] Python AI service health check returned non-OK status — returning fallback');
+      return {
+        success: true,
+        title: 'Issue Detected',
+        description: 'AI analysis temporarily unavailable. Please add details manually.',
+        department: 'General Inquiry',
+        confidence: 0,
+        priority: 'medium',
+        departmentInput: 'General Inquiry',
+      };
+    }
+    const healthData = await healthRes.json();
+    if (healthData.status !== 'healthy') {
+      logger.warn('[AI-SERVICE] Python AI service is degraded — returning fallback');
+      return {
+        success: true,
+        title: 'Issue Detected',
+        description: 'AI analysis temporarily unavailable. Please add details manually.',
+        department: 'General Inquiry',
+        confidence: 0,
+        priority: 'medium',
+        departmentInput: 'General Inquiry',
+      };
+    }
+  } catch (healthErr) {
+    logger.warn('[AI-SERVICE] Python AI service unreachable — returning fallback', { message: healthErr.message });
+    return {
+      success: true,
+      title: 'Issue Detected',
+      description: 'AI analysis temporarily unavailable. Please add details manually.',
+      department: 'General Inquiry',
+      confidence: 0,
+      priority: 'medium',
+      departmentInput: 'General Inquiry',
+    };
+  }
+
+  // Asynchronously read file and wrap in Blob for proper FormData handling
+  const fileBuffer = await fs.promises.readFile(filePath);
   const formData = new FormData();
   formData.append('image', new Blob([fileBuffer], { type: file.mimetype }), file.originalname);
 
@@ -128,7 +174,7 @@ const analyzeComplaintImage = async (file) => {
     const response = await fetchWithTimeout(`${AI_SERVICE_URL}/predict`, {
       method: 'POST',
       body: formData,
-    }, 15000); // 15s timeout for image analysis
+    }, 30000); // 30s timeout for image analysis
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -280,7 +326,7 @@ const verifyResolutionProof = async (beforeImagePath, afterFile) => {
     };
   }
 
-  const fileBuffer = fs.readFileSync(filePath);
+  const fileBuffer = await fs.promises.readFile(filePath);
   const formData = new FormData();
   
   // Resolve before image absolute path

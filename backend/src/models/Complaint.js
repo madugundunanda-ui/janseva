@@ -205,6 +205,21 @@ const complaintSchema = new mongoose.Schema(
         }
       ]
     },
+    aiVerification: {
+      verificationStatus: {
+        type: String,
+        enum: ['Pending', 'Completed', 'Failed'],
+        default: 'Pending',
+      },
+      predictedDepartment: {
+        type: String,
+        default: '',
+      },
+      confidenceScore: {
+        type: Number,
+        default: 0,
+      },
+    },
   },
   {
     timestamps: true,

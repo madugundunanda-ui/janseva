@@ -100,6 +100,13 @@ export const routes: Routes = [
         data: { roles: ['supervisor', 'admin'] }
       },
       {
+        path: 'ai-diagnostics',
+        loadComponent: () => import('./dashboard/admin/ai-diagnostics.component').then(m => m.AiDiagnosticsComponent),
+        canActivate: [authGuard],
+        title: 'AI System Diagnostics',
+        data: { roles: ['admin'] }
+      },
+      {
         path: 'admin',
         loadComponent: () => import('./dashboard/admin/admin.component').then(m => m.AdminComponent),
         canActivate: [authGuard],

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { map, Observable, of, tap } from 'rxjs';
+import { map, Observable, of, tap, delay } from 'rxjs';
 import { ApiService } from './api.service';
 import { DashboardSnapshot, DashboardStats } from '../models/dashboard.model';
 
@@ -14,14 +14,15 @@ export class DashboardService {
   loadStats(): Observable<DashboardStats> {
     return this.apiService.getDashboardStats().pipe(
       map((response) => this.normalizeStats(response)),
-      tap((stats) => this.stats.set(stats))
+      tap((stats) => this.stats.set(stats)),
+      delay(0)
     );
   }
 
   getStats(): Observable<DashboardStats> {
     const cached = this.stats();
     if (cached) {
-      return of(cached);
+      return of(cached).pipe(delay(0));
     }
     return this.loadStats();
   }

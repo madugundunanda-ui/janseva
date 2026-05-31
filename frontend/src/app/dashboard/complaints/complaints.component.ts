@@ -63,7 +63,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
           </div>
 
           <div class="divide-y divide-white/5">
-            @for (complaint of filteredComplaints; track trackById($index, complaint)) {
+            @for (complaint of filteredComplaints; track complaint.id) {
               <div (click)="selectComplaint(complaint)" [class.bg-white/3]="selectedComplaint?.id === complaint.id" class="p-5 hover:bg-white/2 transition-colors duration-200 cursor-pointer relative">
                 <!-- Glowing active tag border -->
                 @if (selectedComplaint?.id === complaint.id) {
@@ -177,7 +177,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               <div class="p-4 rounded-xl border border-[#6AA9FF]/15 bg-[#6AA9FF]/3 space-y-2">
                 <span class="font-mono text-[9px] tracking-widest text-[#6AA9FF] uppercase font-bold">{{ translationService.t('AI_EXPLAINABILITY') }}</span>
                 <div class="flex flex-wrap gap-2">
-                  @for (reason of selectedComplaint.severityReason; track trackByIndex($index, reason)) {
+                  @for (reason of selectedComplaint.severityReason; track reason) {
                     <span class="px-2.5 py-1 rounded bg-[#6AA9FF]/10 border border-[#6AA9FF]/20 font-mono text-[9px] text-[#6AA9FF] uppercase tracking-wide">
                       ⚡ {{ reason }}
                     </span>
@@ -244,7 +244,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
                     @if (selectedComplaint.verification.reasons && selectedComplaint.verification.reasons.length > 0) {
                       <div class="pt-2 border-t border-white/5 space-y-1">
                         <span class="text-[9px] text-muted-var block">AI Reasoning Notes:</span>
-                        @for (r of selectedComplaint.verification.reasons; track trackByIndex($index, r)) {
+                        @for (r of selectedComplaint.verification.reasons; track r) {
                           <div class="text-[9px] text-muted-var">• {{ r }}</div>
                         }
                       </div>
@@ -355,7 +355,7 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
             <div class="pt-6 border-t border-var space-y-4">
               <h4 class="font-mono text-[9px] tracking-widest text-muted-var uppercase font-bold">{{ translationService.t('TRANSCRIPT') }}</h4>
               <div class="space-y-3 font-mono text-[10px] uppercase">
-                @for (log of selectedComplaint.logs; track trackByIndex($index, log)) {
+                @for (log of selectedComplaint.logs; track log.timestamp) {
                   <div class="flex gap-4 p-3 rounded bg-white/2 border border-var">
                     <span class="text-muted-var w-32 shrink-0">{{ log.timestamp | date:'short' }}</span>
                     <div class="space-y-1">
@@ -665,6 +665,10 @@ export class ComplaintsComponent implements OnInit {
     return item.id;
   }
 
+  trackByComplaintId(index: number, item: any): string {
+    return item.id || index.toString();
+  }
+
   // Generic trackBy function for index-based tracking
   trackByIndex(index: number, item: any) {
     return index;
@@ -785,7 +789,7 @@ export class ComplaintsComponent implements OnInit {
 
       let fileToUpload = file;
       try {
-        fileToUpload = await this.imageCompressionService.compress(file, 1280, 1024, 0.72);
+        fileToUpload = await this.imageCompressionService.compress(file, 1024, 1024, 0.75);
       } catch (err) {
         console.error('Image compression failed, using original file:', err);
       }
@@ -894,7 +898,12 @@ export class ComplaintsComponent implements OnInit {
             error: (err) => {
               console.error('AI streaming connection failed:', err);
               if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
-              this.aiTimeoutMessage = 'AI suggestions offline/taking longer than expected.';
+              // Reset all step states so UI doesn't freeze
+              this.aiStepDetecting = false;
+              this.aiStepSeverity = false;
+              this.aiStepETA = false;
+              this.aiStepDuplicate = false;
+              this.aiTimeoutMessage = 'AI analysis timed out or failed. Please select category and fill details manually.';
             }
           });
         },

@@ -1,5 +1,5 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID, inject } from '@angular/core';
+import { Component, Inject, OnDestroy, OnInit, PLATFORM_ID, inject, ChangeDetectorRef } from '@angular/core';
 import { DashboardService } from '../../core/services/dashboard.service';
 import { TimelineService } from '../../core/services/timeline.service';
 import { TranslationService, LanguageCode } from '../../core/services/translation.service';
@@ -230,6 +230,7 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
   private timer: ReturnType<typeof setInterval> | null = null;
 
   public translationService = inject(TranslationService);
+  private cdr = inject(ChangeDetectorRef);
 
   // Strictly unique list of news updates (7 unique items representing the requested categories)
   allUpdates: UpdateItem[] = [
@@ -452,17 +453,23 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.dashboardService.loadStats().subscribe((stats) => {
-      this.activeGrievances = stats.totalComplaints;
-      this.activeDepartments = stats.activeDepartments;
-      this.emergencyAlerts = stats.liveAlerts ?? stats.statusBreakdown.escalated;
-      this.slaCompliance = stats.slaSuccessRate;
+      setTimeout(() => {
+        this.activeGrievances = stats.totalComplaints;
+        this.activeDepartments = stats.activeDepartments;
+        this.emergencyAlerts = stats.liveAlerts ?? stats.statusBreakdown.escalated;
+        this.slaCompliance = stats.slaSuccessRate;
+        this.cdr.detectChanges();
+      });
     });
 
     this.timelineService.getTimeline().subscribe((timeline) => {
-      this.resolved30d = timeline.resolved30d;
-      this.responseHours = timeline.averageResponseTime;
-      this.engagementRate = timeline.engagementRate;
-      this.districtIndex = this.buildDistrictIndex(timeline.engagementRate, timeline.slaSuccessRate);
+      setTimeout(() => {
+        this.resolved30d = timeline.resolved30d;
+        this.responseHours = timeline.averageResponseTime;
+        this.engagementRate = timeline.engagementRate;
+        this.districtIndex = this.buildDistrictIndex(timeline.engagementRate, timeline.slaSuccessRate);
+        this.cdr.detectChanges();
+      });
     });
 
     this.timer = setInterval(() => {

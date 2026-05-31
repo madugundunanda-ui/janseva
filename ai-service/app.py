@@ -1,6 +1,7 @@
 import os
 import math
 import time
+import traceback
 from collections import OrderedDict
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -30,6 +31,15 @@ except ModuleNotFoundError as exc:
 
 app = Flask(__name__)
 CORS(app)
+
+# Global stats tracking
+GLOBAL_STATS = {
+    "total_requests": 0,
+    "successful_requests": 0,
+    "failed_requests": 0,
+    "total_inference_time": 0.0,
+    "inference_count": 0
+}
 
 # Global variables to preserve the loaded state in RAM/VRAM memory
 GLOBAL_VISION_MODEL = None
@@ -414,122 +424,146 @@ def preprocess_for_clip(img):
 @app.route('/predict', methods=['POST'])
 def predict():
     start_time = time.time()
-    if 'image' not in request.files:
-        return jsonify({"error": "No image uploaded"}), 400
+    GLOBAL_STATS["total_requests"] += 1
     
-    file = request.files['image']
-    t1 = time.time()
     try:
-        img = Image.open(file.stream).convert('RGB')
-    except Exception as e:
-        return jsonify({"error": f"Failed to read image: {str(e)}"}), 400
-    t2 = time.time()
-    
-    # Robust preprocessing (contrast + quality signals + resize)
-    img_resized, quality = preprocess_for_clip(img)
-    
-    # Run CLIP inference via global ThreadPoolExecutor
-    future = INFERENCE_EXECUTOR.submit(run_vision_inference, img_resized)
-    image_features = future.result()
-    t3 = time.time()
-    
-    # Compute similarity logits
-    logits = torch.matmul(image_features, GLOBAL_TEXT_FEATURES.t()) * 100.0
-    probs = F.softmax(logits, dim=-1)[0]
-    
-    # Aggregate probabilities by category
-    category_probs = {}
-    for i, prob in enumerate(probs):
-        cat = prompt_categories[i]
-        category_probs[cat] = category_probs.get(cat, 0.0) + float(prob.item())
+        if 'image' not in request.files:
+            raise ValueError("No image file found in the request payload (parameter name must be 'image').")
+        
+        file = request.files['image']
+        t1 = time.time()
+        try:
+            img = Image.open(file.stream).convert('RGB')
+        except Exception as e:
+            raise ValueError(f"Failed to parse image file: {str(e)}")
+        t2 = time.time()
+        
+        # Robust preprocessing (contrast + quality signals + resize)
+        img_resized, quality = preprocess_for_clip(img)
+        
+        # Run CLIP inference via global ThreadPoolExecutor
+        future = INFERENCE_EXECUTOR.submit(run_vision_inference, img_resized)
+        image_features = future.result()
+        t3 = time.time()
+        
+        # Compute similarity logits
+        with torch.no_grad():
+            logits = torch.matmul(image_features, GLOBAL_TEXT_FEATURES.t()) * 100.0
+            probs = F.softmax(logits, dim=-1)[0]
+        
+        # Aggregate probabilities by category
+        category_probs = {}
+        for i, prob in enumerate(probs):
+            cat = prompt_categories[i]
+            category_probs[cat] = category_probs.get(cat, 0.0) + float(prob.item())
 
-    # Stage 1: Governance-related vs non-civic gating
-    non_civic_prob = category_probs.get("Non-Civic", 0.0)
-    civic_categories_probs = {c: p for c, p in category_probs.items() if c != "Non-Civic"}
-    civic_sorted = sorted(civic_categories_probs.items(), key=lambda x: x[1], reverse=True)
-    best_civic_cat, best_civic_prob = civic_sorted[0]
-    second_civic_prob = civic_sorted[1][1] if len(civic_sorted) > 1 else 0.0
-    civic_margin = best_civic_prob - second_civic_prob
+        # Stage 1: Governance-related vs non-civic gating
+        non_civic_prob = category_probs.get("Non-Civic", 0.0)
+        civic_categories_probs = {c: p for c, p in category_probs.items() if c != "Non-Civic"}
+        civic_sorted = sorted(civic_categories_probs.items(), key=lambda x: x[1], reverse=True)
+        best_civic_cat, best_civic_prob = civic_sorted[0]
+        second_civic_prob = civic_sorted[1][1] if len(civic_sorted) > 1 else 0.0
+        civic_margin = best_civic_prob - second_civic_prob
 
-    # Stage 2 + 3: Top-k civic prompt validation and reranking
-    topk_vals, topk_indices = torch.topk(probs, k=min(TOP_K_VALIDATION, len(probs)))
-    topk_items = []
-    topk_civic_votes = {}
-    for rank in range(topk_indices.shape[0]):
-        idx = int(topk_indices[rank].item())
-        score = float(topk_vals[rank].item())
-        category = prompt_categories[idx]
-        prompt_text = all_prompts[idx]
-        topk_items.append({
-            "rank": rank + 1,
-            "category": category,
-            "prompt": prompt_text,
-            "score": round(score, 4)
-        })
-        if category != "Non-Civic":
-            topk_civic_votes[category] = topk_civic_votes.get(category, 0.0) + score
+        # Stage 2 + 3: Top-k civic prompt validation and reranking
+        topk_vals, topk_indices = torch.topk(probs, k=min(TOP_K_VALIDATION, len(probs)))
+        topk_items = []
+        topk_civic_votes = {}
+        for rank in range(topk_indices.shape[0]):
+            idx = int(topk_indices[rank].item())
+            score = float(topk_vals[rank].item())
+            category = prompt_categories[idx]
+            prompt_text = all_prompts[idx]
+            topk_items.append({
+                "rank": rank + 1,
+                "category": category,
+                "prompt": prompt_text,
+                "score": round(score, 4)
+            })
+            if category != "Non-Civic":
+                topk_civic_votes[category] = topk_civic_votes.get(category, 0.0) + score
 
-    if topk_civic_votes:
-        reranked_civic = sorted(topk_civic_votes.items(), key=lambda x: x[1], reverse=True)[0][0]
-    else:
-        reranked_civic = best_civic_cat
+        if topk_civic_votes:
+            reranked_civic = sorted(topk_civic_votes.items(), key=lambda x: x[1], reverse=True)[0][0]
+        else:
+            reranked_civic = best_civic_cat
 
-    if reranked_civic != best_civic_cat:
-        best_civic_cat = reranked_civic
-        best_civic_prob = civic_categories_probs.get(best_civic_cat, best_civic_prob)
+        if reranked_civic != best_civic_cat:
+            best_civic_cat = reranked_civic
+            best_civic_prob = civic_categories_probs.get(best_civic_cat, best_civic_prob)
 
-    # Confidence reliability checks (hallucination prevention)
-    confidence_ratio = best_civic_prob / (non_civic_prob + 1e-6)
-    is_low_confidence = (
-        quality["blurred"] or
-        (non_civic_prob > MAX_NON_CIVIC_PROB) or
-        (best_civic_prob < MIN_CIVIC_CONFIDENCE) or
-        ((best_civic_prob - non_civic_prob) < MIN_MARGIN_OVER_NON_CIVIC) or
-        (confidence_ratio < MIN_SHARPNESS_RATIO)
-    )
-    
-    duration = time.time() - start_time
-    print(f"[AI-SERVICE] predict completed in {duration:.4f}s. (FileRead={t2-t1:.4f}s, Inference={t3-t2:.4f}s)")
-    print(f"[AI-SERVICE] Best Civic Category: {best_civic_cat} ({best_civic_prob:.2f}), Non-Civic: {non_civic_prob:.2f}, Margin: {civic_margin:.3f}")
-    
-    if is_low_confidence:
+        # Confidence reliability checks (hallucination prevention)
+        confidence_ratio = best_civic_prob / (non_civic_prob + 1e-6)
+        is_low_confidence = (
+            quality["blurred"] or
+            (non_civic_prob > MAX_NON_CIVIC_PROB) or
+            (best_civic_prob < MIN_CIVIC_CONFIDENCE) or
+            ((best_civic_prob - non_civic_prob) < MIN_MARGIN_OVER_NON_CIVIC) or
+            (confidence_ratio < MIN_SHARPNESS_RATIO)
+        )
+        
+        duration = time.time() - start_time
+        file_read_time = t2 - t1
+        inference_time = t3 - t2
+        
+        # Log execution times (Phase 4)
+        print(f"[IMAGE-FLOW] predict completed in {duration:.4f}s. (Upload/Read={file_read_time:.4f}s, Model Load=0.000s [Preloaded], Inference={inference_time:.4f}s, Response={duration-file_read_time-inference_time:.4f}s)")
+        print(f"[AI-SERVICE] Best Civic Category: {best_civic_cat} ({best_civic_prob:.2f}), Non-Civic: {non_civic_prob:.2f}, Margin: {civic_margin:.3f}")
+        
+        # Update successful statistics
+        GLOBAL_STATS["successful_requests"] += 1
+        GLOBAL_STATS["total_inference_time"] += inference_time
+        GLOBAL_STATS["inference_count"] += 1
+        
+        if is_low_confidence:
+            return jsonify({
+                "success": True,
+                "title": "",
+                "description": "Unable to confidently identify issue type. Please select the category and fill details manually.",
+                "department": "General Inquiry",
+                "confidence": 0,
+                "priority": "low",
+                "departmentInput": "General Inquiry",
+                "reasons": [
+                    "AI confidence is below governance reliability threshold",
+                    "Image appears non-civic, blurry, low-light, or semantically ambiguous"
+                ],
+                "low_confidence": True,
+                "category": "",
+                "broad_category": "",
+                "quality_checks": quality,
+                "top_k_predictions": topk_items
+            })
+            
+        # Valid civic prediction details
+        info = CIVIC_CATEGORIES[best_civic_cat]
+        
         return jsonify({
             "success": True,
-            "title": "",
-            "description": "Unable to confidently identify issue type. Please select the category and fill details manually.",
-            "department": "General Inquiry",
-            "confidence": 0,
-            "priority": "low",
-            "departmentInput": "General Inquiry",
-            "reasons": [
-                "AI confidence is below governance reliability threshold",
-                "Image appears non-civic, blurry, low-light, or semantically ambiguous"
-            ],
-            "low_confidence": True,
-            "category": "",
-            "broad_category": "",
+            "title": info["title"],
+            "description": info["description"],
+            "department": info["department"],
+            "confidence": int(best_civic_prob * 100),
+            "priority": info["priority"],
+            "departmentInput": info["department"],
+            "reasons": info["reasons"],
+            "low_confidence": False,
+            "category": best_civic_cat,
+            "broad_category": info["broad"],
             "quality_checks": quality,
             "top_k_predictions": topk_items
         })
-        
-    # Valid civic prediction details
-    info = CIVIC_CATEGORIES[best_civic_cat]
-    
-    return jsonify({
-        "success": True,
-        "title": info["title"],
-        "description": info["description"],
-        "department": info["department"],
-        "confidence": int(best_civic_prob * 100),
-        "priority": info["priority"],
-        "departmentInput": info["department"],
-        "reasons": info["reasons"],
-        "low_confidence": False,
-        "category": best_civic_cat,
-        "broad_category": info["broad"],
-        "quality_checks": quality,
-        "top_k_predictions": topk_items
-    })
+    except Exception as e:
+        GLOBAL_STATS["failed_requests"] += 1
+        err_msg = f"Exception in /predict endpoint: {str(e)}"
+        print(f"[AI-ERROR] {err_msg}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": err_msg,
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc()
+        }), 500
 
 # Bounded LRU cache for text embeddings (max 1000 entries)
 TEXT_CACHE_MAX = 1000
@@ -579,135 +613,252 @@ def check_duplicate():
       ]
     }
     """
+    GLOBAL_STATS["total_requests"] += 1
     start_time = time.time()
     
-    data = request.get_json() or {}
-    
-    new_title = data.get('title', '').strip()
-    new_desc = data.get('description', '').strip()
-    new_image_path = data.get('image_path', '')
-    new_lat = data.get('lat')
-    new_lng = data.get('lng')
-    existing_complaints = data.get('existing_complaints', [])
-    
-    if not new_title or not new_desc or not existing_complaints:
-        return jsonify({
-            "success": True,
-            "duplicate_detected": False,
-            "message": "Insufficient data or no existing complaints to compare against."
-        })
-        
-    print(f"[AI-SERVICE] Checking duplicates for new complaint: '{new_title}' near ({new_lat}, {new_lng})")
-    
-    t_text_start = time.time()
-    # 1. Text Similarity (Sentence-Transformers)
-    # Generate embeddings for new title & description using cached helper
-    new_title_emb = get_text_embedding(new_title)
-    new_desc_emb = get_text_embedding(new_desc)
-    
-    # Encode existing complaint titles and descriptions (highly optimized via cache)
-    ext_titles = [c.get('title', '') for c in existing_complaints]
-    ext_descs = [c.get('description', '') for c in existing_complaints]
-    
-    ext_title_list = [get_text_embedding(t) for t in ext_titles]
-    ext_desc_list = [get_text_embedding(d) for d in ext_descs]
-    
-    ext_title_embs = torch.stack(ext_title_list)
-    ext_desc_embs = torch.stack(ext_desc_list)
-    
-    # Compute cosine similarities
-    with torch.no_grad():
-        title_sims = F.cosine_similarity(new_title_emb.unsqueeze(0), ext_title_embs, dim=1)
-        desc_sims = F.cosine_similarity(new_desc_emb.unsqueeze(0), ext_desc_embs, dim=1)
-    t_text_end = time.time()
-    
-    t_clip_new_start = time.time()
-    # 2. Generate CLIP embedding for new image once
-    new_img_emb = None
-    if new_image_path:
-        new_img_emb = get_clip_image_embedding(new_image_path)
-    t_clip_new_end = time.time()
-        
-    matches = []
-    
-    t_loop_start = time.time()
-    for i, c in enumerate(existing_complaints):
-        c_id = c.get('id')
-        c_title = c.get('title')
-        c_status = c.get('status', 'submitted')
-        c_dept_name = c.get('department_name', 'General')
-        c_affected = c.get('affected_count', 1)
-        c_lat = c.get('lat')
-        c_lng = c.get('lng')
-        c_img_path = c.get('image_path', '')
-        
-        # A. Text Similarity (average of title & description similarities)
-        t_sim = max(0.0, float(title_sims[i].item()) * 100.0)
-        d_sim = max(0.0, float(desc_sims[i].item()) * 100.0)
-        text_score = (t_sim + d_sim) / 2.0
-        
-        # B. Location Match (Proximity) - CALCULATED FIRST
-        distance_meters = 999999.0
-        location_score = 0.0
-        if new_lat is not None and new_lng is not None and c_lat is not None and c_lng is not None:
-            distance_meters = haversine_distance(new_lat, new_lng, c_lat, c_lng)
+    try:
+        with torch.no_grad():
+            data = request.get_json() or {}
             
-            # Scores: 100% at 0m, 80% at 500m, drops off to 0% at 1500m
-            if distance_meters <= 500.0:
-                location_score = 100.0 - (distance_meters / 500.0) * 20.0
-            else:
-                location_score = max(0.0, 80.0 - ((distance_meters - 500.0) / 1000.0) * 80.0)
+            new_title = data.get('title', '').strip()
+            new_desc = data.get('description', '').strip()
+            new_image_path = data.get('image_path', '')
+            new_lat = data.get('lat')
+            new_lng = data.get('lng')
+            existing_complaints = data.get('existing_complaints', [])
+            
+            if not new_title or not new_desc or not existing_complaints:
+                GLOBAL_STATS["successful_requests"] += 1
+                return jsonify({
+                    "success": True,
+                    "duplicate_detected": False,
+                    "message": "Insufficient data or no existing complaints to compare against."
+                })
                 
-        # C. Image Similarity - COMPUTED ONLY IF GEOGRAPHICALLY NEAR AND TEXT MATCHES PARTIALLY
-        image_score = 0.0
-        if distance_meters <= 1500.0 and text_score >= 35.0:
-            if new_img_emb is not None and c_img_path:
-                ext_img_emb = get_clip_image_embedding(c_img_path)
-                if ext_img_emb is not None:
-                    # Perform dot product (on device)
-                    cos_sim = torch.dot(new_img_emb, ext_img_emb).item()
-                    image_score = max(0.0, cos_sim * 100.0)
+            print(f"[AI-SERVICE] Checking duplicates for new complaint: '{new_title}' near ({new_lat}, {new_lng})")
+            
+            matches = []
+            valid_candidates = []
+            
+            # 1. Loop over existing_complaints and calculate distance first
+            for c in existing_complaints:
+                c_lat = c.get('lat')
+                c_lng = c.get('lng')
+                distance_meters = None
+                location_score = 0.0
                 
-        # D. Weighted Final Score: 40% text, 30% image, 30% location
-        final_score = (0.4 * text_score) + (0.3 * image_score) + (0.3 * location_score)
-        
-        # Keep if any potential matching exists
-        matches.append({
-            "id": c_id,
-            "title": c_title,
-            "status": c_status,
-            "department": c_dept_name,
-            "affected_count": c_affected,
-            "distance": round(distance_meters, 1),
-            "scores": {
-                "text": round(text_score, 1),
-                "image": round(image_score, 1),
-                "location": round(location_score, 1)
-            },
-            "similarity": round(final_score, 1)
-        })
-    t_loop_end = time.time()
-        
-    # Sort matches by overall similarity descending
-    matches.sort(key=lambda x: x['similarity'], reverse=True)
-    
-    # Filter matches above 80% threshold
-    best_match = matches[0] if matches else None
-    duplicate_detected = False
-    
-    if best_match and best_match['similarity'] > 80.0:
-        duplicate_detected = True
-        print(f"[AI-SERVICE] DUPLICATE DETECTED! Score: {best_match['similarity']}% on Complaint: {best_match['id']}")
-        
-    duration = time.time() - start_time
-    print(f"[AI-SERVICE] check_duplicate completed in {duration:.4f}s. (TextSim={t_text_end-t_text_start:.4f}s, CLIPNew={t_clip_new_end-t_clip_new_start:.4f}s, Loop={t_loop_end-t_loop_start:.4f}s)")
-    
-    return jsonify({
-        "success": True,
-        "duplicate_detected": duplicate_detected,
-        "best_match": best_match,
-        "all_matches": matches[:5]  # return top 5 for debugging or comprehensive display
-    })
+                if new_lat is not None and new_lng is not None and c_lat is not None and c_lng is not None:
+                    distance_meters = haversine_distance(new_lat, new_lng, c_lat, c_lng)
+                    
+                    # If a complaint is farther than 1500 meters away immediately assign 0 similarity and bypass
+                    if distance_meters > 1500.0:
+                        matches.append({
+                            "id": c.get('id'),
+                            "title": c.get('title'),
+                            "status": c.get('status', 'submitted'),
+                            "department": c.get('department_name', 'General'),
+                            "affected_count": c.get('affected_count', 1),
+                            "distance": round(distance_meters, 1),
+                            "scores": {
+                                "text": 0.0,
+                                "image": 0.0,
+                                "location": 0.0
+                            },
+                            "similarity": 0.0
+                        })
+                        continue
+                    
+                    # Scores: 100% at 0m, 80% at 500m, drops off to 0% at 1500m
+                    if distance_meters <= 500.0:
+                        location_score = 100.0 - (distance_meters / 500.0) * 20.0
+                    else:
+                        location_score = max(0.0, 80.0 - ((distance_meters - 500.0) / 1000.0) * 80.0)
+                
+                valid_candidates.append({
+                    "complaint": c,
+                    "distance": distance_meters,
+                    "location_score": location_score
+                })
+                
+            t_text_start = time.time()
+            t_text_end = t_text_start
+            t_clip_new_start = time.time()
+            t_clip_new_end = t_clip_new_start
+            t_loop_start = time.time()
+            t_loop_end = t_loop_start
+            
+            if valid_candidates:
+                # 2. Group text fields into a single batch array and generate text embeddings in one unified forward pass
+                texts_to_encode = []
+                
+                if new_title not in TEXT_EMBEDDING_CACHE:
+                    texts_to_encode.append(new_title)
+                if new_desc not in TEXT_EMBEDDING_CACHE:
+                    texts_to_encode.append(new_desc)
+                    
+                for item in valid_candidates:
+                    c = item["complaint"]
+                    t = c.get("title", "").strip()
+                    d = c.get("description", "").strip()
+                    if t and t not in TEXT_EMBEDDING_CACHE:
+                        texts_to_encode.append(t)
+                    if d and d not in TEXT_EMBEDDING_CACHE:
+                        texts_to_encode.append(d)
+                        
+                # Unique values while preserving order
+                unique_texts = list(OrderedDict.fromkeys(texts_to_encode))
+                
+                if unique_texts:
+                    future = INFERENCE_EXECUTOR.submit(lambda: GLOBAL_NLP_MODEL.encode(unique_texts, convert_to_tensor=True))
+                    encoded_tensors = future.result()
+                    if len(unique_texts) == 1 and len(encoded_tensors.shape) == 1:
+                        encoded_tensors = encoded_tensors.unsqueeze(0)
+                        
+                    # Cache the results
+                    for text, emb in zip(unique_texts, encoded_tensors):
+                        TEXT_EMBEDDING_CACHE[text] = emb
+                        while len(TEXT_EMBEDDING_CACHE) > TEXT_CACHE_MAX:
+                            TEXT_EMBEDDING_CACHE.popitem(last=False)
+                            
+                new_title_emb = TEXT_EMBEDDING_CACHE[new_title]
+                new_desc_emb = TEXT_EMBEDDING_CACHE[new_desc]
+                
+                title_embs_list = []
+                desc_embs_list = []
+                for item in valid_candidates:
+                    c = item["complaint"]
+                    t = c.get("title", "").strip()
+                    d = c.get("description", "").strip()
+                    title_embs_list.append(TEXT_EMBEDDING_CACHE[t])
+                    desc_embs_list.append(TEXT_EMBEDDING_CACHE[d])
+                    
+                ext_title_embs = torch.stack(title_embs_list)
+                ext_desc_embs = torch.stack(desc_embs_list)
+                
+                title_sims = F.cosine_similarity(new_title_emb.unsqueeze(0), ext_title_embs, dim=1)
+                desc_sims = F.cosine_similarity(new_desc_emb.unsqueeze(0), ext_desc_embs, dim=1)
+                t_text_end = time.time()
+                
+                # Helper to get cached or encode image (scaling to max 112x112 if not cached)
+                def get_cached_or_encode_image(image_path):
+                    if not image_path or not os.path.exists(image_path):
+                        return None
+                    try:
+                        mtime = os.path.getmtime(image_path)
+                    except Exception:
+                        mtime = 0
+                    cache_key = (image_path, mtime)
+                    if cache_key in CLIP_EMBEDDING_CACHE:
+                        return CLIP_EMBEDDING_CACHE[cache_key]
+                    try:
+                        img = Image.open(image_path).convert('RGB')
+                        if img.width > 112 or img.height > 112:
+                            img = img.resize((112, 112))
+                        future = INFERENCE_EXECUTOR.submit(run_vision_inference, img)
+                        features = future.result()
+                        embedding = features[0]
+                        CLIP_EMBEDDING_CACHE[cache_key] = embedding
+                        return embedding
+                    except Exception as e:
+                        print(f"[AI-SERVICE] Error generating CLIP embedding for {image_path}: {e}")
+                        return None
+
+                t_clip_new_start = time.time()
+                new_img_emb = None
+                if new_image_path:
+                    resolved_new_path = resolve_image_path(new_image_path)
+                    if resolved_new_path:
+                        new_img_emb = get_cached_or_encode_image(resolved_new_path)
+                t_clip_new_end = time.time()
+                
+                # 3. Read cached/compressed image embeddings and stack into a 2D tensor matrix
+                existing_images_list = []
+                valid_img_indices = []
+                for idx, item in enumerate(valid_candidates):
+                    c_img_path = item["complaint"].get('image_path', '')
+                    resolved_path = resolve_image_path(c_img_path)
+                    emb = None
+                    if resolved_path:
+                        emb = get_cached_or_encode_image(resolved_path)
+                    if emb is not None:
+                        existing_images_list.append(emb)
+                        valid_img_indices.append(idx)
+                        
+                image_scores = [0.0] * len(valid_candidates)
+                if new_img_emb is not None and existing_images_list:
+                    new_image_tensor = new_img_emb.unsqueeze(0)
+                    existing_images_tensor_matrix = torch.stack(existing_images_list)
+                    # 4. Replace individual vector dot products inside the loop with a single matrix multiplication
+                    similarity_matrix = torch.matmul(new_image_tensor, existing_images_tensor_matrix.t())
+                    similarity_scores = similarity_matrix[0].tolist()
+                    for i, idx in enumerate(valid_img_indices):
+                        image_scores[idx] = max(0.0, similarity_scores[i] * 100.0)
+                
+                # 5. Loop over candidates to combine scores
+                t_loop_start = time.time()
+                for i, item in enumerate(valid_candidates):
+                    c = item["complaint"]
+                    distance_meters = item["distance"]
+                    location_score = item["location_score"]
+                    
+                    t_sim = max(0.0, float(title_sims[i].item()) * 100.0)
+                    d_sim = max(0.0, float(desc_sims[i].item()) * 100.0)
+                    text_score = (t_sim + d_sim) / 2.0
+                    image_score = image_scores[i]
+                    
+                    final_score = (0.4 * text_score) + (0.3 * image_score) + (0.3 * location_score)
+                    
+                    matches.append({
+                        "id": c.get('id'),
+                        "title": c.get('title'),
+                        "status": c.get('status', 'submitted'),
+                        "department": c.get('department_name', 'General'),
+                        "affected_count": c.get('affected_count', 1),
+                        "distance": round(distance_meters, 1) if distance_meters is not None else None,
+                        "scores": {
+                            "text": round(text_score, 1),
+                            "image": round(image_score, 1),
+                            "location": round(location_score, 1)
+                        },
+                        "similarity": round(final_score, 1)
+                    })
+                t_loop_end = time.time()
+                
+            # Sort matches by overall similarity descending
+            matches.sort(key=lambda x: x['similarity'], reverse=True)
+            
+            best_match = matches[0] if matches else None
+            duplicate_detected = False
+            if best_match and best_match['similarity'] > 80.0:
+                duplicate_detected = True
+                print(f"[AI-SERVICE] DUPLICATE DETECTED! Score: {best_match['similarity']}% on Complaint: {best_match['id']}")
+                
+            duration = time.time() - start_time
+            print(f"[AI-SERVICE] check_duplicate completed in {duration:.4f}s. (TextSim={t_text_end-t_text_start:.4f}s, CLIPNew={t_clip_new_end-t_clip_new_start:.4f}s, Loop={t_loop_end-t_loop_start:.4f}s)")
+            
+            # Update stats
+            GLOBAL_STATS["successful_requests"] += 1
+            if valid_candidates:
+                GLOBAL_STATS["total_inference_time"] += (t_text_end - t_text_start) + (t_clip_new_end - t_clip_new_start)
+                GLOBAL_STATS["inference_count"] += 1
+            
+            return jsonify({
+                "success": True,
+                "duplicate_detected": duplicate_detected,
+                "best_match": best_match,
+                "all_matches": matches[:5]
+            })
+    except Exception as e:
+        GLOBAL_STATS["failed_requests"] += 1
+        err_msg = f"Exception in /check-duplicate endpoint: {str(e)}"
+        print(f"[AI-ERROR] {err_msg}")
+        traceback.print_exc()
+        return jsonify({
+            "success": False,
+            "error": err_msg,
+            "error_type": type(e).__name__,
+            "traceback": traceback.format_exc()
+        }), 500
 
 
 # ----------------- MACHINE LEARNING PREDICTIVE MODELS -----------------
@@ -784,6 +935,8 @@ def predict_resolution():
       "areaComplaints": 18
     }
     """
+    start_time = time.time()
+    GLOBAL_STATS["total_requests"] += 1
     data = request.get_json() or {}
     
     dept_name = data.get('department', 'General Inquiry')
@@ -834,6 +987,10 @@ def predict_resolution():
         confidence = round(95.0 - abs(predicted_days - 5.0) * 0.5, 1)
         confidence = max(75.0, min(98.0, confidence))
         
+        duration = time.time() - start_time
+        GLOBAL_STATS["successful_requests"] += 1
+        GLOBAL_STATS["total_inference_time"] += duration
+        GLOBAL_STATS["inference_count"] += 1
         return jsonify({
             "estimatedDays": round(predicted_days, 1),
             "delayRisk": delay_risk,
@@ -843,6 +1000,7 @@ def predict_resolution():
         })
         
     except Exception as e:
+        GLOBAL_STATS["failed_requests"] += 1
         print(f"[AI-SERVICE] Prediction error: {e}")
         return jsonify({
             "estimatedDays": 4,
@@ -858,6 +1016,8 @@ def calculate_severity():
     """
     Calculates severity score, priority, reasoning factors, and model confidence.
     """
+    start_time = time.time()
+    GLOBAL_STATS["total_requests"] += 1
     data = request.get_json() or {}
     
     title = data.get('title', '').lower()
@@ -998,6 +1158,10 @@ def calculate_severity():
     confidence = round(92.0 - abs(total_score - 50.0) * 0.1, 1)
     confidence = max(80.0, min(97.0, confidence))
     
+    duration = time.time() - start_time
+    GLOBAL_STATS["successful_requests"] += 1
+    GLOBAL_STATS["total_inference_time"] += duration
+    GLOBAL_STATS["inference_count"] += 1
     return jsonify({
         "severityScore": total_score,
         "priority": priority,
@@ -1036,6 +1200,8 @@ def resolve_image_path(img_path):
 @app.route('/ai/verify-resolution', methods=['POST'])
 @app.route('/verify-resolution', methods=['POST'])
 def verify_resolution():
+    start_time = time.time()
+    GLOBAL_STATS["total_requests"] += 1
     before_img = None
     after_img = None
     
@@ -1112,6 +1278,10 @@ def verify_resolution():
             result = "Issue appears resolved"
             reasons = ["Visual differences confirmed in scene structure", "Problem objects removed", "Area restored successfully"]
             
+        duration = time.time() - start_time
+        GLOBAL_STATS["successful_requests"] += 1
+        GLOBAL_STATS["total_inference_time"] += duration
+        GLOBAL_STATS["inference_count"] += 1
         return jsonify({
             "status": status,
             "confidence": confidence,
@@ -1120,6 +1290,7 @@ def verify_resolution():
             "reasons": reasons
         })
     except Exception as e:
+        GLOBAL_STATS["failed_requests"] += 1
         print(f"[AI-SERVICE] Error in verify_resolution: {e}")
         return jsonify({
             "status": "Verified",
@@ -1215,13 +1386,28 @@ def health():
         GLOBAL_VISION_PROCESSOR is not None
     )
 
+    # GPU info
+    gpu_available = torch.cuda.is_available()
+    gpu_device_name = torch.cuda.get_device_name(0) if gpu_available else "cpu"
+
+    # Average inference time
+    avg_inference_ms = 0
+    if GLOBAL_STATS["inference_count"] > 0:
+        avg_inference_ms = round((GLOBAL_STATS["total_inference_time"] / GLOBAL_STATS["inference_count"]) * 1000, 2)
+
     return jsonify({
         "status": "healthy" if models_ready else "degraded",
         "models_loaded": models_ready,
         "service": "JANSEVA AI Service",
         "models": ["all-MiniLM-L6-v2", "clip-vit-base-patch32"],
         "memory_usage_mb": memory_mb,
-        "inference_readiness": "ready" if models_ready else "not_ready"
+        "inference_readiness": "ready" if models_ready else "not_ready",
+        "total_requests": GLOBAL_STATS["total_requests"],
+        "successful_requests": GLOBAL_STATS["successful_requests"],
+        "failed_requests": GLOBAL_STATS["failed_requests"],
+        "avg_inference_time_ms": avg_inference_ms,
+        "gpu_available": gpu_available,
+        "gpu_device_name": gpu_device_name
     })
 
 if __name__ == '__main__':

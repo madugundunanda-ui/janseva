@@ -85,6 +85,9 @@ import { Complaint } from '../../core/services/api.service';
             <a [routerLink]="['/dashboard/settings']" class="p-4 rounded-xl border border-var hover:border-cyan-500/40 hover:bg-white/2 text-center transition-colors">
               ⚙️ Console Settings
             </a>
+            <a [routerLink]="['/dashboard/ai-diagnostics']" class="p-4 rounded-xl border border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-950/10 text-center transition-colors text-violet-400">
+              🧠 AI Diagnostics
+            </a>
           </div>
         </div>
 

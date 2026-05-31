@@ -88,7 +88,7 @@ describe('Complaint API Endpoints', () => {
         }))
         .attach('image', Buffer.from('dummy image content'), 'test.jpg');
 
-      expect(res.status).toBe(201);
+      expect(res.status).toBe(202);
       expect(res.body.success).toBe(true);
       expect(res.body.data.complaint).toBeDefined();
       expect(res.body.data.complaint.title).toBe('Garbage Overflow');
