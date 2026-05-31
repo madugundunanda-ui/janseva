@@ -451,17 +451,17 @@ def predict():
             logits = torch.matmul(image_features, GLOBAL_TEXT_FEATURES.t()) * 100.0
             probs = F.softmax(logits, dim=-1)[0]
         
-        # Aggressively clear internal PyTorch CUDA caches and memory limits
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-        import gc
-        gc.collect()
-        
         # Aggregate probabilities by category
         category_probs = {}
         for i, prob in enumerate(probs):
             cat = prompt_categories[i]
             category_probs[cat] = category_probs.get(cat, 0.0) + float(prob.item())
+
+        # Aggressively clear internal PyTorch CUDA caches and memory limits
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        import gc
+        gc.collect()
 
         # Stage 1: Governance-related vs non-civic gating
         non_civic_prob = category_probs.get("Non-Civic", 0.0)

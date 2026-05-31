@@ -3,6 +3,7 @@ const AppError = require('../utils/AppError');
 const { Complaint, User, Department } = require('../models');
 const assignmentService = require('../services/assignmentService');
 const { resolveDepartmentId } = require('../services/dashboardService');
+const aiService = require('../services/aiService');
 const { sendSuccess } = require('../utils/apiResponse');
 const path = require('path');
 const logger = require('../utils/logger');
@@ -312,9 +313,12 @@ const createComplaint = asyncHandler(async (req, res) => {
     cObj.imageUrl = '';
   }
 
+  const savedFileContext = req.file;
+
   res.status(202).json({
     success: true,
-    message: "Complaint recorded. Advanced AI analysis is running in the background.",
+    message: "Complaint tokens received. Advanced automated metadata classification has been delegated in the background.",
+    status: "Pending",
     complaint: cObj,
     data: {
       complaint: cObj,
@@ -323,38 +327,12 @@ const createComplaint = asyncHandler(async (req, res) => {
 
   setImmediate(async () => {
     try {
-      const axios = require('axios');
-      const fs = require('fs');
-      const { Blob } = require('buffer');
-
-      // Resolve image absolute path
-      const relativeImagePath = complaint.image.replace(/^\/uploads\//, '/src/uploads/');
-      const absImagePath = path.isAbsolute(relativeImagePath) 
-        ? relativeImagePath 
-        : path.resolve(path.join(__dirname, '../..', relativeImagePath));
-
-      if (!fs.existsSync(absImagePath)) {
-        throw new Error(`Image file not found: ${absImagePath}`);
-      }
-
-      const fileBuffer = fs.readFileSync(absImagePath);
-      const formData = new FormData();
-      formData.append('image', new Blob([fileBuffer], { type: req.file.mimetype }), req.file.originalname);
-
-      // Perform the fast microservice prediction fetch here
-      const aiUrl = (process.env.AI_SERVICE_URL || 'http://localhost:8000') + '/predict';
-      const response = await axios.post(aiUrl, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      const prediction = response.data;
-      logger.info('Background AI image detection completed', { prediction });
+      const extraction = await aiService.analyzeComplaintImage(savedFileContext);
+      logger.info('Background AI image detection completed', { extraction });
 
       let resolvedDeptId = departmentId;
-      if (prediction.department) {
-        resolvedDeptId = await resolveDepartmentId(prediction.department);
+      if (extraction.department) {
+        resolvedDeptId = await resolveDepartmentId(extraction.department);
         if (!resolvedDeptId) {
           resolvedDeptId = departmentId;
         }
@@ -363,13 +341,13 @@ const createComplaint = asyncHandler(async (req, res) => {
       // Update the complaint document
       complaint.aiVerification = {
         verificationStatus: 'Completed',
-        predictedDepartment: prediction.department || 'General Inquiry',
-        confidenceScore: prediction.confidence || 0
+        predictedDepartment: extraction.department || 'General Inquiry',
+        confidenceScore: extraction.confidence || 0
       };
 
       complaint.department = resolvedDeptId;
-      if (prediction.priority) {
-        complaint.priority = prediction.priority.toLowerCase();
+      if (extraction.priority) {
+        complaint.priority = extraction.priority.toLowerCase();
       }
       
       // Save changes
@@ -555,7 +533,7 @@ const createComplaint = asyncHandler(async (req, res) => {
       }
 
     } catch (err) {
-      console.error("Background AI routing error:", err);
+      console.error("[Background Ingestion Alert] Asynchronous extraction thread encountered an error:", err.message);
       try {
         complaint.aiVerification = {
           verificationStatus: 'Failed',
