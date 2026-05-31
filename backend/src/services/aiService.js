@@ -165,16 +165,16 @@ const analyzeComplaintImage = async (file) => {
     };
   }
 
-  // Asynchronously read file and wrap in Blob for proper FormData handling
-  const fileBuffer = await fs.promises.readFile(filePath);
+  // Use a native readable file stream to handle the payload instead
+  const fileStream = fs.createReadStream(file.path);
   const formData = new FormData();
-  formData.append('image', new Blob([fileBuffer], { type: file.mimetype }), file.originalname);
+  formData.append('image', fileStream, file.originalname);
 
   try {
     const response = await fetchWithTimeout(`${AI_SERVICE_URL}/predict`, {
       method: 'POST',
       body: formData,
-    }, 30000); // 30s timeout for image analysis
+    }, 60000); // 60s timeout for image analysis
 
     if (!response.ok) {
       const errorText = await response.text();

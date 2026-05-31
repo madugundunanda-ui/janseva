@@ -26,7 +26,7 @@ export class AiService {
     return this.apiService.postForm<any>('/ai/analyze-pipeline', formData).pipe(
       map((res: any) => {
         this.pipelineProgress.set(100);
-        this.classificationStatus.set('PENDING_BACKGROUND');
+        this.classificationStatus.set('PROCESSING_BACKGROUND');
         return res;
       }),
       catchError((error) => {
@@ -44,7 +44,7 @@ export class AiService {
       timeout(12000),
       map((res: any) => {
         this.pipelineProgress.set(100);
-        this.classificationStatus.set('PENDING_BACKGROUND');
+        this.classificationStatus.set('PROCESSING_BACKGROUND');
         return res;
       }),
       catchError((error) => {
@@ -69,7 +69,7 @@ export class AiService {
 
   analyzeImageStream(analysisId: string): Observable<any> {
     this.pipelineProgress.set(100);
-    this.classificationStatus.set('PENDING_BACKGROUND');
+    this.classificationStatus.set('PROCESSING_BACKGROUND');
     return of({
       status: 'completed',
       progress: 100,

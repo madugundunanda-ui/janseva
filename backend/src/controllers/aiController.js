@@ -1,7 +1,8 @@
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const { sendSuccess } = require('../utils/apiResponse');
-const { analyzeComplaintImage, predictResolution, calculateSeverity, submitFeedback } = require('../services/aiService');
+const aiService = require('../services/aiService');
+const { predictResolution, calculateSeverity, submitFeedback } = aiService;
 const Complaint = require('../models/Complaint');
 const logger = require('../utils/logger');
 
@@ -63,43 +64,43 @@ const analyzeImage = asyncHandler(async (req, res) => {
     }
   });
 
-  // 2. IMMEDIATELY return a clean 202 Accepted status response directly to the Angular frontend
-  res.status(202).json({
+  // 2. IMMEDIATELY return a clean 202 Accepted status response directly to the user frontend within 100ms
+  return res.status(202).json({
     success: true,
-    message: "Evidence received. Advanced categorization has been delegated in the background.",
+    message: "Evidence data ingestion complete. Advanced classification delegated smoothly.",
     status: "Pending"
   });
 
   // 3-4. Move and wrap the analyzeComplaintImage execution block inside setImmediate
   setImmediate(async () => {
     try {
-      const aiResult = await analyzeComplaintImage(req.file);
+      const extractionResult = await aiService.analyzeComplaintImage(req.file);
       
       let resolvedDeptId = placeholderDeptId;
-      if (aiResult.department) {
-        resolvedDeptId = await resolveDepartmentId(aiResult.department);
+      if (extractionResult.department) {
+        resolvedDeptId = await resolveDepartmentId(extractionResult.department);
         if (!resolvedDeptId) {
           resolvedDeptId = placeholderDeptId;
         }
       }
 
       // Asynchronously save the returned title, description, and department metrics directly to the MongoDB record
-      draftComplaint.title = aiResult.title || "Civic Grievance";
-      draftComplaint.description = aiResult.description || draftComplaint.description;
+      draftComplaint.title = extractionResult.title || "Civic Grievance";
+      draftComplaint.description = extractionResult.description || draftComplaint.description;
       draftComplaint.department = resolvedDeptId;
-      draftComplaint.priority = (aiResult.priority || 'medium').toLowerCase();
-      draftComplaint.severityScore = aiResult.severityScore || draftComplaint.severityScore;
-      draftComplaint.severityReason = aiResult.reasons || draftComplaint.severityReason;
+      draftComplaint.priority = (extractionResult.priority || 'medium').toLowerCase();
+      draftComplaint.severityScore = extractionResult.severityScore || draftComplaint.severityScore;
+      draftComplaint.severityReason = extractionResult.reasons || draftComplaint.severityReason;
       
       draftComplaint.aiVerification = {
         verificationStatus: 'Completed',
-        predictedDepartment: aiResult.department || 'General Inquiry',
-        confidenceScore: aiResult.confidence || 0
+        predictedDepartment: extractionResult.department || 'General Inquiry',
+        confidenceScore: extractionResult.confidence || 0
       };
 
       await draftComplaint.save();
     } catch (err) {
-      console.error("[Background Ingestion Error] Classification thread failed:", err.message);
+      console.error("[Background Thread Alert] Asynchronous auto-fill extraction failed:", err.message);
     }
   });
 });
