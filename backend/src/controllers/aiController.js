@@ -74,33 +74,33 @@ const analyzeImage = asyncHandler(async (req, res) => {
   // 3-4. Move and wrap the analyzeComplaintImage execution block inside setImmediate
   setImmediate(async () => {
     try {
-      const extractionResult = await aiService.analyzeComplaintImage(req.file);
+      const results = await aiService.analyzeComplaintImage(req.file);
       
       let resolvedDeptId = placeholderDeptId;
-      if (extractionResult.department) {
-        resolvedDeptId = await resolveDepartmentId(extractionResult.department);
+      if (results.department) {
+        resolvedDeptId = await resolveDepartmentId(results.department);
         if (!resolvedDeptId) {
           resolvedDeptId = placeholderDeptId;
         }
       }
 
       // Asynchronously save the returned title, description, and department metrics directly to the MongoDB record
-      draftComplaint.title = extractionResult.title || "Civic Grievance";
-      draftComplaint.description = extractionResult.description || draftComplaint.description;
+      draftComplaint.title = results.title || "Civic Grievance";
+      draftComplaint.description = results.description || draftComplaint.description;
       draftComplaint.department = resolvedDeptId;
-      draftComplaint.priority = (extractionResult.priority || 'medium').toLowerCase();
-      draftComplaint.severityScore = extractionResult.severityScore || draftComplaint.severityScore;
-      draftComplaint.severityReason = extractionResult.reasons || draftComplaint.severityReason;
+      draftComplaint.priority = (results.priority || 'medium').toLowerCase();
+      draftComplaint.severityScore = results.severityScore || draftComplaint.severityScore;
+      draftComplaint.severityReason = results.reasons || draftComplaint.severityReason;
       
       draftComplaint.aiVerification = {
         verificationStatus: 'Completed',
-        predictedDepartment: extractionResult.department || 'General Inquiry',
-        confidenceScore: extractionResult.confidence || 0
+        predictedDepartment: results.department || 'General Inquiry',
+        confidenceScore: results.confidence || 0
       };
 
       await draftComplaint.save();
     } catch (err) {
-      console.error("[Background Thread Alert] Asynchronous auto-fill extraction failed:", err.message);
+      console.error("[Background Ingestion Error] Asynchronous processing pass failed:", err.message);
     }
   });
 });

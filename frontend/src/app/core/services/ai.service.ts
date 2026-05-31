@@ -108,4 +108,34 @@ export class AiService {
   public verifyResolution(formData: FormData): Observable<unknown> {
     return this.apiService.postForm<unknown>('/ai/verify-resolution', formData);
   }
+
+  public analyzeImageStream(analysisId: string): Observable<any> {
+    return new Observable((observer) => {
+      const url = `${this.apiService.apiUrl}/ai/stream/${analysisId}`;
+      const eventSource = new EventSource(url);
+      
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          observer.next(data);
+          if (data.status === 'completed' || data.status === 'failed') {
+            observer.complete();
+            eventSource.close();
+          }
+        } catch (e) {
+          observer.error(e);
+          eventSource.close();
+        }
+      };
+
+      eventSource.onerror = (error) => {
+        observer.error(error);
+        eventSource.close();
+      };
+
+      return () => {
+        eventSource.close();
+      };
+    });
+  }
 }

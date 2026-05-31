@@ -895,7 +895,7 @@ export class ComplaintsComponent implements OnInit {
                 }
               }
             },
-            error: (err) => {
+            error: (err: any) => {
               console.error('AI streaming connection failed:', err);
               if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
               // Reset all step states so UI doesn't freeze
@@ -1279,8 +1279,12 @@ export class ComplaintsComponent implements OnInit {
     formData.append('afterImage', this.resolutionFile);
     formData.append('status', 'resolved');
 
+    if (!this.selectedComplaint) {
+      this.loadingUpload = false;
+      return;
+    }
     this.complaintsService.updateComplaint(this.selectedComplaint.id, formData).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         this.loadComplaints();
         this.loadingUpload = false;
         this.resolutionFile = null;
@@ -1294,7 +1298,6 @@ export class ComplaintsComponent implements OnInit {
   // --- Citizen Feedback submission ---
   submitFeedback() {
     if (!this.selectedComplaint) return;
-    
     const user = this.authService.currentUser();
     this.selectedComplaint.logs?.push({
       action: 'Citizen Feedback Registered',
@@ -1302,7 +1305,6 @@ export class ComplaintsComponent implements OnInit {
       timestamp: new Date().toISOString(),
       note: `Rating: ${this.feedbackRating}/5 - Feedback: "${this.feedbackComment}"`
     });
-    
     this.feedbackComment = '';
     alert('Resolution feedback registered on municipal grid ledger.');
   }
@@ -1315,6 +1317,7 @@ export class ComplaintsComponent implements OnInit {
       const match = this.departmentsList.find((item) => item.id === dept || item.name.toLowerCase() === dept.toLowerCase());
       return match?.name ?? dept;
     }
-    return dept && typeof dept !== 'string' ? (dept.name ?? 'General Operations') : 'General Operations';
+    // dept is Department or UserDepartmentRef
+    return (dept as any)?.name ?? 'General Operations';
   }
 }
