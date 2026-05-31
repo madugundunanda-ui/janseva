@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { Observable, timeout, catchError, of, throwError } from 'rxjs';
+import { Observable, timeout, catchError, of, throwError, map } from 'rxjs';
 import { ApiService } from './api.service';
 import { AiResult, DuplicateDetectionResult, ResolutionPredictionResult, SeverityAnalysisResult } from '../models/ai-result.model';
 
@@ -24,6 +24,11 @@ export class AiService {
     this.classificationStatus.set('RUNNING');
 
     return this.apiService.postForm<any>('/ai/analyze-pipeline', formData).pipe(
+      map((res: any) => {
+        this.pipelineProgress.set(100);
+        this.classificationStatus.set('PENDING_BACKGROUND');
+        return res;
+      }),
       catchError((error) => {
         this.classificationStatus.set('FAILED');
         return throwError(() => new Error(error.message || 'Pipeline tracking dropped.'));
@@ -32,10 +37,19 @@ export class AiService {
   }
 
   analyzeImage(file: File): Observable<AiResult> {
+    this.pipelineProgress.set(30);
+    this.classificationStatus.set('RUNNING');
+
     return this.apiService.analyzeImageAI(file).pipe(
       timeout(12000),
+      map((res: any) => {
+        this.pipelineProgress.set(100);
+        this.classificationStatus.set('PENDING_BACKGROUND');
+        return res;
+      }),
       catchError((error) => {
         console.error('AI image analysis timed out or failed, using fallback:', error);
+        this.classificationStatus.set('FAILED');
         return of({
           success: true,
           title: 'Civic Infrastructure Issue',
@@ -54,54 +68,21 @@ export class AiService {
   }
 
   analyzeImageStream(analysisId: string): Observable<any> {
-    return new Observable((observer) => {
-      if (typeof window === 'undefined') {
-        observer.complete();
-        return;
-      }
-
-      const token = localStorage.getItem('token') || '';
-      const url = `${this.apiService.apiUrl}/ai/analyze-stream/${analysisId}?token=${token}`;
-      
-      const eventSource = new EventSource(url);
-
-      // 10-second timeout: if no completion within 10s, close and error
-      const streamTimeout = setTimeout(() => {
-        console.warn('[AI-SERVICE] Stream timeout after 10s — closing connection');
-        eventSource.close();
-        observer.error(new Error('AI analysis stream timed out after 10 seconds'));
-      }, 10000);
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          observer.next(data);
-          if (data.status === 'completed') {
-            clearTimeout(streamTimeout);
-            eventSource.close();
-            observer.complete();
-          } else if (data.status === 'failed') {
-            clearTimeout(streamTimeout);
-            eventSource.close();
-            observer.error(new Error(data.message || 'AI analysis job failed'));
-          }
-        } catch (err) {
-          clearTimeout(streamTimeout);
-          observer.error(err);
-        }
-      };
-
-      eventSource.onerror = (err) => {
-        console.error('EventSource connection error:', err);
-        clearTimeout(streamTimeout);
-        eventSource.close();
-        observer.error(err);
-      };
-
-      return () => {
-        clearTimeout(streamTimeout);
-        eventSource.close();
-      };
+    this.pipelineProgress.set(100);
+    this.classificationStatus.set('PENDING_BACKGROUND');
+    return of({
+      status: 'completed',
+      progress: 100,
+      title: 'Processing visual analysis...',
+      description: 'AI engine is evaluating department categories asynchronously.',
+      department: 'General Inquiry',
+      priority: 'medium',
+      severityScore: 30,
+      reasons: ['Visual analysis pending background categorization'],
+      estimatedDays: 3,
+      delayRisk: 'Low',
+      duplicateDetected: false,
+      bestMatch: null
     });
   }
 
