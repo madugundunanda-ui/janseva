@@ -451,6 +451,12 @@ def predict():
             logits = torch.matmul(image_features, GLOBAL_TEXT_FEATURES.t()) * 100.0
             probs = F.softmax(logits, dim=-1)[0]
         
+        # Aggressively clear internal PyTorch CUDA caches and memory limits
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        import gc
+        gc.collect()
+        
         # Aggregate probabilities by category
         category_probs = {}
         for i, prob in enumerate(probs):

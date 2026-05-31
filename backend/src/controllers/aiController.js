@@ -13,18 +13,94 @@ const analyzeImage = asyncHandler(async (req, res) => {
   }
 
   const { location, lat, lng } = req.body;
-  const jobId = aiJobManager.createJob(req.file, location, lat, lng);
-  
-  logger.info('AI Analysis background job created', {
-    jobId,
-    filename: req.file.filename,
-    location,
+  const image = `/uploads/complaints/${req.file.filename}`;
+
+  // 1. Resolve placeholder department
+  const { resolveDepartmentId } = require('../services/dashboardService');
+  let placeholderDeptId = await resolveDepartmentId('Public Safety');
+  if (!placeholderDeptId) {
+    const Department = require('../models/Department');
+    const firstDept = await Department.findOne({});
+    if (firstDept) {
+      placeholderDeptId = firstDept._id;
+    }
+  }
+
+  let address = '';
+  let latitude = 12.9716;
+  let longitude = 77.5946;
+  if (location) {
+    try {
+      const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
+      address = parsedLocation.address || '';
+      latitude = parseFloat(parsedLocation.latitude || lat || 0);
+      longitude = parseFloat(parsedLocation.longitude || lng || 0);
+    } catch (e) {
+      address = String(location);
+    }
+  }
+
+  // Save/stage a draft Complaint record in MongoDB
+  const draftComplaint = await Complaint.create({
+    title: "Processing visual analysis...",
+    description: "AI engine is evaluating department categories asynchronously.",
+    department: placeholderDeptId,
+    citizen: req.user._id,
+    image: image,
+    location: {
+      address,
+      latitude,
+      longitude,
+      coordinates: {
+        lat: latitude,
+        lng: longitude
+      }
+    },
+    aiVerification: {
+      verificationStatus: 'Pending',
+      predictedDepartment: '',
+      confidenceScore: 0
+    }
   });
 
-  sendSuccess(res, 202, 'AI analysis job initialized', {
+  // 2. IMMEDIATELY return a clean 202 Accepted status response directly to the Angular frontend
+  res.status(202).json({
     success: true,
-    analysisId: jobId,
-    tempImagePath: `/uploads/complaints/${req.file.filename}`
+    message: "Evidence received. Advanced categorization has been delegated in the background.",
+    status: "Pending"
+  });
+
+  // 3-4. Move and wrap the analyzeComplaintImage execution block inside setImmediate
+  setImmediate(async () => {
+    try {
+      const aiResult = await analyzeComplaintImage(req.file);
+      
+      let resolvedDeptId = placeholderDeptId;
+      if (aiResult.department) {
+        resolvedDeptId = await resolveDepartmentId(aiResult.department);
+        if (!resolvedDeptId) {
+          resolvedDeptId = placeholderDeptId;
+        }
+      }
+
+      // Asynchronously save the returned title, description, and department metrics directly to the MongoDB record
+      draftComplaint.title = aiResult.title || "Civic Grievance";
+      draftComplaint.description = aiResult.description || draftComplaint.description;
+      draftComplaint.department = resolvedDeptId;
+      draftComplaint.priority = (aiResult.priority || 'medium').toLowerCase();
+      draftComplaint.severityScore = aiResult.severityScore || draftComplaint.severityScore;
+      draftComplaint.severityReason = aiResult.reasons || draftComplaint.severityReason;
+      
+      draftComplaint.aiVerification = {
+        verificationStatus: 'Completed',
+        predictedDepartment: aiResult.department || 'General Inquiry',
+        confidenceScore: aiResult.confidence || 0
+      };
+
+      await draftComplaint.save();
+    } catch (err) {
+      console.error("[Background Ingestion Error] Classification thread failed:", err.message);
+    }
   });
 });
 
