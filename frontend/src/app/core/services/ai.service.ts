@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, timeout } from 'rxjs/operators';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import {
   AiResult,
   DuplicateDetectionResult,
@@ -20,7 +21,10 @@ export class AiService {
   public pipelineProgress = signal<number>(0);
   public classificationStatus = signal<string>('IDLE');
 
-  constructor(private apiService: ApiService) {}
+  constructor(
+    private apiService: ApiService,
+    private authService: AuthService
+  ) {}
 
   /**
    * Upload an image and trigger the backend "analyze-pipeline" endpoint.
@@ -109,6 +113,10 @@ export class AiService {
     return this.apiService.postForm<unknown>('/ai/verify-resolution', formData);
   }
 
+  public getJobStatus(jobId: string): Observable<any> {
+    return this.apiService.get<any>(`/ai/job/${jobId}`);
+  }
+
   public analyzeImageStream(analysisId: string): Observable<any> {
     return new Observable((observer) => {
       if (!analysisId) {
@@ -116,34 +124,111 @@ export class AiService {
         return;
       }
 
-      const streamUrl = `${this.apiService.apiUrl}/ai/stream/${analysisId}`;
-      console.log('STREAM URL');
-      console.log(streamUrl);
+      const token = this.authService.token();
+      const streamUrl = `${this.apiService.apiUrl}/ai/stream/${analysisId}${token ? '?token=' + encodeURIComponent(token) : ''}`;
+      console.log('[AiService] Connecting to stream:', streamUrl);
 
-      const url = streamUrl;
-      const eventSource = new EventSource(url);
-      
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          observer.next(data);
-          if (data.status === 'completed' || data.status === 'failed') {
-            observer.complete();
-            eventSource.close();
-          }
-        } catch (e) {
-          observer.error(e);
+      let eventSource: EventSource | null = null;
+      let pollingInterval: any = null;
+      let timeoutTimer: any = null;
+      let isFallbackActive = false;
+
+      const startTimeoutTimer = () => {
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+        timeoutTimer = setTimeout(() => {
+          console.warn('[AiService] SSE stream timeout (no updates for 10s). Falling back to polling.');
+          activatePollingFallback();
+        }, 10000);
+      };
+
+      const activatePollingFallback = () => {
+        if (isFallbackActive) return;
+        isFallbackActive = true;
+        
+        if (eventSource) {
           eventSource.close();
+          eventSource = null;
         }
+        if (timeoutTimer) {
+          clearTimeout(timeoutTimer);
+          timeoutTimer = null;
+        }
+
+        console.log('[AiService] Polling fallback activated for job:', analysisId);
+        
+        pollingInterval = setInterval(() => {
+          this.getJobStatus(analysisId).subscribe({
+            next: (res: any) => {
+              console.log('[AiService] Polling status update:', res);
+              
+              // Map backend job status response to the structure expected by the component
+              const event = {
+                status: res.status,
+                progress: res.progress,
+                ...res.results
+              };
+              
+              observer.next(event);
+              
+              if (res.status === 'completed' || res.status === 'failed') {
+                clearInterval(pollingInterval);
+                observer.complete();
+              }
+            },
+            error: (err) => {
+              console.error('[AiService] Polling error:', err);
+            }
+          });
+        }, 1500);
       };
 
-      eventSource.onerror = (error) => {
-        observer.error(error);
-        eventSource.close();
-      };
+      try {
+        eventSource = new EventSource(streamUrl);
+        console.log('[AiService] EventSource instance created. Connection state:', eventSource.readyState);
+        startTimeoutTimer();
+
+        eventSource.onopen = () => {
+          console.log('[AiService] SSE Stream connection opened successfully (Connected)');
+        };
+
+        eventSource.onmessage = (event) => {
+          console.log('[AiService] SSE Message received');
+          startTimeoutTimer(); // reset timeout on message
+          
+          try {
+            const data = JSON.parse(event.data);
+            observer.next(data);
+            if (data.status === 'completed' || data.status === 'failed') {
+              console.log('[AiService] SSE Stream completed natively (Completed)');
+              if (timeoutTimer) clearTimeout(timeoutTimer);
+              eventSource?.close();
+              observer.complete();
+            }
+          } catch (e) {
+            console.error('[AiService] SSE message parse error:', e);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('[AiService] SSE Stream error encountered (Error):', error);
+          activatePollingFallback();
+        };
+
+      } catch (err) {
+        console.error('[AiService] EventSource instantiation failed:', err);
+        activatePollingFallback();
+      }
 
       return () => {
-        eventSource.close();
+        if (eventSource) {
+          eventSource.close();
+        }
+        if (pollingInterval) {
+          clearInterval(pollingInterval);
+        }
+        if (timeoutTimer) {
+          clearTimeout(timeoutTimer);
+        }
       };
     });
   }

@@ -17,7 +17,8 @@ const {
   spamActionController,
   verifyResolutionController,
   aiFeedbackController,
-  analyzeComplaintPipeline
+  analyzeComplaintPipeline,
+  getJobStatusController
 } = require('../controllers/aiController');
 
 const router = express.Router();
@@ -26,6 +27,7 @@ router.post('/analyze', protect, upload.single('image'), compressImage, analyzeI
 router.post('/analyze-pipeline', protect, upload.single('image'), compressImage, analyzeComplaintPipeline);
 router.get('/analyze-stream/:analysisId', protect, analyzeImageStream);
 router.get('/stream/:jobId', protect, analyzeImageStream);
+router.get('/job/:jobId', protect, getJobStatusController);
 router.get('/health', protect, getAiHealth);
 router.post('/predict-resolution', protect, predictResolutionController);
 router.post('/severity', protect, getSeverityController);

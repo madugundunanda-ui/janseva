@@ -138,7 +138,7 @@ describe('SaaS Multi-Tenancy & Onboarding API', () => {
       .attach('image', Buffer.from('dummy image content'), 'clog.jpg');
 
     expect(newComplaintRes.status).toBe(202);
-    const complaintId = newComplaintRes.body.complaint.id;
+    const complaintId = newComplaintRes.body.complaint._id;
 
     // Retrieve complaints as Mysore Citizen
     const mysoreComplaintsRes = await request(app)
@@ -147,7 +147,7 @@ describe('SaaS Multi-Tenancy & Onboarding API', () => {
 
     expect(mysoreComplaintsRes.status).toBe(200);
     expect(mysoreComplaintsRes.body.data.complaints).toHaveLength(1);
-    expect(mysoreComplaintsRes.body.data.complaints[0].id).toBe(complaintId);
+    expect(mysoreComplaintsRes.body.data.complaints[0]._id).toBe(complaintId);
     expect(mysoreComplaintsRes.body.data.complaints[0].tenantId).toBe('mysore-municipal-corporation');
 
     // Retrieve complaints as Default Citizen: should be empty (isolated)

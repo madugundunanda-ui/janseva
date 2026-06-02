@@ -830,6 +830,18 @@ export class ComplaintsComponent implements OnInit {
             next: (event: any) => {
               this.aiProgress = event.progress || this.aiProgress;
               
+              if (event.status === 'upload_complete') {
+                this.aiStepDetecting = true;
+                this.aiStepDetectingDone = false;
+                this.aiStepSeverity = false;
+                this.aiStepSeverityDone = false;
+                this.aiStepETA = false;
+                this.aiStepETADone = false;
+                this.aiStepDuplicate = false;
+                this.aiStepDuplicateDone = false;
+                this.aiProgress = 10;
+              }
+              
               if (event.status === 'detecting_issue') {
                 this.aiStepDetecting = false;
                 this.aiStepDetectingDone = true;

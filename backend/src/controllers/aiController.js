@@ -802,6 +802,20 @@ const analyzeComplaintPipeline = asyncHandler(async (req, res, next) => {
   });
 });
 
+const getJobStatusController = asyncHandler(async (req, res) => {
+  const { jobId } = req.params;
+  const job = aiJobManager.getJob(jobId);
+  if (!job) {
+    throw new AppError('Analysis job not found', 404);
+  }
+  res.json({
+    success: true,
+    status: job.status,
+    progress: job.progress,
+    results: job.results
+  });
+});
+
 module.exports = {
   analyzeImage,
   analyzeImageStream,
@@ -816,4 +830,5 @@ module.exports = {
   verifyResolutionController,
   aiFeedbackController,
   analyzeComplaintPipeline,
+  getJobStatusController,
 };
