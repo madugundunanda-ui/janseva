@@ -20,6 +20,28 @@ const getFileHash = (filePath) => {
   }
 };
 
+// Helper to perform fetch with timeout
+async function fetchWithTimeout(url, options, timeoutMs) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    return response;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// Local helper to bypass Node global FormData restrictions on streams
+class FormData {
+  constructor() {
+    this.fields = [];
+  }
+  append(name, value, filename) {
+    this.fields.push({ name, value, filename });
+  }
+}
+
 const analyzeComplaintImage = async (file) => {
   if (!file) {
     throw new AppError('Image file is required', 400);
@@ -41,10 +63,22 @@ const analyzeComplaintImage = async (file) => {
       }
     }
 
-    // Call vision provider
+    // Native readable file stream to handle payload boundaries optimally
+    const fileStream = fs.createReadStream(file.path);
+    const formData = new FormData();
+    formData.append('image', fileStream, file.originalname);
+
+    // Call the vision provider to run the inference
     const provider = VisionProviderFactory.getProvider();
-    const result = await provider.analyzeImage(file);
     
+    // We execute the call wrapped with our timeout safety envelope set to 60000ms
+    const result = await provider.analyzeImage({
+      ...file,
+      stream: fileStream,
+      formData,
+      timeoutMs: 60000
+    });
+
     // Save to cache
     if (imageHash && result) {
       await AiCache.create({

@@ -243,8 +243,10 @@ describe('Actual AI Service Unit Tests', () => {
 
       // Mock fs.existsSync to return true so getFileHash/read file is bypassed or mocked
       const fs = require('fs');
+      const { Readable } = require('stream');
       const existsSpy = jest.spyOn(fs, 'existsSync').mockReturnValue(true);
       const readSpy = jest.spyOn(fs, 'readFileSync').mockReturnValue(Buffer.from('dummy'));
+      const createStreamSpy = jest.spyOn(fs, 'createReadStream').mockReturnValue(Readable.from(['dummy']));
 
       // Also need to clear/mock AiCache findOne to return null to force provider invocation
       const { AiCache } = require('../src/models');
@@ -254,10 +256,15 @@ describe('Actual AI Service Unit Tests', () => {
       const result = await actualAiService.analyzeComplaintImage(mockFile);
 
       expect(result.title).toBe('Road Damage Mocked');
-      expect(mockProvider.analyzeImage).toHaveBeenCalledWith(mockFile);
+      expect(mockProvider.analyzeImage).toHaveBeenCalledWith(expect.objectContaining({
+        path: 'dummy-path.jpg',
+        mimetype: 'image/jpeg',
+        filename: 'dummy-file.jpg'
+      }));
 
       existsSpy.mockRestore();
       readSpy.mockRestore();
+      createStreamSpy.mockRestore();
       findOneSpy.mockRestore();
       createSpy.mockRestore();
     });
