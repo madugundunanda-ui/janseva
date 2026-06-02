@@ -4,176 +4,176 @@ const { sendSuccess } = require('../utils/apiResponse');
 const aiService = require('../services/aiService');
 const { predictResolution, calculateSeverity, submitFeedback } = aiService;
 const Complaint = require('../models/Complaint');
+const Department = require('../models/Department');
 const logger = require('../utils/logger');
+const { resolveDepartmentId } = require('../services/dashboardService');
 
-const aiJobManager = require('../utils/aiJobManager');
-
-const analyzeImage = asyncHandler(async (req, res) => {
-  if (!req.file) {
-    throw new AppError('Image file is required', 400);
-  }
-
-  const { location, lat, lng } = req.body;
-  const image = `/uploads/complaints/${req.file.filename}`;
-
-  // 1. Resolve placeholder department
-  const { resolveDepartmentId } = require('../services/dashboardService');
+const resolvePlaceholderDepartmentId = async () => {
   let placeholderDeptId = await resolveDepartmentId('Public Safety');
   if (!placeholderDeptId) {
-    const Department = require('../models/Department');
-    const firstDept = await Department.findOne({});
+    const firstDept = await Department.findOne({}).select('_id');
     if (firstDept) {
       placeholderDeptId = firstDept._id;
     }
   }
 
+  if (!placeholderDeptId) {
+    throw new AppError('No department is available for AI draft staging', 500);
+  }
+
+  return placeholderDeptId;
+};
+
+const parseAnalysisLocation = (body) => {
+  const { location, lat, lng } = body;
   let address = '';
   let latitude = 12.9716;
   let longitude = 77.5946;
+
   if (location) {
     try {
       const parsedLocation = typeof location === 'string' ? JSON.parse(location) : location;
       address = parsedLocation.address || '';
-      latitude = parseFloat(parsedLocation.latitude || lat || 0);
-      longitude = parseFloat(parsedLocation.longitude || lng || 0);
-    } catch (e) {
+      latitude = parseFloat(parsedLocation.latitude || parsedLocation.coordinates?.lat || lat || latitude);
+      longitude = parseFloat(parsedLocation.longitude || parsedLocation.coordinates?.lng || lng || longitude);
+    } catch (error) {
       address = String(location);
+      latitude = parseFloat(lat || latitude);
+      longitude = parseFloat(lng || longitude);
     }
+  } else {
+    latitude = parseFloat(lat || latitude);
+    longitude = parseFloat(lng || longitude);
   }
 
-  // Save/stage a draft Complaint record in MongoDB
-  const draftComplaint = await Complaint.create({
-    title: "Processing visual analysis...",
-    description: "AI engine is evaluating department categories asynchronously.",
+  return {
+    address,
+    latitude: Number.isFinite(latitude) ? latitude : 12.9716,
+    longitude: Number.isFinite(longitude) ? longitude : 77.5946,
+  };
+};
+
+const stageDraftComplaint = async (req, placeholderDeptId) => {
+  const image = `/uploads/complaints/${req.file.filename}`;
+  const { address, latitude, longitude } = parseAnalysisLocation(req.body);
+
+  return Complaint.create({
+    title: 'Processing visual analysis...',
+    description: 'Evidence data received. Advanced categorization is running in the background.',
     department: placeholderDeptId,
+    priority: 'medium',
+    status: 'submitted',
     citizen: req.user._id,
-    image: image,
+    image,
     location: {
       address,
       latitude,
       longitude,
       coordinates: {
         lat: latitude,
-        lng: longitude
-      }
+        lng: longitude,
+      },
     },
     aiVerification: {
       verificationStatus: 'Pending',
       predictedDepartment: '',
-      confidenceScore: 0
-    }
-  });
-
-  const jobId = draftComplaint._id.toString();
-
-  // Create background AI job in aiJobManager for UI EventSource/SSE compatibility
-  aiJobManager.createJob(req.file, address, latitude, longitude, jobId);
-  logger.info('AI job created', { jobId, image });
-
-  // Detach heavy cloud execution from active request-response lifecycle
-  setImmediate(async () => {
-    try {
-      const extraction = await aiService.analyzeComplaintImage(req.file);
-      
-      let resolvedDeptId = placeholderDeptId;
-      if (extraction.department) {
-        resolvedDeptId = await resolveDepartmentId(extraction.department);
-        if (!resolvedDeptId) {
-          resolvedDeptId = placeholderDeptId;
-        }
-      }
-
-      // Asynchronously save the returned title, category description, and department fields back to the MongoDB document
-      draftComplaint.title = extraction.title || "Civic Grievance";
-      draftComplaint.description = extraction.description || draftComplaint.description;
-      draftComplaint.department = resolvedDeptId;
-      draftComplaint.priority = (extraction.priority || 'medium').toLowerCase();
-      draftComplaint.severityScore = extraction.severityScore || draftComplaint.severityScore;
-      draftComplaint.severityReason = extraction.reasons || draftComplaint.severityReason;
-      
-      draftComplaint.aiVerification = {
-        verificationStatus: 'Completed',
-        predictedDepartment: extraction.department || 'General Inquiry',
-        confidenceScore: extraction.confidence || 0
-      };
-
-      await draftComplaint.save();
-    } catch (err) {
-      console.error("[Background Thread Alert] Asynchronous auto-fill extraction pass failed:", err.message);
-    }
-  });
-
-  // IMMEDIATELY return a clean 202 Accepted HTTP response directly to the user frontend
-  return res.status(202).json({
-    success: true,
-    message: "Visual token ingestion complete. Advanced extraction delegated asynchronously.",
-    jobId: draftComplaint._id,
-    status: "Pending",
-    tempImagePath: image,
-    analysisId: jobId,
-    job: { id: jobId },
-    data: { jobId }
-  });
-});
-
-const analyzeImageStream = (req, res) => {
-  const streamJobId = req.params.analysisId || req.params.jobId;
-  console.log('STREAM REQUEST', streamJobId);
-  const job = aiJobManager.getJob(streamJobId);
-
-  if (!job) {
-    return res.status(404).json({ success: false, message: 'Analysis job not found' });
-  }
-
-  res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
-  res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Prevent proxy buffering
-  res.flushHeaders();
-
-  // Send initial job status
-  res.write(`data: ${JSON.stringify({ status: job.status, progress: job.progress, ...job.results })}\n\n`);
-
-  if (job.status === 'completed' || job.status === 'failed') {
-    res.end();
-    return;
-  }
-
-  const listener = (event) => {
-    res.write(`data: ${JSON.stringify(event)}\n\n`);
-    if (event.status === 'completed' || event.status === 'failed') {
-      res.end();
-      aiJobManager.off(streamJobId, listener);
-    }
-  };
-
-  aiJobManager.on(streamJobId, listener);
-
-  req.on('close', () => {
-    aiJobManager.off(streamJobId, listener);
+      confidenceScore: 0,
+    },
+    tenantId: req.user.tenantId || 'default-municipality',
   });
 };
 
+const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId) => {
+  try {
+    const results = await aiService.analyzeComplaintImage(file);
+
+    let resolvedDeptId = placeholderDeptId;
+    if (results.department) {
+      resolvedDeptId = await resolveDepartmentId(results.department);
+      if (!resolvedDeptId) {
+        resolvedDeptId = placeholderDeptId;
+      }
+    }
+
+    draftComplaint.title = results.title || 'Civic Grievance';
+    draftComplaint.description = results.description || draftComplaint.description;
+    draftComplaint.department = resolvedDeptId;
+    draftComplaint.priority = (results.priority || 'medium').toLowerCase();
+    draftComplaint.aiVerification = {
+      verificationStatus: 'Completed',
+      predictedDepartment: results.department || '',
+      confidenceScore: results.confidence || 0,
+    };
+
+    await draftComplaint.save();
+    logger.info('Background AI auto-fill completed', {
+      complaintId: draftComplaint._id.toString(),
+      department: results.department,
+      confidence: results.confidence,
+    });
+  } catch (err) {
+    console.error('[Background Thread Error] Asynchronous auto-fill pass failed:', err.message);
+    try {
+      draftComplaint.aiVerification = {
+        verificationStatus: 'Failed',
+        predictedDepartment: '',
+        confidenceScore: 0,
+      };
+      await draftComplaint.save();
+    } catch (saveErr) {
+      logger.error('Failed to persist AI auto-fill failure state', {
+        complaintId: draftComplaint._id.toString(),
+        message: saveErr.message,
+      });
+    }
+  }
+};
+
+const createDetachedAnalysisDraft = async (req, res) => {
+  if (!req.file) {
+    throw new AppError('Image file is required', 400);
+  }
+
+  const placeholderDeptId = await resolvePlaceholderDepartmentId();
+  const draftComplaint = await stageDraftComplaint(req, placeholderDeptId);
+
+  setImmediate(() => {
+    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId);
+  });
+
+  return res.status(202).json({
+    success: true,
+    message: 'Evidence data received. Advanced categorization delegated smoothly.',
+    jobId: draftComplaint._id,
+    status: 'Pending',
+  });
+};
+
+const analyzeImage = asyncHandler(async (req, res) => {
+  return createDetachedAnalysisDraft(req, res);
+});
+
 const getAiHealth = asyncHandler(async (req, res) => {
-  const provider = (process.env.VISION_PROVIDER || 'gemini').toLowerCase();
-  const hasApiKey = !!process.env.GEMINI_API_KEY;
+  const hasApiKey = !!process.env.OPENAI_API_KEY;
   
-  const aiServiceStatus = (provider === 'gemini' && !hasApiKey) ? 'Offline' : 'Online';
-  const models = provider === 'gemini' ? ['gemini-2.5-flash'] : ['MockHeuristicRules'];
+  const aiServiceStatus = hasApiKey ? 'Online' : 'Offline';
+  const models = ['gpt-4o-mini'];
   
   const memUsage = process.memoryUsage();
-  const queueSize = Array.from(aiJobManager.jobs.values()).filter(j => j.status === 'queued' || j.status === 'processing').length;
+  const pendingDrafts = await Complaint.countDocuments({
+    'aiVerification.verificationStatus': 'Pending',
+  });
   
   res.json({
     success: true,
     status: aiServiceStatus,
-    queueSize,
+    queueSize: pendingDrafts,
     models,
     responseTimeMs: 150,
     pythonStats: {
-      totalRequests: Array.from(aiJobManager.jobs.values()).length,
-      successfulRequests: Array.from(aiJobManager.jobs.values()).filter(j => j.status === 'completed').length,
-      failedRequests: Array.from(aiJobManager.jobs.values()).filter(j => j.status === 'failed').length,
+      totalRequests: pendingDrafts,
+      successfulRequests: 0,
+      failedRequests: 0,
       avgInferenceTimeMs: 1200,
       gpuAvailable: false,
       gpuDeviceName: 'N/A',
@@ -183,12 +183,7 @@ const getAiHealth = asyncHandler(async (req, res) => {
     system: {
       nodeMemoryMB: Math.round(memUsage.rss / 1024 / 1024),
       pythonMemoryMB: 0,
-      activeJobs: Array.from(aiJobManager.jobs.values()).slice(-10).map(j => ({
-        id: j.id,
-        status: j.status,
-        progress: j.progress,
-        createdAt: j.createdAt
-      }))
+      activeJobs: []
     }
   });
 });
@@ -747,60 +742,34 @@ const aiFeedbackController = asyncHandler(async (req, res) => {
  * FIXED: Non-blocking asynchronous intake handler
  * Responds to the client within 100ms and detaches the heavy inference process
  */
-const analyzeComplaintPipeline = asyncHandler(async (req, res, next) => {
-  if (!req.file) {
-    return res.status(400).json({ success: false, message: 'Visual evidence tokens missing.' });
-  }
-
-  // 1. Immediately create a mock placeholder record or update the status in the background
-  // This keeps the user interface moving forward smoothly
-  const initialPayload = {
-    title: "Processing visual analysis...",
-    description: "AI engine is evaluating department categories asynchronously.",
-    status: "submitted",
-    aiVerification: { verificationStatus: "Pending" }
-  };
-
-  // 2. IMMEDIATELY send a 202 Accepted response to the frontend client
-  res.status(202).json({
-    success: true,
-    message: "Visual data ingestion complete. Thread worker detached successfully.",
-    status: "Pending"
-  });
-
-  // 3. Detach the heavy inference call entirely from the main request execution loop
-  setImmediate(async () => {
-    try {
-      console.log(`[AI Worker Thread] Executing asynchronous classification pass...`);
-      
-      // Asynchronously process the compressed file stream against the pre-loaded model matrix
-      const prediction = await analyzeComplaintImage(req.file);
-      
-      console.log(`[AI Worker Thread] Inference complete. Result: ${prediction.department}`);
-      // Silently save updates to the database record here or broadcast via WebSockets
-    } catch (err) {
-      console.error("[AI Worker Thread Error] Asynchronous processing pass failed:", err.message);
-    }
-  });
+const analyzeComplaintPipeline = asyncHandler(async (req, res) => {
+  return createDetachedAnalysisDraft(req, res);
 });
 
 const getJobStatusController = asyncHandler(async (req, res) => {
   const { jobId } = req.params;
-  const job = aiJobManager.getJob(jobId);
-  if (!job) {
-    throw new AppError('Analysis job not found', 404);
+  const complaint = await Complaint.findById(jobId).populate('department', 'name');
+  if (!complaint) {
+    throw new AppError('Analysis draft not found', 404);
   }
+
   res.json({
     success: true,
-    status: job.status,
-    progress: job.progress,
-    results: job.results
+    jobId: complaint._id,
+    status: complaint.aiVerification?.verificationStatus || 'Pending',
+    complaint: {
+      title: complaint.title,
+      description: complaint.description,
+      department: complaint.department?.name || complaint.department,
+      priority: complaint.priority,
+      confidence: complaint.aiVerification?.confidenceScore || 0,
+      image: complaint.image,
+    },
   });
 });
 
 module.exports = {
   analyzeImage,
-  analyzeImageStream,
   getAiHealth,
   predictResolutionController,
   getSeverityController,

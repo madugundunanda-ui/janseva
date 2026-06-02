@@ -1,10 +1,17 @@
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
+const OpenAI = require('openai');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 const VisionProviderFactory = require('../ai/providers/VisionProviderFactory');
 const { AiCache } = require('../models');
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY || 'missing-openai-api-key',
+});
+
+const DEPARTMENTS = ['Roads', 'Water Supply', 'Electricity', 'Sanitation', 'Health', 'Transport'];
+const PRIORITIES = ['low', 'medium', 'high'];
 
 // Helper to calculate SHA256 of file
 const getFileHash = (filePath) => {
@@ -20,27 +27,99 @@ const getFileHash = (filePath) => {
   }
 };
 
-// Helper to perform fetch with timeout
-async function fetchWithTimeout(url, options, timeoutMs) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    return response;
-  } finally {
-    clearTimeout(timeout);
-  }
-}
+const streamFileAsBase64 = async (filePath) => {
+  const encodedChunks = [];
+  let carry = Buffer.alloc(0);
 
-// Local helper to bypass Node global FormData restrictions on streams
-class FormData {
-  constructor() {
-    this.fields = [];
+  for await (const chunk of fs.createReadStream(filePath, { highWaterMark: 1024 * 1024 })) {
+    const bufferedChunk = carry.length ? Buffer.concat([carry, chunk]) : chunk;
+    const remainingBytes = bufferedChunk.length % 3;
+    const encodableLength = bufferedChunk.length - remainingBytes;
+
+    if (encodableLength > 0) {
+      encodedChunks.push(bufferedChunk.subarray(0, encodableLength).toString('base64'));
+    }
+
+    carry = remainingBytes > 0 ? bufferedChunk.subarray(encodableLength) : Buffer.alloc(0);
   }
-  append(name, value, filename) {
-    this.fields.push({ name, value, filename });
+
+  if (carry.length > 0) {
+    encodedChunks.push(carry.toString('base64'));
   }
-}
+
+  return encodedChunks.join('');
+};
+
+const complaintImageResponseFormat = {
+  type: 'json_schema',
+  json_schema: {
+    name: 'civic_issue_image_analysis',
+    strict: true,
+    schema: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        title: {
+          type: 'string',
+          description: 'A concise, short title summarizing the civic breakdown.',
+        },
+        description: {
+          type: 'string',
+          description: 'A detailed narrative describing the visual civic issue.',
+        },
+        department: {
+          type: 'string',
+          enum: DEPARTMENTS,
+          description: 'The e-governance department responsible for routing this issue.',
+        },
+        priority: {
+          type: 'string',
+          enum: PRIORITIES,
+          description: 'The operational response priority for the issue.',
+        },
+        confidence: {
+          type: 'integer',
+          minimum: 0,
+          maximum: 100,
+          description: 'Confidence score for the analysis from 0 to 100.',
+        },
+      },
+      required: ['title', 'description', 'department', 'priority', 'confidence'],
+    },
+  },
+};
+
+const validateComplaintImageAnalysis = (payload) => {
+  if (!payload || typeof payload !== 'object') {
+    throw new AppError('AI analysis response was not a JSON object', 502);
+  }
+
+  const analysis = {
+    title: String(payload.title || '').trim(),
+    description: String(payload.description || '').trim(),
+    department: payload.department,
+    priority: payload.priority,
+    confidence: Number(payload.confidence),
+  };
+
+  if (!analysis.title || !analysis.description) {
+    throw new AppError('AI analysis response missed required text fields', 502);
+  }
+
+  if (!DEPARTMENTS.includes(analysis.department)) {
+    throw new AppError('AI analysis response returned an invalid department', 502);
+  }
+
+  if (!PRIORITIES.includes(analysis.priority)) {
+    throw new AppError('AI analysis response returned an invalid priority', 502);
+  }
+
+  if (!Number.isInteger(analysis.confidence) || analysis.confidence < 0 || analysis.confidence > 100) {
+    throw new AppError('AI analysis response returned an invalid confidence score', 502);
+  }
+
+  return analysis;
+};
 
 const analyzeComplaintImage = async (file) => {
   if (!file) {
@@ -50,6 +129,10 @@ const analyzeComplaintImage = async (file) => {
   const filePath = file.path;
   if (!fs.existsSync(filePath)) {
     throw new AppError('File not found on server', 500);
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    throw new AppError('OPENAI_API_KEY is required for image analysis', 500);
   }
 
   try {
@@ -63,21 +146,40 @@ const analyzeComplaintImage = async (file) => {
       }
     }
 
-    // Native readable file stream to handle payload boundaries optimally
-    const fileStream = fs.createReadStream(file.path);
-    const formData = new FormData();
-    formData.append('image', fileStream, file.originalname);
+    const imageBase64 = await streamFileAsBase64(filePath);
+    const mimeType = file.mimetype || 'image/jpeg';
 
-    // Call the vision provider to run the inference
-    const provider = VisionProviderFactory.getProvider();
-    
-    // We execute the call wrapped with our timeout safety envelope set to 60000ms
-    const result = await provider.analyzeImage({
-      ...file,
-      stream: fileStream,
-      formData,
-      timeoutMs: 60000
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      max_tokens: 500,
+      response_format: complaintImageResponseFormat,
+      messages: [
+        {
+          role: 'developer',
+          content: 'Audit the submitted civic issue image for e-governance routing. Identify the visible municipal breakdown, write citizen-ready complaint metadata, and route it only to one of these departments: Roads, Water Supply, Electricity, Sanitation, Health, Transport. Use priority low, medium, or high based on public safety, service disruption, and urgency.',
+        },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: 'Analyze this civic complaint image and return the structured routing payload.',
+            },
+            {
+              type: 'image_url',
+              image_url: {
+                url: `data:${mimeType};base64,${imageBase64}`,
+                detail: 'low',
+              },
+            },
+          ],
+        },
+      ],
     });
+
+    const content = completion.choices?.[0]?.message?.content;
+    const result = validateComplaintImageAnalysis(JSON.parse(content));
 
     // Save to cache
     if (imageHash && result) {
@@ -91,16 +193,10 @@ const analyzeComplaintImage = async (file) => {
     return result;
   } catch (error) {
     logger.error('AI vision analysis request error', { message: error.message, stack: error.stack });
-    return {
-      title: '',
-      category: 'Emergency Hazard',
-      department: 'Emergency Response',
-      severity: 'low',
-      priority: 'low',
-      confidence: 0,
-      emergency: false,
-      explanation: ['Vision Provider failed: ' + error.message]
-    };
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('AI vision analysis failed', 502);
   }
 };
 

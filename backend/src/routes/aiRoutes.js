@@ -6,7 +6,6 @@ const { validate } = require('../middleware/validate');
 const { recommendOfficerSchema, detectSpamSchema, spamActionSchema, updateSettingsSchema } = require('../validators');
 const { 
   analyzeImage, 
-  analyzeImageStream,
   getAiHealth,
   predictResolutionController,
   getSeverityController,
@@ -25,8 +24,6 @@ const router = express.Router();
 
 router.post('/analyze', protect, upload.single('image'), compressImage, analyzeImage);
 router.post('/analyze-pipeline', protect, upload.single('image'), compressImage, analyzeComplaintPipeline);
-router.get('/analyze-stream/:analysisId', protect, analyzeImageStream);
-router.get('/stream/:jobId', protect, analyzeImageStream);
 router.get('/job/:jobId', protect, getJobStatusController);
 router.get('/health', protect, getAiHealth);
 router.post('/predict-resolution', protect, predictResolutionController);
