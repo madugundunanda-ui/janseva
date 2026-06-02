@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { Observable, throwError, timer } from 'rxjs';
+import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ApiService } from './api.service';
 import {
@@ -15,6 +15,7 @@ import {
   providedIn: 'root',
 })
 export class AiService {
+  private readonly apiUrl = environment.apiUrl;
   public pipelineProgress = signal<number>(0);
   public classificationStatus = signal<string>('IDLE');
 
@@ -25,7 +26,61 @@ export class AiService {
 
   private buildApiUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${environment.apiUrl}${normalizedPath}`;
+    return `${this.apiUrl}${normalizedPath}`;
+  }
+
+  private extractJobId(response: any): string | null {
+    return response?.jobId || response?.data?.jobId || response?.job?.id || response?.analysisId || null;
+  }
+
+  private normalizeJobStatus(response: any): any {
+    const rawStatus =
+      response?.verificationStatus ||
+      response?.aiVerification?.verificationStatus ||
+      response?.status ||
+      response?.complaint?.verificationStatus ||
+      response?.complaint?.aiVerification?.verificationStatus ||
+      '';
+
+    return {
+      ...response,
+      verificationStatus: rawStatus,
+      category: response?.category || response?.complaint?.category || response?.complaint?.department,
+      title: response?.title || response?.complaint?.title,
+      description: response?.description || response?.complaint?.description,
+      department: response?.department || response?.complaint?.department,
+      priority: response?.priority || response?.complaint?.priority,
+      confidence: response?.confidence ?? response?.complaint?.confidence ?? 0,
+    };
+  }
+
+  private isTerminalSuccess(status: string): boolean {
+    const normalizedStatus = String(status || '').toLowerCase();
+    return normalizedStatus === 'verified' || normalizedStatus === 'completed';
+  }
+
+  private isTerminalFailure(status: string): boolean {
+    const normalizedStatus = String(status || '').toLowerCase();
+    return normalizedStatus === 'failed' || normalizedStatus === 'rejected';
+  }
+
+  private pollJobStatus(jobId: string): Observable<AiResult> {
+    return timer(0, 2000).pipe(
+      switchMap(() => this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`))),
+      map((response) => this.normalizeJobStatus(response)),
+      tap((response) => {
+        if (this.isTerminalFailure(response.verificationStatus)) {
+          throw new Error('AI background categorization failed');
+        }
+      }),
+      filter((response) => this.isTerminalSuccess(response.verificationStatus)),
+      take(1),
+      map((response) => {
+        this.pipelineProgress.set(100);
+        this.classificationStatus.set('DONE');
+        return response as AiResult;
+      })
+    );
   }
 
   private triggerImageAnalysis(file: File, route = '/ai/analyze'): Observable<AiResult> {
@@ -36,11 +91,15 @@ export class AiService {
     this.classificationStatus.set('RUNNING');
 
     return this.http.post<AiResult>(this.buildApiUrl(route), formData).pipe(
-      map((res) => {
+      tap((res) => {
         this.pipelineProgress.set(100);
         this.classificationStatus.set('PROCESSING_BACKGROUND');
-        return res;
+        const jobId = this.extractJobId(res);
+        if (!jobId) {
+          throw new Error('AI job ID missing from response');
+        }
       }),
+      switchMap((res) => this.pollJobStatus(this.extractJobId(res) as string)),
       catchError((err) => {
         this.classificationStatus.set('FAILED');
         return throwError(() => new Error(err?.message ?? 'Analysis pipeline failed'));
@@ -81,7 +140,9 @@ export class AiService {
   }
 
   public getJobStatus(jobId: string): Observable<any> {
-    return this.apiService.get<any>(`/ai/job/${jobId}`);
+    return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`)).pipe(
+      map((response) => this.normalizeJobStatus(response))
+    );
   }
 
   public analyzeImageStream(analysisId: string): Observable<any> {
@@ -89,12 +150,6 @@ export class AiService {
       return throwError(() => new Error('AI job ID missing from response'));
     }
 
-    return this.getJobStatus(analysisId).pipe(
-      map((res: any) => ({
-        status: 'completed',
-        progress: 100,
-        ...(res.complaint || {}),
-      }))
-    );
+    return this.pollJobStatus(analysisId);
   }
 }
