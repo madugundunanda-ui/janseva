@@ -117,6 +117,10 @@ export class AiService {
     return this.apiService.get<any>(`/ai/job/${jobId}`);
   }
 
+  /**
+   * Refactored to utilize a standard HTTP polling workflow to track the background job progress.
+   * This completely avoids the EventSource stream allocation issues and prevents connection hangs.
+   */
   public analyzeImageStream(analysisId: string): Observable<any> {
     return new Observable((observer) => {
       if (!analysisId) {
@@ -124,111 +128,37 @@ export class AiService {
         return;
       }
 
-      const token = this.authService.token();
-      const streamUrl = `${this.apiService.apiUrl}/ai/stream/${analysisId}${token ? '?token=' + encodeURIComponent(token) : ''}`;
-      console.log('[AiService] Connecting to stream:', streamUrl);
+      console.log('[AiService] Polling status updates for job:', analysisId);
 
-      let eventSource: EventSource | null = null;
-      let pollingInterval: any = null;
-      let timeoutTimer: any = null;
-      let isFallbackActive = false;
+      const pollingInterval = setInterval(() => {
+        this.getJobStatus(analysisId).subscribe({
+          next: (res: any) => {
+            console.log('[AiService] Polling status update:', res);
 
-      const startTimeoutTimer = () => {
-        if (timeoutTimer) clearTimeout(timeoutTimer);
-        timeoutTimer = setTimeout(() => {
-          console.warn('[AiService] SSE stream timeout (no updates for 10s). Falling back to polling.');
-          activatePollingFallback();
-        }, 10000);
-      };
+            // Map backend job status response to the structure expected by the component
+            const event = {
+              status: res.status,
+              progress: res.progress,
+              ...res.results
+            };
 
-      const activatePollingFallback = () => {
-        if (isFallbackActive) return;
-        isFallbackActive = true;
-        
-        if (eventSource) {
-          eventSource.close();
-          eventSource = null;
-        }
-        if (timeoutTimer) {
-          clearTimeout(timeoutTimer);
-          timeoutTimer = null;
-        }
+            observer.next(event);
 
-        console.log('[AiService] Polling fallback activated for job:', analysisId);
-        
-        pollingInterval = setInterval(() => {
-          this.getJobStatus(analysisId).subscribe({
-            next: (res: any) => {
-              console.log('[AiService] Polling status update:', res);
-              
-              // Map backend job status response to the structure expected by the component
-              const event = {
-                status: res.status,
-                progress: res.progress,
-                ...res.results
-              };
-              
-              observer.next(event);
-              
-              if (res.status === 'completed' || res.status === 'failed') {
-                clearInterval(pollingInterval);
-                observer.complete();
-              }
-            },
-            error: (err) => {
-              console.error('[AiService] Polling error:', err);
-            }
-          });
-        }, 1500);
-      };
-
-      try {
-        eventSource = new EventSource(streamUrl);
-        console.log('[AiService] EventSource instance created. Connection state:', eventSource.readyState);
-        startTimeoutTimer();
-
-        eventSource.onopen = () => {
-          console.log('[AiService] SSE Stream connection opened successfully (Connected)');
-        };
-
-        eventSource.onmessage = (event) => {
-          console.log('[AiService] SSE Message received');
-          startTimeoutTimer(); // reset timeout on message
-          
-          try {
-            const data = JSON.parse(event.data);
-            observer.next(data);
-            if (data.status === 'completed' || data.status === 'failed') {
-              console.log('[AiService] SSE Stream completed natively (Completed)');
-              if (timeoutTimer) clearTimeout(timeoutTimer);
-              eventSource?.close();
+            if (res.status === 'completed' || res.status === 'failed') {
+              clearInterval(pollingInterval);
               observer.complete();
             }
-          } catch (e) {
-            console.error('[AiService] SSE message parse error:', e);
+          },
+          error: (err) => {
+            console.error('[AiService] Polling error:', err);
+            clearInterval(pollingInterval);
+            observer.error(err);
           }
-        };
-
-        eventSource.onerror = (error) => {
-          console.error('[AiService] SSE Stream error encountered (Error):', error);
-          activatePollingFallback();
-        };
-
-      } catch (err) {
-        console.error('[AiService] EventSource instantiation failed:', err);
-        activatePollingFallback();
-      }
+        });
+      }, 1500);
 
       return () => {
-        if (eventSource) {
-          eventSource.close();
-        }
-        if (pollingInterval) {
-          clearInterval(pollingInterval);
-        }
-        if (timeoutTimer) {
-          clearTimeout(timeoutTimer);
-        }
+        clearInterval(pollingInterval);
       };
     });
   }
