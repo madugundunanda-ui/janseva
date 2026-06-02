@@ -1,8 +1,0 @@
-__pycache__
-*.pyc
-.env
-.git
-.github
-*.egg-info
-dist
-build

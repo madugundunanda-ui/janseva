@@ -514,6 +514,36 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               }
             </div>
 
+            <!-- AI Confidence & Explainability Panel -->
+            @if (showAiStatusSteps && aiStepDuplicateDone && newComplaintData.confidence > 0) {
+              <div class="p-4 rounded-xl border border-cyan-500/20 bg-cyan-950/5 space-y-2.5 font-mono text-[10px] uppercase text-left">
+                <div class="flex justify-between items-center">
+                  <span>AI CONFIDENCE LEVEL:</span>
+                  <span class="font-bold" [ngClass]="{
+                    'text-emerald-400': newComplaintData.confidence >= 70,
+                    'text-red-400 animate-pulse': newComplaintData.confidence < 70
+                  }">
+                    {{ newComplaintData.confidence }}% ({{ newComplaintData.confidence >= 85 ? 'High Confidence' : (newComplaintData.confidence >= 70 ? 'Medium Confidence' : 'Low Confidence') }})
+                  </span>
+                </div>
+                
+                @if (newComplaintData.confidence < 70) {
+                  <div class="p-2 bg-red-950/20 border border-red-500/30 text-red-400 font-bold rounded animate-pulse">
+                    ⚠️ Please review department selection manually.
+                  </div>
+                }
+
+                @if (newComplaintData.severityReason && newComplaintData.severityReason.length > 0) {
+                  <div class="pt-2 border-t border-white/5 space-y-1">
+                    <span class="text-muted-var block">AI EXPLAINABILITY REASONS:</span>
+                    @for (reason of newComplaintData.severityReason; track reason) {
+                      <div class="text-[9px] text-[#6AA9FF]">• {{ reason }}</div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+
             <!-- Title & description -->
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('GRIEVANCE_TITLE') }}</label>
@@ -617,6 +647,7 @@ export class ComplaintsComponent implements OnInit {
     priority: 'medium',
     severityScore: 0,
     severityReason: [] as string[],
+    confidence: 0,
     estimatedDays: 0,
     delayRisk: 'Low',
     duplicateDetected: false
@@ -849,6 +880,7 @@ export class ComplaintsComponent implements OnInit {
                 
                 this.aiPredictedCategory = event.category || '';
                 this.aiPredictedDepartment = event.department || '';
+                this.newComplaintData.confidence = event.confidence || 0;
 
                 if (event.low_confidence) {
                   this.newComplaintData.title = '';
@@ -909,6 +941,7 @@ export class ComplaintsComponent implements OnInit {
                   this.newComplaintData.department = '';
                   this.aiPredictedCategory = '';
                   this.aiPredictedDepartment = '';
+                  this.newComplaintData.confidence = event.confidence || 0;
                 } else {
                   this.newComplaintData.title = event.title || this.newComplaintData.title;
                   this.newComplaintData.description = event.description || this.newComplaintData.description;
@@ -919,6 +952,7 @@ export class ComplaintsComponent implements OnInit {
                   this.newComplaintData.priority = event.priority || this.newComplaintData.priority;
                   this.newComplaintData.severityScore = event.severityScore || this.newComplaintData.severityScore;
                   this.newComplaintData.severityReason = event.reasons || this.newComplaintData.severityReason;
+                  this.newComplaintData.confidence = event.confidence || 0;
                   this.aiPredictedCategory = event.category || '';
                   this.aiPredictedDepartment = event.department || '';
                 }

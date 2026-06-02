@@ -5,4 +5,6 @@ module.exports = {
   Feedback: require('./Feedback'),
   Announcement: require('./Announcement'),
   Hotspot: require('./Hotspot'),
+  AiCache: require('./AiCache'),
+  AiAuditLog: require('./AiAuditLog'),
 };

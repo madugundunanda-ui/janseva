@@ -36,25 +36,14 @@ const healthDeep = async (req, res) => {
     healthy = false;
   }
 
-  // 2. AI Service reachability
-  try {
-    const aiUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
-
-    const response = await fetch(`${aiUrl}/health`, { signal: controller.signal });
-    clearTimeout(timeout);
-
-    checks.aiService = {
-      status: response.ok ? 'healthy' : 'degraded',
-      statusCode: response.status,
-      url: aiUrl,
-    };
-    if (!response.ok) healthy = false;
-  } catch (err) {
-    checks.aiService = { status: 'unreachable', error: err.message };
-    // AI service being unreachable doesn't make the app unhealthy — just degraded
-  }
+  // 2. AI Service status
+  const provider = (process.env.VISION_PROVIDER || 'gemini').toLowerCase();
+  const hasApiKey = !!process.env.GEMINI_API_KEY;
+  checks.aiService = {
+    status: (provider === 'gemini' && !hasApiKey) ? 'degraded' : 'healthy',
+    provider,
+    apiKeyConfigured: hasApiKey
+  };
 
   // 3. System resources
   const memUsage = process.memoryUsage();

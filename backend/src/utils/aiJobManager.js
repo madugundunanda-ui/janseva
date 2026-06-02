@@ -6,8 +6,6 @@ const { analyzeComplaintImage, predictResolution, calculateSeverity } = require(
 const { Complaint, Department } = require('../models');
 const logger = require('./logger');
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-
 class AIJobManager extends EventEmitter {
   constructor() {
     super();
@@ -114,9 +112,10 @@ class AIJobManager extends EventEmitter {
         low_confidence: !!prediction.low_confidence,
         category: prediction.category || '',
         broadCategory: prediction.broad_category || '',
-        classificationReasons: Array.isArray(prediction.reasons) ? prediction.reasons : [],
+        classificationReasons: Array.isArray(prediction.reasons) ? prediction.reasons : (Array.isArray(prediction.explanation) ? prediction.explanation : []),
         qualityChecks: prediction.quality_checks || {},
-        topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : []
+        topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : [],
+        emergency: !!prediction.emergency
       };
 
       this.emit(jobId, { 
@@ -187,7 +186,13 @@ class AIJobManager extends EventEmitter {
       // Execute secondary jobs concurrently
       await Promise.all([severityPromise, resolutionPromise]);
 
-      // Execute duplicate check using the resolved department
+      // If emergency is flagged by AI, override priority to urgent/critical
+      if (job.results.emergency) {
+        job.results.priority = 'critical';
+        job.results.severityScore = 95;
+      }
+
+      // Execute duplicate check using the resolved department and coordinates
       const duplicateResult = await this._checkDuplicatesInternal(job);
       job.results.duplicateDetected = duplicateResult.duplicateDetected;
       job.results.bestMatch = duplicateResult.bestMatch;
@@ -205,6 +210,25 @@ class AIJobManager extends EventEmitter {
       // Cache results
       if (job.hash) {
         this.cachePrediction(job.hash, job.results);
+      }
+
+      // Log AI inference to AiAuditLog collection
+      try {
+        const { AiAuditLog, Complaint } = require('../models');
+        const draft = await Complaint.findOne({ image: `/uploads/complaints/${job.file.filename}` });
+        if (draft) {
+          await AiAuditLog.create({
+            complaintId: draft._id,
+            provider: process.env.VISION_PROVIDER === 'mock' ? 'Mock' : 'Gemini',
+            confidence: job.results.confidence || 0,
+            department: job.results.department || 'General Inquiry',
+            priority: job.results.priority || 'medium',
+            reasons: job.results.classificationReasons || []
+          });
+          logger.info('[AI-AUDIT-LOG] AI inference logged to database', { complaintId: draft._id });
+        }
+      } catch (logErr) {
+        logger.error('[AI-AUDIT-LOG] Failed to create audit log', { error: logErr.message });
       }
 
       this.emit(jobId, { status: 'completed', progress: 100, ...job.results });
@@ -225,56 +249,59 @@ class AIJobManager extends EventEmitter {
       const dept = await Department.findOne({ name: { $regex: new RegExp(job.results.department, 'i') } });
       if (dept) departmentId = dept._id;
 
-      if (!departmentId) {
+      if (!departmentId || job.lat == null || job.lng == null) {
         return { duplicateDetected: false, bestMatch: null };
       }
 
-      // Query active complaints
+      // Query active complaints in last 24 hours
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const activeComplaints = await Complaint.find({
         department: departmentId,
         status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
-      }).populate('department', 'name');
+        createdAt: { $gte: oneDayAgo },
+        'location.latitude': { $exists: true },
+        'location.longitude': { $exists: true }
+      });
 
       if (activeComplaints.length === 0) {
         return { duplicateDetected: false, bestMatch: null };
       }
 
-      // Map to payload structure
-      const existingPayload = activeComplaints.map(c => ({
-        id: c._id.toString(),
-        title: c.title,
-        description: c.description,
-        image_path: c.image ? path.join(__dirname, '..', c.image.startsWith('/') ? c.image.slice(1) : c.image) : '',
-        lat: c.location?.coordinates?.lat || null,
-        lng: c.location?.coordinates?.lng || null,
-        department_name: c.department?.name || 'General',
-        status: c.status,
-        affected_count: c.affectedCitizens || 1
-      }));
+      // Proximity check (within 500 meters)
+      const R = 6371; // radius in km
+      const matches = [];
 
-      // Call Python duplicate detection endpoint
-      const response = await fetch(`${AI_SERVICE_URL}/check-duplicate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: job.results.title,
-          description: job.results.description,
-          image_path: job.file.path,
-          lat: job.lat,
-          lng: job.lng,
-          existing_complaints: existingPayload
-        })
-      });
+      for (const c of activeComplaints) {
+        const cLat = c.location.latitude;
+        const cLng = c.location.longitude;
+        
+        const dLat = (cLat - job.lat) * Math.PI / 180;
+        const dLng = (cLng - job.lng) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(job.lat * Math.PI / 180) * Math.cos(cLat * Math.PI / 180) *
+                  Math.sin(dLng/2) * Math.sin(dLng/2);
+        const circumference = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        const distanceMeters = R * circumference * 1000;
 
-      if (!response.ok) {
-        return { duplicateDetected: false, bestMatch: null };
+        if (distanceMeters <= 500) {
+          matches.push({
+            id: c._id.toString(),
+            title: c.title,
+            distanceMeters: Math.round(distanceMeters)
+          });
+        }
       }
 
-      const data = await response.json();
-      return {
-        duplicateDetected: !!data.duplicate_detected,
-        bestMatch: data.best_match || null
-      };
+      if (matches.length > 0) {
+        matches.sort((a, b) => a.distanceMeters - b.distanceMeters);
+        logger.info(`[DUPLICATE-DETECTOR] Found ${matches.length} similar complaints nearby within 500m.`);
+        return {
+          duplicateDetected: true,
+          bestMatch: matches[0]
+        };
+      }
+
+      return { duplicateDetected: false, bestMatch: null };
     } catch (err) {
       logger.error('Failed checking duplicates in background job', { error: err.message });
       return { duplicateDetected: false, bestMatch: null };
@@ -282,5 +309,4 @@ class AIJobManager extends EventEmitter {
   }
 }
 
-// Singleton instance
 module.exports = new AIJobManager();

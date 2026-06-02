@@ -5,6 +5,7 @@ const assignmentService = require('../services/assignmentService');
 const { resolveDepartmentId } = require('../services/dashboardService');
 const aiService = require('../services/aiService');
 const { sendSuccess } = require('../utils/apiResponse');
+const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
 
