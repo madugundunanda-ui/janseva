@@ -64,53 +64,55 @@ const analyzeImage = asyncHandler(async (req, res) => {
     }
   });
 
-  // Create background AI job and return ID for frontend SSE subscription.
-  const jobId = aiJobManager.createJob(req.file, address, latitude, longitude);
-  console.log('JOB CREATED', jobId);
+  const jobId = draftComplaint._id.toString();
+
+  // Create background AI job in aiJobManager for UI EventSource/SSE compatibility
+  aiJobManager.createJob(req.file, address, latitude, longitude, jobId);
   logger.info('AI job created', { jobId, image });
 
-  // Return explicit job fields for frontend compatibility.
-  return res.status(202).json({
-    success: true,
-    status: 'Pending',
-    jobId,
-    analysisId: jobId,
-    job: { id: jobId },
-    data: { jobId },
-    tempImagePath: image,
-  });
-
-  // 3-4. Move and wrap the analyzeComplaintImage execution block inside setImmediate
+  // Detach heavy cloud execution from active request-response lifecycle
   setImmediate(async () => {
     try {
-      const results = await aiService.analyzeComplaintImage(req.file);
+      const extraction = await aiService.analyzeComplaintImage(req.file);
       
       let resolvedDeptId = placeholderDeptId;
-      if (results.department) {
-        resolvedDeptId = await resolveDepartmentId(results.department);
+      if (extraction.department) {
+        resolvedDeptId = await resolveDepartmentId(extraction.department);
         if (!resolvedDeptId) {
           resolvedDeptId = placeholderDeptId;
         }
       }
 
-      // Asynchronously save the returned title, description, and department metrics directly to the MongoDB record
-      draftComplaint.title = results.title || "Civic Grievance";
-      draftComplaint.description = results.description || draftComplaint.description;
+      // Asynchronously save the returned title, category description, and department fields back to the MongoDB document
+      draftComplaint.title = extraction.title || "Civic Grievance";
+      draftComplaint.description = extraction.description || draftComplaint.description;
       draftComplaint.department = resolvedDeptId;
-      draftComplaint.priority = (results.priority || 'medium').toLowerCase();
-      draftComplaint.severityScore = results.severityScore || draftComplaint.severityScore;
-      draftComplaint.severityReason = results.reasons || draftComplaint.severityReason;
+      draftComplaint.priority = (extraction.priority || 'medium').toLowerCase();
+      draftComplaint.severityScore = extraction.severityScore || draftComplaint.severityScore;
+      draftComplaint.severityReason = extraction.reasons || draftComplaint.severityReason;
       
       draftComplaint.aiVerification = {
         verificationStatus: 'Completed',
-        predictedDepartment: results.department || 'General Inquiry',
-        confidenceScore: results.confidence || 0
+        predictedDepartment: extraction.department || 'General Inquiry',
+        confidenceScore: extraction.confidence || 0
       };
 
       await draftComplaint.save();
     } catch (err) {
-      console.error("[Background Ingestion Error] Asynchronous processing pass failed:", err.message);
+      console.error("[Background Thread Alert] Asynchronous auto-fill extraction pass failed:", err.message);
     }
+  });
+
+  // IMMEDIATELY return a clean 202 Accepted HTTP response directly to the user frontend
+  return res.status(202).json({
+    success: true,
+    message: "Visual token ingestion complete. Advanced extraction delegated asynchronously.",
+    jobId: draftComplaint._id,
+    status: "Pending",
+    tempImagePath: image,
+    analysisId: jobId,
+    job: { id: jobId },
+    data: { jobId }
   });
 });
 

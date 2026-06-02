@@ -44,8 +44,8 @@ class AIJobManager extends EventEmitter {
     logger.info('Cached AI predictions for hash', { hash: hash.substring(0, 10) });
   }
 
-  createJob(file, locationStr = '', lat = null, lng = null) {
-    const jobId = `job_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  createJob(file, locationStr = '', lat = null, lng = null, customJobId = null) {
+    const jobId = customJobId || `job_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const hash = this.getFileHash(file.path);
     
     const job = {
