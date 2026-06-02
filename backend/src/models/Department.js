@@ -5,7 +5,6 @@ const departmentSchema = new mongoose.Schema(
     name: {
       type: String,
       required: [true, 'Department name is required'],
-      unique: true,
       trim: true,
     },
     description: {
@@ -14,7 +13,6 @@ const departmentSchema = new mongoose.Schema(
     },
     code: {
       type: String,
-      unique: true,
       trim: true,
     },
     status: {
@@ -28,10 +26,18 @@ const departmentSchema = new mongoose.Schema(
         ref: 'User',
       },
     ],
+    tenantId: {
+      type: String,
+      default: 'default-municipality',
+      index: true,
+    },
   },
   {
     timestamps: true,
   },
 );
+
+departmentSchema.index({ name: 1, tenantId: 1 }, { unique: true });
+departmentSchema.index({ code: 1, tenantId: 1 }, { unique: true });
 
 module.exports = mongoose.model('Department', departmentSchema);

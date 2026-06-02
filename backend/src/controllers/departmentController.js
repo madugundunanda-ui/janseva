@@ -22,7 +22,8 @@ const dedupeByName = (items = []) => {
 };
 
 const getDepartments = asyncHandler(async (req, res) => {
-  const savedDepartments = await Department.find().populate('officers', 'name email role');
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const savedDepartments = await Department.find({ tenantId }).populate('officers', 'name email role');
   const data = dedupeByName(savedDepartments);
 
   sendSuccess(res, 200, 'Departments fetched successfully', {
@@ -32,7 +33,8 @@ const getDepartments = asyncHandler(async (req, res) => {
 });
 
 const createDepartment = asyncHandler(async (req, res) => {
-  const department = await Department.create(req.body);
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const department = await Department.create({ ...req.body, tenantId });
 
   sendSuccess(res, 201, 'Department created successfully', {
     department,
@@ -40,13 +42,19 @@ const createDepartment = asyncHandler(async (req, res) => {
 });
 
 const updateDepartment = asyncHandler(async (req, res) => {
-  const department = await Department.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const department = await Department.findOneAndUpdate(
+    { _id: req.params.id, tenantId },
+    req.body,
+    { new: true, runValidators: true }
+  );
   if (!department) return res.status(404).json({ success: false, message: 'Department not found' });
   sendSuccess(res, 200, 'Department updated successfully', { department });
 });
 
 const deleteDepartment = asyncHandler(async (req, res) => {
-  const department = await Department.findById(req.params.id);
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const department = await Department.findOne({ _id: req.params.id, tenantId });
   if (!department) return res.status(404).json({ success: false, message: 'Department not found' });
   
   if (department.officers && department.officers.length > 0) {

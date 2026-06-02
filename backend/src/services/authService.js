@@ -116,6 +116,7 @@ const sanitizeUser = (user) => ({
   profilePhotoUrl: user.profilePhotoUrl,
   trustScore: user.trustScore,
   trustLevel: user.trustLevel,
+  tenantId: user.tenantId,
 });
 
 module.exports = {

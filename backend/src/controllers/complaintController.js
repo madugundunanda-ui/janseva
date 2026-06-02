@@ -35,6 +35,9 @@ const parseJsonField = (value, fieldName) => {
 const getComplaints = asyncHandler(async (req, res) => {
   const filter = {};
 
+  const tenantId = req.user.tenantId || 'default-municipality';
+  filter.tenantId = tenantId;
+
   if (req.user.role === 'citizen') filter.citizen = req.user._id;
   if (req.user.role === 'officer') filter.assignedOfficer = req.user._id;
   if (req.user.role === 'supervisor' && req.user.department) filter.department = req.user.department;
@@ -290,7 +293,8 @@ const createComplaint = asyncHandler(async (req, res) => {
       verificationStatus: 'Pending',
       predictedDepartment: '',
       confidenceScore: 0
-    }
+    },
+    tenantId: req.user.tenantId || 'default-municipality'
   });
 
   logger.info('Complaint created', {
@@ -622,6 +626,12 @@ const assignSupervisor = asyncHandler(async (req, res) => {
 const updateComplaint = asyncHandler(async (req, res) => {
   const complaint = await Complaint.findById(req.params.id);
   if (!complaint) throw new AppError('Complaint not found', 404);
+
+  const tenantId = req.user.tenantId || 'default-municipality';
+  if (complaint.tenantId !== tenantId) {
+    throw new AppError('Not authorized to update this complaint (tenant mismatch)', 403);
+  }
+
   const previousStatus = complaint.status;
 
   const allowedFields = ['status', 'priority', 'resolutionNote', 'slaDeadline'];
@@ -889,7 +899,8 @@ const getNearbyComplaints = asyncHandler(async (req, res) => {
         key: 'location.geoPoint',
         query: {
           status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
-          citizen: { $ne: req.user._id }
+          citizen: { $ne: req.user._id },
+          tenantId: req.user.tenantId || 'default-municipality'
         }
       }
     },
@@ -1050,6 +1061,11 @@ const getComplaintById = asyncHandler(async (req, res) => {
 
   if (!complaint) {
     throw new AppError('Complaint not found', 404);
+  }
+
+  const tenantId = req.user.tenantId || 'default-municipality';
+  if (complaint.tenantId !== tenantId) {
+    throw new AppError('Not authorized to view this complaint (tenant mismatch)', 403);
   }
 
   // Auth role restrictions

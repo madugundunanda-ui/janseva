@@ -45,6 +45,11 @@ const announcementSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    tenantId: {
+      type: String,
+      default: 'default-municipality',
+      index: true,
+    },
   },
   {
     timestamps: true,

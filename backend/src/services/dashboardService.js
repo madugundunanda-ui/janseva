@@ -25,6 +25,9 @@ const statusMap = {
 const getDashboardStats = async (user) => {
   const filter = {};
 
+  const tenantId = user?.tenantId || 'default-municipality';
+  filter.tenantId = tenantId;
+
   if (user) {
     if (user.role === 'citizen') {
       filter.citizen = user._id;
@@ -62,14 +65,14 @@ const getDashboardStats = async (user) => {
   if (user && user.role === 'admin') {
     const { User, Announcement } = require('../models');
     const [officers, supervisors, departments, recentComplaints, recentAnnouncements, mostAffectedIssues, problematicAreas, spamCount, blockedCount, totalCitizens, trustedCount, normalCount, warningCount, restrictedCount] = await Promise.all([
-      User.countDocuments({ role: 'officer', activeStatus: true }),
-      User.countDocuments({ role: 'supervisor', activeStatus: true }),
-      Department.countDocuments({ status: 'active' }),
+      User.countDocuments({ role: 'officer', activeStatus: true, tenantId }),
+      User.countDocuments({ role: 'supervisor', activeStatus: true, tenantId }),
+      Department.countDocuments({ status: 'active', tenantId }),
       Complaint.find(filter).sort({ createdAt: -1 }).limit(5).populate('citizen', 'firstName lastName email phone currentAddress permanentAddress age gender occupation aadhaarNumber').populate('department', 'name'),
-      Announcement.find().sort({ createdAt: -1 }).limit(5),
+      Announcement.find({ tenantId }).sort({ createdAt: -1 }).limit(5),
       Complaint.find(filter).sort({ affectedCitizens: -1, createdAt: -1 }).limit(5).populate('citizen', 'firstName lastName email phone currentAddress permanentAddress age gender occupation aadhaarNumber').populate('department', 'name'),
       Complaint.aggregate([
-        { $match: { status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] } } },
+        { $match: { status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] }, tenantId } },
         {
           $group: {
             _id: { $ifNull: ['$location.address', 'Unknown Area'] },
@@ -79,13 +82,13 @@ const getDashboardStats = async (user) => {
         { $sort: { count: -1 } },
         { $limit: 5 }
       ]),
-      Complaint.countDocuments({ 'spamAnalysis.isSpam': true }),
-      User.countDocuments({ role: 'citizen', restricted: true }),
-      User.countDocuments({ role: 'citizen' }),
-      User.countDocuments({ role: 'citizen', trustScore: { $gte: 95 } }),
-      User.countDocuments({ role: 'citizen', trustScore: { $gte: 70, $lt: 95 } }),
-      User.countDocuments({ role: 'citizen', trustScore: { $gte: 40, $lt: 70 } }),
-      User.countDocuments({ role: 'citizen', trustScore: { $lt: 40 } })
+      Complaint.countDocuments({ 'spamAnalysis.isSpam': true, tenantId }),
+      User.countDocuments({ role: 'citizen', restricted: true, tenantId }),
+      User.countDocuments({ role: 'citizen', tenantId }),
+      User.countDocuments({ role: 'citizen', trustScore: { $gte: 95 }, tenantId }),
+      User.countDocuments({ role: 'citizen', trustScore: { $gte: 70, $lt: 95 }, tenantId }),
+      User.countDocuments({ role: 'citizen', trustScore: { $gte: 40, $lt: 70 }, tenantId }),
+      User.countDocuments({ role: 'citizen', trustScore: { $lt: 40 }, tenantId })
     ]);
 
     const citizensTotal = totalCitizens || 1;

@@ -101,46 +101,45 @@ class AIJobManager extends EventEmitter {
       job.progress = 10;
       this.emit(jobId, { status: 'upload_complete', progress: 10, message: 'Image uploaded successfully' });
 
-      logger.info('Starting concurrent inference pipeline...', { jobId });
+      logger.info('Starting structured inference pipeline...', { jobId });
 
-      // Run core prediction, severity calculation, and resolution prediction in parallel
-      const predictionPromise = analyzeComplaintImage(job.file).then(prediction => {
-        job.results = {
-          ...job.results,
-          title: prediction.title || '',
-          description: prediction.description || 'Unable to confidently identify issue type. Please select the category and fill details manually.',
-          department: prediction.department || 'General Inquiry',
-          confidence: Number.isFinite(prediction.confidence) ? prediction.confidence : 0,
-          low_confidence: !!prediction.low_confidence,
-          category: prediction.category || '',
-          broadCategory: prediction.broad_category || '',
-          classificationReasons: Array.isArray(prediction.reasons) ? prediction.reasons : [],
-          qualityChecks: prediction.quality_checks || {},
-          topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : []
-        };
-        
-        this.emit(jobId, { 
-          status: 'detecting_issue', 
-          progress: 40, 
-          title: job.results.title,
-          description: job.results.description,
-          department: job.results.department,
-          confidence: job.results.confidence,
-          low_confidence: job.results.low_confidence,
-          category: job.results.category,
-          broad_category: job.results.broadCategory,
-          reasons: job.results.classificationReasons,
-          quality_checks: job.results.qualityChecks,
-          top_k_predictions: job.results.topKPredictions
-        });
-        return prediction;
+      // Step 1: Run vision prediction first to get details
+      const prediction = await analyzeComplaintImage(job.file);
+      job.results = {
+        ...job.results,
+        title: prediction.title || '',
+        description: prediction.description || 'Unable to confidently identify issue type. Please select the category and fill details manually.',
+        department: prediction.department || 'General Inquiry',
+        confidence: Number.isFinite(prediction.confidence) ? prediction.confidence : 0,
+        low_confidence: !!prediction.low_confidence,
+        category: prediction.category || '',
+        broadCategory: prediction.broad_category || '',
+        classificationReasons: Array.isArray(prediction.reasons) ? prediction.reasons : [],
+        qualityChecks: prediction.quality_checks || {},
+        topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : []
+      };
+
+      this.emit(jobId, { 
+        status: 'detecting_issue', 
+        progress: 40, 
+        title: job.results.title,
+        description: job.results.description,
+        department: job.results.department,
+        confidence: job.results.confidence,
+        low_confidence: job.results.low_confidence,
+        category: job.results.category,
+        broad_category: job.results.broadCategory,
+        reasons: job.results.classificationReasons,
+        quality_checks: job.results.qualityChecks,
+        top_k_predictions: job.results.topKPredictions
       });
 
+      // Step 2: Use actual results from vision analysis for severity and resolution predictions in parallel
       const severityPromise = calculateSeverity({
-        title: job.locationStr || 'Civic Issue',
-        description: job.locationStr || 'Civic Issue',
+        title: job.results.title || job.locationStr || 'Civic Issue',
+        description: job.results.description || job.locationStr || 'Civic Issue',
         location: job.locationStr,
-        department: 'General Operations',
+        department: job.results.department,
         activeComplaints: 0,
         areaComplaints: 0,
         peopleAffected: 1,
@@ -164,8 +163,8 @@ class AIJobManager extends EventEmitter {
       });
 
       const resolutionPromise = predictResolution({
-        department: 'General Operations',
-        priority: 'medium',
+        department: job.results.department,
+        priority: job.results.priority || 'medium',
         activeComplaints: Math.floor(Math.random() * 8) + 1,
         areaComplaints: Math.floor(Math.random() * 12) + 2
       }).then(resPrediction => {
@@ -185,8 +184,8 @@ class AIJobManager extends EventEmitter {
         return resPrediction;
       });
 
-      // Execute primary jobs concurrently
-      await Promise.all([predictionPromise, severityPromise, resolutionPromise]);
+      // Execute secondary jobs concurrently
+      await Promise.all([severityPromise, resolutionPromise]);
 
       // Execute duplicate check using the resolved department
       const duplicateResult = await this._checkDuplicatesInternal(job);

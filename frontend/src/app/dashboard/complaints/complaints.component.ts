@@ -802,14 +802,31 @@ export class ComplaintsComponent implements OnInit {
       formData.append('lat', String(this.capturedCoordinates.lat));
       formData.append('lng', String(this.capturedCoordinates.lng));
 
-      this.apiService.postForm<{ success: boolean; analysisId: string; tempImagePath: string }>('/ai/analyze', formData).subscribe({
+      this.apiService.postForm<any>('/ai/analyze', formData).subscribe({
         next: (res) => {
-          const analysisId = res.analysisId;
-          this.tempImagePath = res.tempImagePath;
-          if (this.aiProgress < 20) this.aiProgress = 20;
+          try {
+            console.log('UPLOAD RESPONSE');
+            console.log(res);
+            console.log('AI RESPONSE', res);
 
-          // 2. Connect to SSE stream
-          this.aiStreamSub = this.aiService.analyzeImageStream(analysisId).subscribe({
+            const jobId =
+              res?.jobId ||
+              res?.data?.jobId ||
+              res?.job?.id ||
+              res?.analysisId;
+
+            console.log('JOB ID');
+            console.log(jobId);
+
+            if (!jobId) {
+              throw new Error('AI job ID missing from response');
+            }
+
+            this.tempImagePath = res.tempImagePath;
+            if (this.aiProgress < 20) this.aiProgress = 20;
+
+            // 2. Connect to SSE stream
+            this.aiStreamSub = this.aiService.analyzeImageStream(jobId).subscribe({
             next: (event: any) => {
               this.aiProgress = event.progress || this.aiProgress;
               
@@ -903,14 +920,23 @@ export class ComplaintsComponent implements OnInit {
               this.aiStepSeverity = false;
               this.aiStepETA = false;
               this.aiStepDuplicate = false;
-              this.aiTimeoutMessage = 'AI analysis timed out or failed. Please select category and fill details manually.';
+              this.aiTimeoutMessage = 'AI processing unavailable. Please continue manually.';
             }
-          });
+            });
+          } catch (err) {
+            console.error('Failed to map AI job response:', err);
+            if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
+            this.aiStepDetecting = false;
+            this.aiStepSeverity = false;
+            this.aiStepETA = false;
+            this.aiStepDuplicate = false;
+            this.aiTimeoutMessage = 'AI processing unavailable. Please continue manually.';
+          }
         },
         error: (err) => {
           console.error('Failed to initialize AI analysis job:', err);
           if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
-          this.aiTimeoutMessage = 'Failed to initiate AI suggestions.';
+          this.aiTimeoutMessage = 'AI processing unavailable. Please continue manually.';
         }
       });
     }

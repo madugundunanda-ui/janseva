@@ -111,7 +111,16 @@ export class AiService {
 
   public analyzeImageStream(analysisId: string): Observable<any> {
     return new Observable((observer) => {
-      const url = `${this.apiService.apiUrl}/ai/stream/${analysisId}`;
+      if (!analysisId) {
+        observer.error(new Error('AI job ID missing from response'));
+        return;
+      }
+
+      const streamUrl = `${this.apiService.apiUrl}/ai/stream/${analysisId}`;
+      console.log('STREAM URL');
+      console.log(streamUrl);
+
+      const url = streamUrl;
       const eventSource = new EventSource(url);
       
       eventSource.onmessage = (event) => {

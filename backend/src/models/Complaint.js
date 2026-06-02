@@ -220,6 +220,11 @@ const complaintSchema = new mongoose.Schema(
         default: 0,
       },
     },
+    tenantId: {
+      type: String,
+      default: 'default-municipality',
+      index: true,
+    },
   },
   {
     timestamps: true,

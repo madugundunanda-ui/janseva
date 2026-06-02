@@ -152,6 +152,11 @@ const userSchema = new mongoose.Schema(
       enum: ['Trusted', 'Normal', 'Warning', 'Restricted'],
       default: 'Trusted',
     },
+    tenantId: {
+      type: String,
+      default: 'default-municipality',
+      index: true,
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },

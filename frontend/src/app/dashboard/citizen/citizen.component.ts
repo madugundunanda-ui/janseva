@@ -5,10 +5,11 @@ import { AuthService } from '../../core/services/auth.service';
 import { ComplaintsService } from '../../core/services/complaints.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { Complaint } from '../../core/services/api.service';
+import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.component';
 
 @Component({
   selector: 'app-citizen',
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, VoiceAssistantComponent],
   template: `
     <div class="space-y-6 pb-12">
       <!-- Welcome Hero Banner -->
@@ -105,6 +106,9 @@ import { Complaint } from '../../core/services/api.service';
           }
         </div>
       </div>
+
+      <!-- Multilingual Voice Assistant Co-Pilot -->
+      <app-voice-assistant></app-voice-assistant>
     </div>
   `,
   styles: [`

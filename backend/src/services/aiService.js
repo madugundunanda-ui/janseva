@@ -4,6 +4,7 @@ const { Blob } = require('buffer');
 const axios = require('axios');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
+const VisionProviderFactory = require('./vision/VisionProviderFactory');
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
 
@@ -121,77 +122,25 @@ const analyzeComplaintImage = async (file) => {
     };
   }
 
-  // Health pre-check: verify Python AI service is alive before sending image
   try {
-    const healthController = new AbortController();
-    const healthTimeout = setTimeout(() => healthController.abort(), 2000);
-    const healthRes = await fetch(`${AI_SERVICE_URL}/health`, { signal: healthController.signal });
-    clearTimeout(healthTimeout);
-    if (!healthRes.ok) {
-      logger.warn('[AI-SERVICE] Python AI service health check returned non-OK status — returning fallback');
-      return {
-        success: true,
-        title: 'Issue Detected',
-        description: 'AI analysis temporarily unavailable. Please add details manually.',
-        department: 'General Inquiry',
-        confidence: 0,
-        priority: 'medium',
-        departmentInput: 'General Inquiry',
-      };
-    }
-    const healthData = await healthRes.json();
-    if (healthData.status !== 'healthy') {
-      logger.warn('[AI-SERVICE] Python AI service is degraded — returning fallback');
-      return {
-        success: true,
-        title: 'Issue Detected',
-        description: 'AI analysis temporarily unavailable. Please add details manually.',
-        department: 'General Inquiry',
-        confidence: 0,
-        priority: 'medium',
-        departmentInput: 'General Inquiry',
-      };
-    }
-  } catch (healthErr) {
-    logger.warn('[AI-SERVICE] Python AI service unreachable — returning fallback', { message: healthErr.message });
+    const provider = VisionProviderFactory.getProvider();
+    const result = await provider.analyzeImage(file);
+    circuitBreaker.recordSuccess();
+    return result;
+  } catch (error) {
+    logger.error('AI vision analysis request error', { message: error.message, stack: error.stack });
+    circuitBreaker.recordFailure();
     return {
-      success: true,
-      title: 'Issue Detected',
-      description: 'AI analysis temporarily unavailable. Please add details manually.',
+      title: '',
+      description: 'Unable to confidently identify issue type. Please select the category and fill details manually.',
       department: 'General Inquiry',
       confidence: 0,
       priority: 'medium',
-      departmentInput: 'General Inquiry',
+      category: '',
+      broad_category: '',
+      low_confidence: true,
+      reasons: ['Vision Provider failed: ' + error.message]
     };
-  }
-
-  // Use a native readable file stream to handle the payload instead
-  const fileStream = fs.createReadStream(file.path);
-  const formData = new FormData();
-  formData.append('image', fileStream, file.originalname);
-
-  try {
-    const response = await fetchWithTimeout(`${AI_SERVICE_URL}/predict`, {
-      method: 'POST',
-      body: formData,
-    }, 60000); // 60s timeout for image analysis
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      logger.error('AI image detection failed', { errorText });
-      circuitBreaker.recordFailure();
-      throw new AppError('AI service failed to process image', 502);
-    }
-
-    const prediction = await response.json();
-    logger.info('AI image detection completed', { prediction });
-    circuitBreaker.recordSuccess();
-    return prediction;
-  } catch (error) {
-    logger.error('AI image detection request error', { message: error.message, stack: error.stack });
-    circuitBreaker.recordFailure();
-    if (error instanceof AppError) throw error;
-    throw new AppError('Failed to communicate with AI service', 502);
   }
 };
 

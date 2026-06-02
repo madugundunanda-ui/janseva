@@ -64,11 +64,20 @@ const analyzeImage = asyncHandler(async (req, res) => {
     }
   });
 
-  // 2. IMMEDIATELY return a clean 202 Accepted status response directly to the user frontend within 100ms
+  // Create background AI job and return ID for frontend SSE subscription.
+  const jobId = aiJobManager.createJob(req.file, address, latitude, longitude);
+  console.log('JOB CREATED', jobId);
+  logger.info('AI job created', { jobId, image });
+
+  // Return explicit job fields for frontend compatibility.
   return res.status(202).json({
     success: true,
-    message: "Evidence data ingestion complete. Advanced classification delegated smoothly.",
-    status: "Pending"
+    status: 'Pending',
+    jobId,
+    analysisId: jobId,
+    job: { id: jobId },
+    data: { jobId },
+    tempImagePath: image,
   });
 
   // 3-4. Move and wrap the analyzeComplaintImage execution block inside setImmediate
@@ -106,8 +115,9 @@ const analyzeImage = asyncHandler(async (req, res) => {
 });
 
 const analyzeImageStream = (req, res) => {
-  const { analysisId } = req.params;
-  const job = aiJobManager.getJob(analysisId);
+  const streamJobId = req.params.analysisId || req.params.jobId;
+  console.log('STREAM REQUEST', streamJobId);
+  const job = aiJobManager.getJob(streamJobId);
 
   if (!job) {
     return res.status(404).json({ success: false, message: 'Analysis job not found' });
@@ -131,14 +141,14 @@ const analyzeImageStream = (req, res) => {
     res.write(`data: ${JSON.stringify(event)}\n\n`);
     if (event.status === 'completed' || event.status === 'failed') {
       res.end();
-      aiJobManager.off(analysisId, listener);
+      aiJobManager.off(streamJobId, listener);
     }
   };
 
-  aiJobManager.on(analysisId, listener);
+  aiJobManager.on(streamJobId, listener);
 
   req.on('close', () => {
-    aiJobManager.off(analysisId, listener);
+    aiJobManager.off(streamJobId, listener);
   });
 };
 

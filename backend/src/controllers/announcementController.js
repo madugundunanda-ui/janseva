@@ -13,6 +13,9 @@ const toThumbnail = (req) => {
 const getAnnouncements = asyncHandler(async (req, res) => {
   const filter = {};
 
+  const tenantId = req.user?.tenantId || req.query.tenantId || 'default-municipality';
+  filter.tenantId = tenantId;
+
   if (req.query.category) filter.category = req.query.category;
   if (req.query.priority) filter.priority = req.query.priority;
   if (req.query.department) filter.department = req.query.department;
@@ -29,17 +32,20 @@ const getAnnouncements = asyncHandler(async (req, res) => {
 });
 
 const getAnnouncementById = asyncHandler(async (req, res) => {
-  const announcement = await Announcement.findById(req.params.id);
+  const tenantId = req.user?.tenantId || req.query.tenantId || 'default-municipality';
+  const announcement = await Announcement.findOne({ _id: req.params.id, tenantId });
   if (!announcement) throw new AppError('Announcement not found', 404);
 
   sendSuccess(res, 200, 'Announcement fetched successfully', { announcement });
 });
 
 const createAnnouncement = asyncHandler(async (req, res) => {
+  const tenantId = req.user?.tenantId || 'default-municipality';
   const payload = {
     ...req.body,
     thumbnailUrl: toThumbnail(req),
     publishedDate: req.body.publishedDate || new Date(),
+    tenantId,
   };
 
   const announcement = await Announcement.create(payload);
@@ -48,7 +54,8 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 });
 
 const updateAnnouncement = asyncHandler(async (req, res) => {
-  const existing = await Announcement.findById(req.params.id);
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const existing = await Announcement.findOne({ _id: req.params.id, tenantId });
   if (!existing) throw new AppError('Announcement not found', 404);
 
   const payload = {
@@ -59,16 +66,18 @@ const updateAnnouncement = asyncHandler(async (req, res) => {
     payload.thumbnailUrl = toThumbnail(req);
   }
 
-  const announcement = await Announcement.findByIdAndUpdate(req.params.id, payload, {
-    new: true,
-    runValidators: true,
-  });
+  const announcement = await Announcement.findOneAndUpdate(
+    { _id: req.params.id, tenantId },
+    payload,
+    { new: true, runValidators: true }
+  );
 
   sendSuccess(res, 200, 'Announcement updated successfully', { announcement });
 });
 
 const deleteAnnouncement = asyncHandler(async (req, res) => {
-  const announcement = await Announcement.findById(req.params.id);
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const announcement = await Announcement.findOne({ _id: req.params.id, tenantId });
   if (!announcement) throw new AppError('Announcement not found', 404);
 
   await announcement.deleteOne();
