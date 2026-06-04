@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, Complaint, Department, User } from '../../core/services/api.service';
@@ -671,7 +671,8 @@ export class ComplaintsComponent implements OnInit {
     public authService: AuthService,
     private complaintsService: ComplaintsService,
     private departmentsService: DepartmentsService,
-    private aiService: AiService
+    private aiService: AiService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -926,36 +927,42 @@ export class ComplaintsComponent implements OnInit {
 
               if (event.status === 'completed') {
                 if (this.aiTimeoutTimer) clearTimeout(this.aiTimeoutTimer);
-                this.aiStepDetecting = false;
-                this.aiStepDetectingDone = true;
-                this.aiStepSeverity = false;
-                this.aiStepSeverityDone = true;
-                this.aiStepETA = false;
-                this.aiStepETADone = true;
-                this.aiStepDuplicate = false;
-                this.aiStepDuplicateDone = true;
+                setTimeout(() => {
+                  this.aiStepDetecting = false;
+                  this.aiStepDetectingDone = true;
+                  this.aiStepSeverity = false;
+                  this.aiStepSeverityDone = true;
+                  this.aiStepETA = false;
+                  this.aiStepETADone = true;
+                  this.aiStepDuplicate = false;
+                  this.aiStepDuplicateDone = true;
                 
-                if (event.low_confidence) {
-                  this.newComplaintData.title = '';
-                  this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
-                  this.newComplaintData.department = '';
-                  this.aiPredictedCategory = '';
-                  this.aiPredictedDepartment = '';
-                  this.newComplaintData.confidence = event.confidence || 0;
-                } else {
-                  this.newComplaintData.title = event.title || this.newComplaintData.title;
-                  this.newComplaintData.description = event.description || this.newComplaintData.description;
-                  const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
-                  if (matchedDept) {
-                    this.newComplaintData.department = matchedDept.id;
+                  if (event.low_confidence) {
+                    this.newComplaintData.title = '';
+                    this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
+                    this.newComplaintData.department = '';
+                    this.aiPredictedCategory = '';
+                    this.aiPredictedDepartment = '';
+                    this.newComplaintData.confidence = event.confidence || 0;
+                  } else {
+                    this.newComplaintData.title = event.title || this.newComplaintData.title;
+                    this.newComplaintData.description = event.description || this.newComplaintData.description;
+                    const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                    if (matchedDept) {
+                      this.newComplaintData.department = matchedDept.id;
+                    }
+                    this.newComplaintData.priority = event.priority || this.newComplaintData.priority;
+                    this.newComplaintData.severityScore = event.severityScore || this.newComplaintData.severityScore;
+                    this.newComplaintData.severityReason = event.reasons || this.newComplaintData.severityReason;
+                    this.newComplaintData.confidence = event.confidence || 0;
+                    this.aiPredictedCategory = event.category || '';
+                    this.aiPredictedDepartment = event.department || '';
                   }
-                  this.newComplaintData.priority = event.priority || this.newComplaintData.priority;
-                  this.newComplaintData.severityScore = event.severityScore || this.newComplaintData.severityScore;
-                  this.newComplaintData.severityReason = event.reasons || this.newComplaintData.severityReason;
-                  this.newComplaintData.confidence = event.confidence || 0;
-                  this.aiPredictedCategory = event.category || '';
-                  this.aiPredictedDepartment = event.department || '';
-                }
+
+                  this.aiService.pipelineProgress.set(100);
+                  this.aiService.classificationStatus.set('DONE');
+                  this.cdr.detectChanges();
+                }, 0);
               }
             },
             error: (err: any) => {

@@ -83,7 +83,7 @@ const stageDraftComplaint = async (req, placeholderDeptId) => {
   });
 };
 
-const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId) => {
+const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, tenantId) => {
   try {
     const results = await aiService.analyzeComplaintImage(file);
 
@@ -95,17 +95,18 @@ const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId) =>
       }
     }
 
-    draftComplaint.title = results.title || 'Civic Grievance';
-    draftComplaint.description = results.description || draftComplaint.description;
-    draftComplaint.department = resolvedDeptId;
-    draftComplaint.priority = (results.priority || 'medium').toLowerCase();
-    draftComplaint.aiVerification = {
-      verificationStatus: 'Completed',
-      predictedDepartment: results.department || '',
-      confidenceScore: results.confidence || 0,
-    };
-
-    await draftComplaint.save();
+    await Complaint.findOneAndUpdate(
+      { _id: draftComplaint._id, tenantId: tenantId },
+      {
+        title: results.title || 'Civic Grievance',
+        description: results.description || draftComplaint.description,
+        department: resolvedDeptId,
+        priority: (results.priority || 'medium').toLowerCase(),
+        'aiVerification.verificationStatus': 'Completed',
+        'aiVerification.predictedDepartment': results.department || '',
+        'aiVerification.confidenceScore': results.confidence || 0,
+      }
+    );
     logger.info('Background AI auto-fill completed', {
       complaintId: draftComplaint._id.toString(),
       department: results.department,
@@ -114,12 +115,14 @@ const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId) =>
   } catch (err) {
     console.error('[Background Thread Error] Asynchronous auto-fill pass failed:', err.message);
     try {
-      draftComplaint.aiVerification = {
-        verificationStatus: 'Failed',
-        predictedDepartment: '',
-        confidenceScore: 0,
-      };
-      await draftComplaint.save();
+      await Complaint.findOneAndUpdate(
+        { _id: draftComplaint._id, tenantId: tenantId },
+        {
+          'aiVerification.verificationStatus': 'Failed',
+          'aiVerification.predictedDepartment': '',
+          'aiVerification.confidenceScore': 0,
+        }
+      );
     } catch (saveErr) {
       logger.error('Failed to persist AI auto-fill failure state', {
         complaintId: draftComplaint._id.toString(),
@@ -137,8 +140,10 @@ const createDetachedAnalysisDraft = async (req, res) => {
   const placeholderDeptId = await resolvePlaceholderDepartmentId();
   const draftComplaint = await stageDraftComplaint(req, placeholderDeptId);
 
+  const tenantId = req.user.tenantId || 'default-municipality';
+
   setImmediate(() => {
-    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId);
+    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId, tenantId);
   });
 
   return res.status(202).json({

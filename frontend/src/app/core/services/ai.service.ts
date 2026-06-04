@@ -1,9 +1,10 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, timer } from 'rxjs';
 import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ApiService } from './api.service';
+import { AuthService } from './auth.service';
 import {
   AiResult,
   DuplicateDetectionResult,
@@ -21,12 +22,22 @@ export class AiService {
 
   constructor(
     private http: HttpClient,
-    private apiService: ApiService
+    private apiService: ApiService,
+    private authService: AuthService
   ) {}
 
   private buildApiUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return `${this.apiUrl}${normalizedPath}`;
+  }
+
+  private buildAuthHeaders(): HttpHeaders {
+    const token = this.authService.token();
+    let headers = new HttpHeaders();
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
+    return headers;
   }
 
   private extractJobId(response: any): string | null {
@@ -66,7 +77,10 @@ export class AiService {
 
   private pollJobStatus(jobId: string): Observable<AiResult> {
     return timer(0, 2000).pipe(
-      switchMap(() => this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`))),
+      switchMap(() => {
+        const headers = this.buildAuthHeaders();
+        return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers });
+      }),
       map((response) => this.normalizeJobStatus(response)),
       tap((response) => {
         if (this.isTerminalFailure(response.verificationStatus)) {
@@ -140,7 +154,8 @@ export class AiService {
   }
 
   public getJobStatus(jobId: string): Observable<any> {
-    return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`)).pipe(
+    const headers = this.buildAuthHeaders();
+    return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers }).pipe(
       map((response) => this.normalizeJobStatus(response))
     );
   }
