@@ -25,6 +25,7 @@ const router = express.Router();
 router.post('/analyze', protect, upload.single('image'), compressImage, analyzeImage);
 router.post('/analyze-pipeline', protect, upload.single('image'), compressImage, analyzeComplaintPipeline);
 router.get('/job/:jobId', protect, getJobStatusController);
+router.get('/status/:jobId', protect, getJobStatusController);
 router.get('/health', protect, getAiHealth);
 router.post('/predict-resolution', protect, predictResolutionController);
 router.post('/severity', protect, getSeverityController);

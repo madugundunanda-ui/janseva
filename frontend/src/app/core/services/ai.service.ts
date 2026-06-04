@@ -71,7 +71,7 @@ export class AiService {
       switchMap(() => {
         const token = this.authService.getJwtToken();
         const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-        return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers });
+        return this.http.get<any>(this.buildApiUrl(`/ai/status/${jobId}`), { headers });
       }),
       map((response) => this.normalizeJobStatus(response)),
       tap((response) => {
@@ -151,7 +151,7 @@ export class AiService {
   public getJobStatus(jobId: string): Observable<any> {
     const token = this.authService.getJwtToken();
     const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
-    return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers }).pipe(
+    return this.http.get<any>(this.buildApiUrl(`/ai/status/${jobId}`), { headers }).pipe(
       map((response) => this.normalizeJobStatus(response))
     );
   }
