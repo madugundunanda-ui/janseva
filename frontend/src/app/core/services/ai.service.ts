@@ -31,15 +31,6 @@ export class AiService {
     return `${this.apiUrl}${normalizedPath}`;
   }
 
-  private buildAuthHeaders(): HttpHeaders {
-    const token = this.authService.getJwtToken();
-    if (!token) {
-      console.warn('[AiService] No JWT token available — request will be sent without Authorization header');
-      return new HttpHeaders();
-    }
-    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
-  }
-
   private extractJobId(response: any): string | null {
     return response?.jobId || response?.data?.jobId || response?.job?.id || response?.analysisId || null;
   }
@@ -78,7 +69,8 @@ export class AiService {
   private pollJobStatus(jobId: string): Observable<AiResult> {
     return timer(0, 2000).pipe(
       switchMap(() => {
-        const headers = this.buildAuthHeaders();
+        const token = this.authService.getJwtToken();
+        const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
         return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers });
       }),
       map((response) => this.normalizeJobStatus(response)),
@@ -157,7 +149,8 @@ export class AiService {
   }
 
   public getJobStatus(jobId: string): Observable<any> {
-    const headers = this.buildAuthHeaders();
+    const token = this.authService.getJwtToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
     return this.http.get<any>(this.buildApiUrl(`/ai/job/${jobId}`), { headers }).pipe(
       map((response) => this.normalizeJobStatus(response))
     );
