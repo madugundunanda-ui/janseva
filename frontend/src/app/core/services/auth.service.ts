@@ -52,6 +52,21 @@ export class AuthService {
     return !!role && roles.includes(role);
   }
 
+  /**
+   * Returns the current JWT token from the in-memory signal,
+   * falling back to localStorage if the signal is empty.
+   */
+  getJwtToken(): string | null {
+    const memoryToken = this.token();
+    if (memoryToken) {
+      return memoryToken;
+    }
+    if (typeof window !== 'undefined') {
+      return window.localStorage.getItem('token');
+    }
+    return null;
+  }
+
   private restoreSession(): void {
     if (typeof window === 'undefined') {
       return;

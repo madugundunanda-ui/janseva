@@ -32,12 +32,12 @@ export class AiService {
   }
 
   private buildAuthHeaders(): HttpHeaders {
-    const token = this.authService.token();
-    let headers = new HttpHeaders();
-    if (token) {
-      headers = headers.set('Authorization', `Bearer ${token}`);
+    const token = this.authService.getJwtToken();
+    if (!token) {
+      console.warn('[AiService] No JWT token available — request will be sent without Authorization header');
+      return new HttpHeaders();
     }
-    return headers;
+    return new HttpHeaders().set('Authorization', `Bearer ${token}`);
   }
 
   private extractJobId(response: any): string | null {
@@ -104,7 +104,10 @@ export class AiService {
     this.pipelineProgress.set(30);
     this.classificationStatus.set('RUNNING');
 
-    return this.http.post<AiResult>(this.buildApiUrl(route), formData).pipe(
+    const token = this.authService.getJwtToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+
+    return this.http.post<AiResult>(this.buildApiUrl(route), formData, { headers }).pipe(
       tap((res) => {
         this.pipelineProgress.set(100);
         this.classificationStatus.set('PROCESSING_BACKGROUND');

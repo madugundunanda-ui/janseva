@@ -208,7 +208,7 @@ const complaintSchema = new mongoose.Schema(
     aiVerification: {
       verificationStatus: {
         type: String,
-        enum: ['Pending', 'Completed', 'Failed'],
+        enum: ['Pending', 'Completed', 'Verified', 'Failed'],
         default: 'Pending',
       },
       predictedDepartment: {

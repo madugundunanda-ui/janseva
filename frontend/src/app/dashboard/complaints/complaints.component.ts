@@ -875,54 +875,66 @@ export class ComplaintsComponent implements OnInit {
               }
               
               if (event.status === 'detecting_issue') {
-                this.aiStepDetecting = false;
-                this.aiStepDetectingDone = true;
-                this.aiStepSeverity = true;
-                
-                this.aiPredictedCategory = event.category || '';
-                this.aiPredictedDepartment = event.department || '';
-                this.newComplaintData.confidence = event.confidence || 0;
-
-                if (event.low_confidence) {
-                  this.newComplaintData.title = '';
-                  this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
-                  this.newComplaintData.department = '';
-                  this.aiPredictedCategory = '';
-                  this.aiPredictedDepartment = '';
-                } else {
-                  this.newComplaintData.title = event.title || this.newComplaintData.title;
-                  this.newComplaintData.description = event.description || this.newComplaintData.description;
+                setTimeout(() => {
+                  this.aiStepDetecting = false;
+                  this.aiStepDetectingDone = true;
+                  this.aiStepSeverity = true;
                   
-                  const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
-                  if (matchedDept) {
-                    this.newComplaintData.department = matchedDept.id;
+                  this.aiPredictedCategory = event.category || '';
+                  this.aiPredictedDepartment = event.department || '';
+                  this.newComplaintData.confidence = event.confidence || 0;
+
+                  if (event.low_confidence) {
+                    this.newComplaintData.title = '';
+                    this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
+                    this.newComplaintData.department = '';
+                    this.aiPredictedCategory = '';
+                    this.aiPredictedDepartment = '';
+                  } else {
+                    this.newComplaintData.title = event.title || this.newComplaintData.title;
+                    this.newComplaintData.description = event.description || this.newComplaintData.description;
+                    
+                    const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                    if (matchedDept) {
+                      this.newComplaintData.department = matchedDept.id;
+                    }
                   }
-                }
+                  this.cdr.detectChanges();
+                }, 0);
               }
               
               if (event.status === 'estimating_severity') {
-                this.aiStepSeverity = false;
-                this.aiStepSeverityDone = true;
-                this.aiStepETA = true;
-                
-                this.newComplaintData.priority = event.priority || 'medium';
-                this.newComplaintData.severityScore = event.severityScore || 50;
-                this.newComplaintData.severityReason = event.reasons || [];
+                setTimeout(() => {
+                  this.aiStepSeverity = false;
+                  this.aiStepSeverityDone = true;
+                  this.aiStepETA = true;
+                  
+                  this.newComplaintData.priority = event.priority || 'medium';
+                  this.newComplaintData.severityScore = event.severityScore || 50;
+                  this.newComplaintData.severityReason = event.reasons || [];
+                  this.cdr.detectChanges();
+                }, 0);
               }
 
               if (event.status === 'generating_recommendations') {
-                this.aiStepETA = false;
-                this.aiStepETADone = true;
-                this.aiStepDuplicate = true;
+                setTimeout(() => {
+                  this.aiStepETA = false;
+                  this.aiStepETADone = true;
+                  this.aiStepDuplicate = true;
 
-                this.newComplaintData.estimatedDays = event.estimatedDays || 3;
-                this.newComplaintData.delayRisk = event.delayRisk || 'Low';
+                  this.newComplaintData.estimatedDays = event.estimatedDays || 3;
+                  this.newComplaintData.delayRisk = event.delayRisk || 'Low';
+                  this.cdr.detectChanges();
+                }, 0);
               }
 
               if (event.status === 'duplicate_checked') {
-                this.aiStepDuplicate = false;
-                this.aiStepDuplicateDone = true;
-                this.newComplaintData.duplicateDetected = !!event.duplicateDetected;
+                setTimeout(() => {
+                  this.aiStepDuplicate = false;
+                  this.aiStepDuplicateDone = true;
+                  this.newComplaintData.duplicateDetected = !!event.duplicateDetected;
+                  this.cdr.detectChanges();
+                }, 0);
               }
 
               if (event.status === 'completed') {

@@ -95,14 +95,16 @@ const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, te
       }
     }
 
+    const tenantFilter = { _id: draftComplaint._id, tenantId: tenantId };
+
     await Complaint.findOneAndUpdate(
-      { _id: draftComplaint._id, tenantId: tenantId },
+      tenantFilter,
       {
         title: results.title || 'Civic Grievance',
         description: results.description || draftComplaint.description,
         department: resolvedDeptId,
         priority: (results.priority || 'medium').toLowerCase(),
-        'aiVerification.verificationStatus': 'Completed',
+        'aiVerification.verificationStatus': 'Verified',
         'aiVerification.predictedDepartment': results.department || '',
         'aiVerification.confidenceScore': results.confidence || 0,
       }
@@ -753,7 +755,10 @@ const analyzeComplaintPipeline = asyncHandler(async (req, res) => {
 
 const getJobStatusController = asyncHandler(async (req, res) => {
   const { jobId } = req.params;
-  const complaint = await Complaint.findById(jobId).populate('department', 'name');
+  const tenantId = req.user.tenantId || 'default-municipality';
+  const complaint = await Complaint.findOne(
+    { _id: jobId, tenantId: tenantId }
+  ).populate('department', 'name');
   if (!complaint) {
     throw new AppError('Analysis draft not found', 404);
   }
