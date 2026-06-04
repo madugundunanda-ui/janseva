@@ -1,6 +1,7 @@
 const fs = require('fs');
 const crypto = require('crypto');
 const OpenAI = require('openai');
+const CircuitBreaker = require('opossum');
 const AppError = require('../utils/AppError');
 const logger = require('../utils/logger');
 const VisionProviderFactory = require('../ai/providers/VisionProviderFactory');
@@ -121,7 +122,7 @@ const validateComplaintImageAnalysis = (payload) => {
   return analysis;
 };
 
-const analyzeComplaintImage = async (file) => {
+const rawAnalyzeComplaintImage = async (file) => {
   if (!file) {
     throw new AppError('Image file is required', 400);
   }
@@ -129,10 +130,6 @@ const analyzeComplaintImage = async (file) => {
   const filePath = file.path;
   if (!fs.existsSync(filePath)) {
     throw new AppError('File not found on server', 500);
-  }
-
-  if (!process.env.OPENAI_API_KEY) {
-    throw new AppError('OPENAI_API_KEY is required for image analysis', 500);
   }
 
   try {
@@ -146,51 +143,34 @@ const analyzeComplaintImage = async (file) => {
       }
     }
 
-    const imageBase64 = await streamFileAsBase64(filePath);
-    const mimeType = file.mimetype || 'image/jpeg';
+    const provider = VisionProviderFactory.getProvider();
+    const result = await provider.analyzeImage(file);
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0,
-      max_tokens: 500,
-      response_format: complaintImageResponseFormat,
-      messages: [
-        {
-          role: 'developer',
-          content: 'Audit the submitted civic issue image for e-governance routing. Identify the visible municipal breakdown, write citizen-ready complaint metadata, and route it only to one of these departments: Roads, Water Supply, Electricity, Sanitation, Health, Transport. Use priority low, medium, or high based on public safety, service disruption, and urgency.',
-        },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Analyze this civic complaint image and return the structured routing payload.',
-            },
-            {
-              type: 'image_url',
-              image_url: {
-                url: `data:${mimeType};base64,${imageBase64}`,
-                detail: 'low',
-              },
-            },
-          ],
-        },
-      ],
-    });
-
-    const content = completion.choices?.[0]?.message?.content;
-    const result = validateComplaintImageAnalysis(JSON.parse(content));
+    const validatedResult = {
+      title: result.title || 'Civic Grievance',
+      description: result.description || 'Unable to confidently identify issue type. Please select the category and fill details manually.',
+      department: result.department || 'Roads',
+      priority: result.priority || 'medium',
+      confidence: result.confidence ?? 85,
+      low_confidence: result.confidence < 45 || !!result.low_confidence,
+      category: result.category || '',
+      broad_category: result.broad_category || '',
+      reasons: result.explanation || [],
+      quality_checks: result.quality_checks || {},
+      top_k_predictions: result.top_k_predictions || [],
+      emergency: !!result.emergency
+    };
 
     // Save to cache
-    if (imageHash && result) {
+    if (imageHash && validatedResult) {
       await AiCache.create({
         imageHash,
-        analysis: result,
+        analysis: validatedResult,
       });
       logger.info('[AI-CACHE] Analysis cached successfully', { imageHash });
     }
 
-    return result;
+    return validatedResult;
   } catch (error) {
     logger.error('AI vision analysis request error', { message: error.message, stack: error.stack });
     if (error instanceof AppError) {
@@ -198,6 +178,28 @@ const analyzeComplaintImage = async (file) => {
     }
     throw new AppError('AI vision analysis failed', 502);
   }
+};
+
+const breaker = new CircuitBreaker(rawAnalyzeComplaintImage, {
+  timeout: 10000, // 10 seconds timeout
+  errorThresholdPercentage: 50,
+  resetTimeout: 30000
+});
+
+breaker.fallback((file, err) => {
+  logger.warn('AI vision analysis circuit breaker triggered fallback', { error: err ? err.message : 'timeout' });
+  return {
+    title: 'Civic Grievance (Unverified)',
+    description: 'Unable to confidently identify issue type. Please select the category and fill details manually.',
+    department: 'Roads',
+    priority: 'medium',
+    confidence: 10,
+    low_confidence: true
+  };
+});
+
+const analyzeComplaintImage = async (file) => {
+  return breaker.fire(file);
 };
 
 const predictResolution = async (payload) => {

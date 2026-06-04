@@ -138,9 +138,10 @@ app.use(requestLogger);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ─── Health Check ───────────────────────────────────────────────
-const { healthz, healthDeep } = require('./middleware/healthCheck');
+const { healthz, healthDeep, redisQueueHealth } = require('./middleware/healthCheck');
 app.get('/healthz', healthz);
 app.get('/health', healthDeep);
+app.get('/health/queue', redisQueueHealth);
 app.get('/', (req, res) => {
   sendSuccess(res, 200, 'Citizen Grievance Backend Running', {
     service: 'Citizen Service Request & Municipal Grievance Resolution System',
