@@ -655,12 +655,15 @@ export class ComplaintsComponent implements OnInit {
 
   // Proxy complaintForm object to bridge template compatibility with reactive form instructions
   complaintForm = {
-    patchValue: (value: { department?: string; category?: string }) => {
+    patchValue: (value: { department?: string; category?: string; title?: string }) => {
       if (value.department) {
         this.newComplaintData.department = value.department;
       }
       if (value.category) {
         this.aiPredictedCategory = value.category;
+      }
+      if (value.title) {
+        this.newComplaintData.title = value.title;
       }
     }
   };
@@ -961,7 +964,7 @@ export class ComplaintsComponent implements OnInit {
                   this.aiStepDuplicate = false;
                   this.aiStepDuplicateDone = true;
                 
-                  const result = event;
+                  const incomingData = event;
                   if (event.low_confidence) {
                     this.newComplaintData.title = '';
                     this.newComplaintData.description = 'Unable to confidently identify issue type. Please select the category and fill details manually.';
@@ -987,8 +990,8 @@ export class ComplaintsComponent implements OnInit {
                   this.aiService.pipelineProgress.set(100);
                   this.aiService.classificationStatus.set('DONE');
                   this.complaintForm.patchValue({
-                    department: result.department,
-                    category: result.category
+                    department: incomingData.department,
+                    title: incomingData.title
                   });
                   this.cdr.detectChanges();
                 }, 0);
