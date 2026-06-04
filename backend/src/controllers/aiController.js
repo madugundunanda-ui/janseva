@@ -83,7 +83,7 @@ const stageDraftComplaint = async (req, placeholderDeptId) => {
   });
 };
 
-const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, tenantId) => {
+const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, req) => {
   try {
     const results = await aiService.analyzeComplaintImage(file);
 
@@ -95,10 +95,8 @@ const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, te
       }
     }
 
-    const tenantFilter = { _id: draftComplaint._id, tenantId: tenantId };
-
     await Complaint.findOneAndUpdate(
-      tenantFilter,
+      { _id: draftComplaint._id, tenantId: req.user.tenantId },
       {
         title: results.title || 'Civic Grievance',
         description: results.description || draftComplaint.description,
@@ -118,7 +116,7 @@ const persistAnalysisResult = async (draftComplaint, file, placeholderDeptId, te
     console.error('[Background Thread Error] Asynchronous auto-fill pass failed:', err.message);
     try {
       await Complaint.findOneAndUpdate(
-        { _id: draftComplaint._id, tenantId: tenantId },
+        { _id: draftComplaint._id, tenantId: req.user.tenantId },
         {
           'aiVerification.verificationStatus': 'Failed',
           'aiVerification.predictedDepartment': '',
@@ -142,10 +140,8 @@ const createDetachedAnalysisDraft = async (req, res) => {
   const placeholderDeptId = await resolvePlaceholderDepartmentId();
   const draftComplaint = await stageDraftComplaint(req, placeholderDeptId);
 
-  const tenantId = req.user.tenantId || 'default-municipality';
-
   setImmediate(() => {
-    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId, tenantId);
+    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId, req);
   });
 
   return res.status(202).json({
