@@ -36,23 +36,22 @@ export class AiService {
   }
 
   private normalizeJobStatus(response: any): any {
+    const dataPayload = response.complaint || response;
     const rawStatus =
-      response?.verificationStatus ||
-      response?.aiVerification?.verificationStatus ||
       response?.status ||
-      response?.complaint?.verificationStatus ||
-      response?.complaint?.aiVerification?.verificationStatus ||
+      dataPayload?.verificationStatus ||
+      dataPayload?.aiVerification?.verificationStatus ||
       '';
 
     return {
       ...response,
       verificationStatus: rawStatus,
-      category: response?.category || response?.complaint?.category || response?.complaint?.department,
-      title: response?.title || response?.complaint?.title,
-      description: response?.description || response?.complaint?.description,
-      department: response?.department || response?.complaint?.department,
-      priority: response?.priority || response?.complaint?.priority,
-      confidence: response?.confidence ?? response?.complaint?.confidence ?? 0,
+      department: dataPayload.department,
+      category: dataPayload.category || dataPayload.title,
+      title: dataPayload.title || response?.title,
+      description: dataPayload.description || response?.description,
+      priority: dataPayload.priority || response?.priority,
+      confidence: dataPayload.confidence ?? dataPayload.aiVerification?.confidenceScore ?? 0,
     };
   }
 
