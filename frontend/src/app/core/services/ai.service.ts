@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError, timer } from 'rxjs';
-import { catchError, filter, map, switchMap, take, tap } from 'rxjs/operators';
+import { catchError, map, switchMap, takeWhile, tap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ApiService } from './api.service';
 import { AuthService } from './auth.service';
@@ -74,17 +74,21 @@ export class AiService {
       }),
       map((response) => this.normalizeJobStatus(response)),
       tap((response) => {
+        if (response.progress !== undefined) {
+          this.pipelineProgress.set(response.progress);
+        }
         if (this.isTerminalFailure(response.verificationStatus)) {
           throw new Error('AI background categorization failed');
         }
       }),
-      filter((response) => this.isTerminalSuccess(response.verificationStatus)),
-      take(1),
-      map((response) => {
-        this.pipelineProgress.set(100);
-        this.classificationStatus.set('DONE');
-        return response as AiResult;
-      })
+      takeWhile((response) => !this.isTerminalSuccess(response.verificationStatus), true),
+      tap((response) => {
+        if (this.isTerminalSuccess(response.verificationStatus)) {
+          this.pipelineProgress.set(100);
+          this.classificationStatus.set('DONE');
+        }
+      }),
+      map((response) => response as AiResult)
     );
   }
 
@@ -162,4 +166,26 @@ export class AiService {
 
     return this.pollJobStatus(analysisId);
   }
+
+  public pollJobAutoFillParameters(jobId: string) {
+    const token = this.authService.getJwtToken();
+    const headers = new HttpHeaders().set('Authorization', `Bearer ${token}`);
+    
+    return timer(0, 2000).pipe(
+      switchMap(() => this.http.get<any>(this.buildApiUrl(`/ai/status/${jobId}`), { headers }))
+    ).subscribe({
+      next: (response) => {
+        const status = response.complaint?.aiVerification?.verificationStatus || 'PENDING';
+        this.classificationStatus.set(status.toUpperCase()); // Transitions 'Verified' to 'ONLINE'
+        
+        if (this.classificationStatus() === 'VERIFIED') {
+          this.classificationStatus.set('ONLINE');
+        }
+      },
+      error: (err) => {
+        console.error('Error polling AI auto-fill parameters:', err);
+      }
+    });
+  }
 }
+

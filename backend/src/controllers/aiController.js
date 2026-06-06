@@ -7,6 +7,8 @@ const Complaint = require('../models/Complaint');
 const Department = require('../models/Department');
 const logger = require('../utils/logger');
 const { resolveDepartmentId } = require('../services/dashboardService');
+const aiJobManager = require('../utils/aiJobManager');
+
 
 const resolvePlaceholderDepartmentId = async () => {
   let placeholderDeptId = await resolveDepartmentId('Public Safety');
@@ -137,12 +139,16 @@ const createDetachedAnalysisDraft = async (req, res) => {
     throw new AppError('Image file is required', 400);
   }
 
+  logger.info('[UPLOAD] Image upload initiated', { filename: req.file.filename });
+
   const placeholderDeptId = await resolvePlaceholderDepartmentId();
   const draftComplaint = await stageDraftComplaint(req, placeholderDeptId);
 
-  setImmediate(() => {
-    persistAnalysisResult(draftComplaint, req.file, placeholderDeptId, req);
-  });
+  const jobId = draftComplaint._id.toString();
+  logger.info('[JOB_CREATED] AI job created successfully', { jobId });
+
+  // Delegate processing to the in-memory AIJobManager queue
+  aiJobManager.createJob(req.file, req.body.location, req.body.lat, req.body.lng, jobId);
 
   return res.status(202).json({
     success: true,
@@ -751,10 +757,48 @@ const analyzeComplaintPipeline = asyncHandler(async (req, res) => {
 
 const getJobStatusController = asyncHandler(async (req, res) => {
   const { jobId } = req.params;
-  const tenantId = req.user.tenantId || 'default-municipality';
-  const complaint = await Complaint.findOne(
-    { _id: jobId, tenantId: tenantId }
-  ).populate('department', 'name');
+  
+  // Try to get in-memory job status for real-time progress reporting
+  const job = aiJobManager.getJob(jobId);
+  if (job) {
+    let statusName = 'Pending';
+    if (job.status === 'completed') {
+      statusName = 'completed';
+    } else if (job.status === 'failed') {
+      statusName = 'failed';
+    } else if (job.progress >= 100) {
+      statusName = 'completed';
+    } else if (job.progress >= 90) {
+      statusName = 'duplicate_checked';
+    } else if (job.progress >= 70) {
+      statusName = 'generating_recommendations';
+    } else if (job.progress >= 40) {
+      statusName = 'estimating_severity';
+    } else if (job.progress >= 10) {
+      statusName = 'detecting_issue';
+    }
+
+    return res.json({
+      success: true,
+      jobId: job.id,
+      status: statusName,
+      progress: job.progress,
+      ...job.results,
+      complaint: {
+        title: job.results.title || '',
+        description: job.results.description || '',
+        department: job.results.department || 'General Inquiry',
+        priority: job.results.priority || 'medium',
+        confidence: job.results.confidence || 0,
+        image: `/uploads/complaints/${job.file.filename}`
+      }
+    });
+  }
+
+  // Fallback to Mongoose database lookup selecting all populated keys
+  const complaint = await Complaint.findById(jobId).select(
+    'aiVerification title department description priority severityScore severityReason image'
+  );
   if (!complaint) {
     throw new AppError('Analysis draft not found', 404);
   }
@@ -762,17 +806,19 @@ const getJobStatusController = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     jobId: complaint._id,
-    status: complaint.aiVerification?.verificationStatus || 'Pending',
-    complaint: {
-      title: complaint.title,
-      description: complaint.description,
-      department: complaint.department?.name || complaint.department,
-      priority: complaint.priority,
-      confidence: complaint.aiVerification?.confidenceScore || 0,
-      image: complaint.image,
-    },
+    status: complaint.aiVerification?.verificationStatus === 'Verified' ? 'completed' : (complaint.aiVerification?.verificationStatus === 'Failed' ? 'failed' : 'Pending'),
+    progress: complaint.aiVerification?.verificationStatus === 'Verified' ? 100 : 0,
+    title: complaint.title,
+    description: complaint.description,
+    department: complaint.department?.name || complaint.department,
+    priority: complaint.priority,
+    severityScore: complaint.severityScore,
+    reasons: complaint.severityReason,
+    confidence: complaint.aiVerification?.confidenceScore || 0,
+    complaint: complaint
   });
 });
+
 
 module.exports = {
   analyzeImage,

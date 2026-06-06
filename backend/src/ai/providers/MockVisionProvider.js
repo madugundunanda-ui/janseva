@@ -4,14 +4,17 @@ const logger = require('../../utils/logger');
 class MockVisionProvider extends BaseVisionProvider {
   async analyzeImage(file) {
     logger.info('Using MockVisionProvider (Development Only) for image analysis', { filename: file.originalname });
+    logger.info('[AI_REQUEST] Sending image analysis request to Mock API', { jobId: file.filename || file.originalname });
 
     const nameLower = (file.originalname || '').toLowerCase();
     
     // Simulate minor delay to emulate network request
     await new Promise(resolve => setTimeout(resolve, 300));
 
+    let results;
+
     if (nameLower.includes('pothole') || nameLower.includes('road') || nameLower.includes('crack') || nameLower.includes('asphalt')) {
-      return {
+      results = {
         title: 'Road Surface Damage / Pothole',
         category: 'Road Damage',
         department: 'Roads & Highways',
@@ -21,10 +24,8 @@ class MockVisionProvider extends BaseVisionProvider {
         emergency: false,
         explanation: ['Visible road structural damage', 'Vehicle alignment hazard']
       };
-    }
-
-    if (nameLower.includes('garbage') || nameLower.includes('waste') || nameLower.includes('trash') || nameLower.includes('dump') || nameLower.includes('litter')) {
-      return {
+    } else if (nameLower.includes('garbage') || nameLower.includes('waste') || nameLower.includes('trash') || nameLower.includes('dump') || nameLower.includes('litter')) {
+      results = {
         title: 'Garbage and Waste Pileup',
         category: 'Garbage / Waste',
         department: 'Sanitation',
@@ -34,10 +35,8 @@ class MockVisionProvider extends BaseVisionProvider {
         emergency: false,
         explanation: ['Accumulated roadside litter', 'Public health/odor risk']
       };
-    }
-
-    if (nameLower.includes('water') || nameLower.includes('leak') || nameLower.includes('pipe') || nameLower.includes('burst')) {
-      return {
+    } else if (nameLower.includes('water') || nameLower.includes('leak') || nameLower.includes('pipe') || nameLower.includes('burst')) {
+      results = {
         title: 'Water Utility Pipeline Leakage',
         category: 'Water Leakage',
         department: 'Water Supply',
@@ -47,11 +46,9 @@ class MockVisionProvider extends BaseVisionProvider {
         emergency: false,
         explanation: ['Water pipe leak detected', 'Municipal water waste risk']
       };
-    }
-
-    if (nameLower.includes('wire') || nameLower.includes('electric') || nameLower.includes('transformer') || nameLower.includes('power')) {
+    } else if (nameLower.includes('wire') || nameLower.includes('electric') || nameLower.includes('transformer') || nameLower.includes('power')) {
       const isExtreme = nameLower.includes('fire') || nameLower.includes('spark') || nameLower.includes('live');
-      return {
+      results = {
         title: isExtreme ? 'Severe Transformer Fire / Live Wire Hazard' : 'Electrical Infrastructure Issue',
         category: 'Electricity Problem',
         department: 'Electricity',
@@ -61,10 +58,8 @@ class MockVisionProvider extends BaseVisionProvider {
         emergency: isExtreme,
         explanation: ['Exposed power line cables', isExtreme ? 'High immediate electrocution/fire risk' : 'Public safety concern']
       };
-    }
-
-    if (nameLower.includes('light') || nameLower.includes('lamp') || nameLower.includes('streetlight')) {
-      return {
+    } else if (nameLower.includes('light') || nameLower.includes('lamp') || nameLower.includes('streetlight')) {
+      results = {
         title: 'Street Light Failure',
         category: 'Street Light Failure',
         department: 'Electricity',
@@ -74,19 +69,22 @@ class MockVisionProvider extends BaseVisionProvider {
         emergency: false,
         explanation: ['Street lamp outage', 'Reduced safety/visibility at night']
       };
+    } else {
+      // Default low confidence fallback
+      results = {
+        title: '',
+        category: 'Emergency Hazard',
+        department: 'Emergency Response',
+        severity: 'low',
+        priority: 'low',
+        confidence: 40,
+        emergency: false,
+        explanation: ['AI confidence is below governance reliability threshold']
+      };
     }
 
-    // Default low confidence fallback
-    return {
-      title: '',
-      category: 'Emergency Hazard',
-      department: 'Emergency Response',
-      severity: 'low',
-      priority: 'low',
-      confidence: 40,
-      emergency: false,
-      explanation: ['AI confidence is below governance reliability threshold']
-    };
+    logger.info('[AI_RESPONSE] Mock Vision analysis completed successfully', { jobId: file.filename || file.originalname, results });
+    return results;
   }
 
   async compareImages(beforeImagePath, afterFile) {

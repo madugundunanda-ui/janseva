@@ -395,14 +395,9 @@ import { ImageCompressionService } from '../../core/services/image-compression.s
               <span class="w-1.5 h-1.5 bg-cyan-500 rounded-full animate-pulse"></span>
               <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">{{ translationService.t('AI_ASSISTED_CIVIC_INTAKE') }}</span>
             </div>
-            <div class="font-mono text-[9px] uppercase flex items-center gap-1.5">
-              <span class="text-muted-var">{{ translationService.t('AI_CORE_NETWORK') }}:</span>
-              <span class="font-bold" [ngClass]="{
-                'text-emerald-400': aiHealthStatus === 'Online',
-                'text-amber-400': aiHealthStatus === 'Busy',
-                'text-red-400 animate-pulse': aiHealthStatus === 'Offline'
-              }">{{ aiHealthStatus }}</span>
-            </div>
+            <span [ngClass]="aiService.classificationStatus() === 'VERIFIED' ? 'badge-green' : 'badge-amber'">
+              AI CORE NETWORK: {{ aiService.classificationStatus() === 'VERIFIED' ? 'ONLINE' : 'PROCESSING' }}
+            </span>
           </div>
           <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mb-6 font-mono">{{ translationService.t('REGISTER_NEW_GRIEVANCE') }}</h3>
 
@@ -686,7 +681,7 @@ export class ComplaintsComponent implements OnInit {
     public authService: AuthService,
     private complaintsService: ComplaintsService,
     private departmentsService: DepartmentsService,
-    private aiService: AiService,
+    public aiService: AiService,
     private cdr: ChangeDetectorRef
   ) {}
 

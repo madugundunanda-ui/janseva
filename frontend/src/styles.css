@@ -247,3 +247,35 @@ body, h1, h2, h3, h4, h5, h6, p, span, div, td, th {
 .animate-pulse-progress {
   animation: pulseProgress 1.2s infinite ease-in-out;
 }
+
+.badge-green {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: monospace;
+  background-color: rgba(52, 211, 153, 0.15);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  color: #34d399;
+}
+
+.badge-amber {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 8px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-family: monospace;
+  background-color: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+  color: #fbbf24;
+  animation: pulse-slow 2s infinite ease-in-out;
+}
+

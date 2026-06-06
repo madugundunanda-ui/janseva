@@ -63,6 +63,8 @@ class GeminiVisionProvider extends BaseVisionProvider {
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       
+      logger.info('[AI_REQUEST] Sending image analysis request to Gemini API', { jobId: file.filename || file.originalname });
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -84,7 +86,7 @@ class GeminiVisionProvider extends BaseVisionProvider {
       }
 
       const results = JSON.parse(textResponse.trim());
-      logger.info('Gemini Vision analysis completed', { jobId: file.filename, results });
+      logger.info('[AI_RESPONSE] Gemini Vision analysis completed successfully', { jobId: file.filename || file.originalname, results });
       return results;
 
     } catch (err) {

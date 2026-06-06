@@ -6,6 +6,8 @@ const { analyzeComplaintImage, predictResolution, calculateSeverity } = require(
 const { Complaint, Department } = require('../models');
 const logger = require('./logger');
 
+const { resolveDepartmentId } = require('../services/dashboardService');
+
 class AIJobManager extends EventEmitter {
   constructor() {
     super();
@@ -73,13 +75,40 @@ class AIJobManager extends EventEmitter {
       job.results = { ...cached };
       
       // Defer execution slightly to allow EventSource subscription
-      setTimeout(() => {
+      setTimeout(async () => {
         this.emit(jobId, { status: 'upload_complete', progress: 10, ...job.results });
         this.emit(jobId, { status: 'detecting_issue', progress: 40, ...job.results });
         this.emit(jobId, { status: 'estimating_severity', progress: 70, ...job.results });
         this.emit(jobId, { status: 'generating_recommendations', progress: 90, ...job.results });
         this.emit(jobId, { status: 'duplicate_checked', progress: 100, ...job.results });
         this.emit(jobId, { status: 'completed', progress: 100, ...job.results });
+
+        // Save to database
+        try {
+          const resolvedDeptId = await resolveDepartmentId(job.results.department);
+          let targetDeptId = resolvedDeptId;
+          if (!targetDeptId) {
+            targetDeptId = await resolveDepartmentId('Public Safety');
+            if (!targetDeptId) {
+              const firstDept = await Department.findOne({}).select('_id');
+              if (firstDept) targetDeptId = firstDept._id;
+            }
+          }
+
+          await Complaint.findByIdAndUpdate(jobId, {
+            title: job.results.title || 'Civic Grievance',
+            description: job.results.description,
+            department: targetDeptId,
+            priority: (job.results.priority || 'medium').toLowerCase(),
+            severityScore: job.results.severityScore || 50,
+            severityReason: job.results.reasons || [],
+            'aiVerification.verificationStatus': 'Verified',
+            'aiVerification.predictedDepartment': job.results.department || '',
+            'aiVerification.confidenceScore': job.results.confidence || 0,
+          });
+        } catch (dbErr) {
+          logger.error('Failed to update DB on cached job completion', { jobId, error: dbErr.message });
+        }
       }, 100);
 
       return jobId;
@@ -97,6 +126,7 @@ class AIJobManager extends EventEmitter {
     try {
       job.status = 'processing';
       job.progress = 10;
+      logger.info('[JOB_STARTED] AI job background processing started', { jobId });
       this.emit(jobId, { status: 'upload_complete', progress: 10, message: 'Image uploaded successfully' });
 
       logger.info('Starting structured inference pipeline...', { jobId });
@@ -118,6 +148,7 @@ class AIJobManager extends EventEmitter {
         emergency: !!prediction.emergency
       };
 
+      job.progress = 40;
       this.emit(jobId, { 
         status: 'detecting_issue', 
         progress: 40, 
@@ -151,6 +182,7 @@ class AIJobManager extends EventEmitter {
           reasons: severity.reason || ['Standard analysis completed']
         };
         
+        job.progress = 70;
         this.emit(jobId, {
           status: 'estimating_severity',
           progress: 70,
@@ -174,6 +206,7 @@ class AIJobManager extends EventEmitter {
           escalationProbability: resPrediction.escalationProbability || 35
         };
         
+        job.progress = 90;
         this.emit(jobId, {
           status: 'generating_recommendations',
           progress: 90,
@@ -197,6 +230,7 @@ class AIJobManager extends EventEmitter {
       job.results.duplicateDetected = duplicateResult.duplicateDetected;
       job.results.bestMatch = duplicateResult.bestMatch;
       
+      job.progress = 100;
       this.emit(jobId, {
         status: 'duplicate_checked',
         progress: 100,
@@ -212,31 +246,62 @@ class AIJobManager extends EventEmitter {
         this.cachePrediction(job.hash, job.results);
       }
 
+      // Update the Complaint document in database
+      const resolvedDeptId = await resolveDepartmentId(job.results.department);
+      let targetDeptId = resolvedDeptId;
+      if (!targetDeptId) {
+        targetDeptId = await resolveDepartmentId('Public Safety');
+        if (!targetDeptId) {
+          const firstDept = await Department.findOne({}).select('_id');
+          if (firstDept) targetDeptId = firstDept._id;
+        }
+      }
+
+      await Complaint.findByIdAndUpdate(jobId, {
+        title: job.results.title || 'Civic Grievance',
+        description: job.results.description || 'No description provided',
+        department: targetDeptId,
+        priority: (job.results.priority || 'medium').toLowerCase(),
+        severityScore: job.results.severityScore || 50,
+        severityReason: job.results.reasons || [],
+        'aiVerification.verificationStatus': 'Verified',
+        'aiVerification.predictedDepartment': job.results.department || '',
+        'aiVerification.confidenceScore': job.results.confidence || 0,
+      });
+
       // Log AI inference to AiAuditLog collection
       try {
-        const { AiAuditLog, Complaint } = require('../models');
-        const draft = await Complaint.findOne({ image: `/uploads/complaints/${job.file.filename}` });
-        if (draft) {
-          await AiAuditLog.create({
-            complaintId: draft._id,
-            provider: process.env.VISION_PROVIDER === 'mock' ? 'Mock' : 'Gemini',
-            confidence: job.results.confidence || 0,
-            department: job.results.department || 'General Inquiry',
-            priority: job.results.priority || 'medium',
-            reasons: job.results.classificationReasons || []
-          });
-          logger.info('[AI-AUDIT-LOG] AI inference logged to database', { complaintId: draft._id });
-        }
+        const { AiAuditLog } = require('../models');
+        await AiAuditLog.create({
+          complaintId: jobId,
+          provider: process.env.VISION_PROVIDER === 'mock' ? 'Mock' : 'Gemini',
+          confidence: job.results.confidence || 0,
+          department: job.results.department || 'General Inquiry',
+          priority: job.results.priority || 'medium',
+          reasons: job.results.classificationReasons || []
+        });
+        logger.info('[AI-AUDIT-LOG] AI inference logged to database', { complaintId: jobId });
       } catch (logErr) {
         logger.error('[AI-AUDIT-LOG] Failed to create audit log', { error: logErr.message });
       }
 
+      logger.info('[JOB_COMPLETED] Background AI job completed successfully', { jobId });
       this.emit(jobId, { status: 'completed', progress: 100, ...job.results });
-      logger.info('Background AI job completed successfully', { jobId });
     } catch (err) {
-      logger.error('AI background job processing failed', { jobId, error: err.message });
+      logger.error('[JOB_FAILED] AI background job processing failed', { jobId, error: err.message });
       job.status = 'failed';
       job.error = err.message;
+
+      try {
+        await Complaint.findByIdAndUpdate(jobId, {
+          'aiVerification.verificationStatus': 'Failed',
+          'aiVerification.predictedDepartment': '',
+          'aiVerification.confidenceScore': 0,
+        });
+      } catch (dbErr) {
+        logger.error('Failed to update failed job status in database', { jobId, error: dbErr.message });
+      }
+
       this.emit(jobId, { status: 'failed', message: 'Inference pipeline encountered an error' });
     }
   }
