@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { map, Observable, of, tap, delay } from 'rxjs';
+import { map, Observable, of, tap, delay, shareReplay } from 'rxjs';
 import { ApiService } from './api.service';
 import { DashboardSnapshot, DashboardStats } from '../models/dashboard.model';
 
@@ -8,15 +8,26 @@ import { DashboardSnapshot, DashboardStats } from '../models/dashboard.model';
 })
 export class DashboardService {
   readonly stats = signal<DashboardStats | null>(null);
+  private statsRequest$: Observable<DashboardStats> | null = null;
 
   constructor(private apiService: ApiService) {}
 
   loadStats(): Observable<DashboardStats> {
-    return this.apiService.getDashboardStats().pipe(
+    if (this.statsRequest$) {
+      return this.statsRequest$;
+    }
+
+    this.statsRequest$ = this.apiService.getDashboardStats().pipe(
       map((response) => this.normalizeStats(response)),
-      tap((stats) => this.stats.set(stats)),
-      delay(0)
+      tap({
+        next: (stats) => this.stats.set(stats),
+        error: () => { this.statsRequest$ = null; },
+        complete: () => { this.statsRequest$ = null; }
+      }),
+      shareReplay(1)
     );
+
+    return this.statsRequest$;
   }
 
   getStats(): Observable<DashboardStats> {

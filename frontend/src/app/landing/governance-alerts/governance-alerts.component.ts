@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, PLATFORM_ID, Inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, PLATFORM_ID, Inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Subscription } from 'rxjs';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -122,7 +122,8 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
     private updatesService: UpdatesService,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -130,6 +131,7 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
 
     this.dashboardService.loadStats().subscribe((stats) => {
       this.counter = (stats.totalComplaints * 100) + stats.pendingComplaints;
+      this.cdr.detectChanges();
     });
 
     this.timerId = this.updatesService.watchLiveUpdates(4500).subscribe((items) => {
@@ -140,6 +142,7 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
         risk: item.severity === 'critical' ? 'HIGH RISK' : item.severity === 'warning' ? 'MED RISK' : 'LOW RISK'
       }));
       this.counter += Math.max(1, items.length);
+      this.cdr.detectChanges();
     });
   }
 

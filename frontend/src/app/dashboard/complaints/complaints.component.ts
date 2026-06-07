@@ -9,7 +9,7 @@ import { DepartmentsService } from '../../core/services/departments.service';
 import { AiService } from '../../core/services/ai.service';
 import { TranslationService, LanguageCode } from '../../core/services/translation.service';
 import { ImageCompressionService } from '../../core/services/image-compression.service';
-
+import { normalizeDepartment } from '../../core/utils/department-normalizer';
 @Component({
   selector: 'app-complaints',
   imports: [CommonModule, FormsModule],
@@ -692,11 +692,18 @@ export class ComplaintsComponent implements OnInit {
       if (data.length > 0) {
         this.newComplaintData.department = data[0].id;
       }
+      this.cdr.detectChanges();
     });
 
     if (this.canSupervisorEdit()) {
-      this.apiService.getUsers('officer').subscribe(data => this.officersList = data);
-      this.apiService.getUsers('supervisor').subscribe(data => this.supervisorsList = data);
+      this.apiService.getUsers('officer').subscribe(data => {
+        this.officersList = data;
+        this.cdr.detectChanges();
+      });
+      this.apiService.getUsers('supervisor').subscribe(data => {
+        this.supervisorsList = data;
+        this.cdr.detectChanges();
+      });
     }
 
     // Setup offline detection and local sync
@@ -904,7 +911,8 @@ export class ComplaintsComponent implements OnInit {
                     this.newComplaintData.title = event.title || this.newComplaintData.title;
                     this.newComplaintData.description = event.description || this.newComplaintData.description;
                     
-                    const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                    const normalizedDept = normalizeDepartment(event.department || '');
+                    const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === normalizedDept.toLowerCase());
                     if (matchedDept) {
                       this.newComplaintData.department = matchedDept.id;
                     }

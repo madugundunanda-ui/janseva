@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DepartmentsService } from '../../core/services/departments.service';
 import { TranslationService } from '../../core/services/translation.service';
@@ -119,6 +119,12 @@ export class GovernanceTransparencyComponent implements OnInit {
 
   private departmentsService = inject(DepartmentsService);
   public translationService = inject(TranslationService);
+  private cdr = inject(ChangeDetectorRef);
+
+  constructor() {
+    this.departments = this.allDepartmentsMock;
+    this.calculateAggregateMetrics();
+  }
 
   // Fallback / Predefined 20 departments structure matching showcase
   private allDepartmentsMock: DepartmentItem[] = [
@@ -171,6 +177,7 @@ export class GovernanceTransparencyComponent implements OnInit {
       });
 
       this.calculateAggregateMetrics();
+      this.cdr.detectChanges();
     });
   }
 

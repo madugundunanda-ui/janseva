@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AiService } from '../../core/services/ai.service';
@@ -253,7 +253,8 @@ export class AiInsightsComponent implements OnInit {
 
   constructor(
     private aiService: AiService,
-    private departmentsService: DepartmentsService
+    private departmentsService: DepartmentsService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -262,6 +263,7 @@ export class AiInsightsComponent implements OnInit {
       if (departments.length > 0) {
         this.predictorPayload.department = departments[0].name;
       }
+      this.cdr.detectChanges();
     });
   }
 
@@ -271,9 +273,11 @@ export class AiInsightsComponent implements OnInit {
       next: (res) => {
         this.predictionResult = res;
         this.loadingPredictor = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loadingPredictor = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -284,9 +288,11 @@ export class AiInsightsComponent implements OnInit {
       next: (res) => {
         this.severityResult = res;
         this.loadingSeverity = false;
+        this.cdr.detectChanges();
       },
       error: () => {
         this.loadingSeverity = false;
+        this.cdr.detectChanges();
       }
     });
   }

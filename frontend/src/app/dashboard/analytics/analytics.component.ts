@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { NgApexchartsModule, ChartComponent } from 'ng-apexcharts';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -184,13 +184,15 @@ export class AnalyticsComponent implements OnInit {
   constructor(
     private dashboardService: DashboardService,
     private departmentsService: DepartmentsService,
-    private timelineService: TimelineService
+    private timelineService: TimelineService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
     this.dashboardService.loadStats().subscribe((stats) => {
       this.stats = stats;
       this.initCharts();
+      this.cdr.detectChanges();
     });
   }
 
@@ -256,6 +258,7 @@ export class AnalyticsComponent implements OnInit {
           labels: { colors: 'white' }
         }
       };
+      this.cdr.detectChanges();
     });
 
     const breakdown = this.stats.statusBreakdown;
@@ -344,6 +347,7 @@ export class AnalyticsComponent implements OnInit {
           theme: 'light'
         }
       };
+      this.cdr.detectChanges();
     });
   }
 }

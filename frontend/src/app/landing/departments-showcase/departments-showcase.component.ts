@@ -1,4 +1,4 @@
-import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, PLATFORM_ID, Inject, inject } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, PLATFORM_ID, Inject, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DepartmentsService } from '../../core/services/departments.service';
 import { Department } from '../../core/models/department.model';
@@ -215,7 +215,7 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
     { id: 'disaster', name: 'Disaster Management & Relief', nameKey: 'DEPT_DISASTER', description: '', activeComplaints: 1, resolvedComplaints: 200, resolutionRate: 100, avgResponseTime: 1.0, liveStatus: 'operational' }
   ];
 
-  displayedDepartments: DepartmentItem[] = [];
+  displayedDepartments: DepartmentItem[] = this.allDepartments.slice(0, 10);
   showAll = false;
   selectedDept: DepartmentItem | null = null;
 
@@ -318,6 +318,7 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
   };
 
   public translationService = inject(TranslationService);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     @Inject(PLATFORM_ID) private platformId: Object,
@@ -351,6 +352,7 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
       });
 
       this.updateDisplayedDepartments();
+      this.cdr.detectChanges();
 
       if (isPlatformBrowser(this.platformId)) {
         setTimeout(() => {
