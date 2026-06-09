@@ -33,89 +33,150 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
-        path: 'analytics',
-        loadComponent: () => import('./dashboard/analytics/analytics.component').then(m => m.AnalyticsComponent),
-        title: 'System Analytics'
-      },
-      {
-        path: 'ai-insights',
-        loadComponent: () => import('./dashboard/ai-insights/ai-insights.component').then(m => m.AiInsightsComponent),
-        title: 'AI Predictive Insights'
-      },
-      {
-        path: 'complaints',
-        loadComponent: () => import('./dashboard/complaints/complaints.component').then(m => m.ComplaintsComponent),
-        title: 'Grievance Core'
-      },
-      {
-        path: 'officers',
-        loadComponent: () => import('./dashboard/officers/officers.component').then(m => m.OfficersComponent),
-        canActivate: [authGuard],
-        title: 'Officer Workloads',
-        data: { roles: ['admin', 'supervisor', 'officer'] }
-      },
-      {
-        path: 'citizens',
-        loadComponent: () => import('./dashboard/citizens/citizens.component').then(m => m.CitizensComponent),
-        canActivate: [authGuard],
-        title: 'Citizen Directory',
-        data: { roles: ['admin', 'supervisor'] }
-      },
-      {
-        path: 'reports',
-        loadComponent: () => import('./dashboard/reports/reports.component').then(m => m.ReportsComponent),
-        canActivate: [authGuard],
-        title: 'Intelligence Reports',
-        data: { roles: ['admin', 'supervisor'] }
-      },
-      {
-        path: 'maps',
-        loadComponent: () => import('./dashboard/maps/maps.component').then(m => m.MapsComponent),
-        title: 'Hotspot Mapping'
-      },
-      {
-        path: 'settings',
-        loadComponent: () => import('./dashboard/settings/settings.component').then(m => m.SettingsComponent),
-        title: 'Console Settings'
-      },
-      {
         path: 'citizen',
-        loadComponent: () => import('./dashboard/citizen/citizen.component').then(m => m.CitizenComponent),
+        loadComponent: () => import('./shared/layouts/citizen-layout/citizen-layout.component').then(m => m.CitizenLayoutComponent),
         canActivate: [authGuard],
-        title: 'Citizen Dashboard',
-        data: { roles: ['citizen', 'admin'] }
+        data: { roles: ['citizen', 'admin'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/citizen/citizen-home.component').then(m => m.CitizenHomeComponent),
+            title: 'Citizen Dashboard'
+          },
+          {
+            path: 'complaints',
+            loadComponent: () => import('./features/citizen/citizen-complaints.component').then(m => m.CitizenComplaintsComponent),
+            title: 'My Complaints'
+          },
+          {
+            path: 'settings',
+            loadComponent: () => import('./shared/components/profile-settings/profile-settings.component').then(m => m.ProfileSettingsComponent),
+            title: 'My Profile'
+          }
+        ]
       },
       {
         path: 'officer',
-        loadComponent: () => import('./dashboard/officer/officer.component').then(m => m.OfficerComponent),
+        loadComponent: () => import('./shared/layouts/officer-layout/officer-layout.component').then(m => m.OfficerLayoutComponent),
         canActivate: [authGuard],
-        title: 'Officer Operations Dashboard',
-        data: { roles: ['officer', 'admin'] }
+        data: { roles: ['officer', 'admin'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/officer/officer-home.component').then(m => m.OfficerHomeComponent),
+            title: 'Officer Operations'
+          },
+          {
+            path: 'complaints',
+            loadComponent: () => import('./features/officer/officer-complaints.component').then(m => m.OfficerComplaintsComponent),
+            title: 'Active Queue'
+          },
+          {
+            path: 'maps',
+            loadComponent: () => import('./shared/maps/map-view/map-view.component').then(m => m.MapViewComponent),
+            title: 'Hotspot Map'
+          },
+          {
+            path: 'settings',
+            loadComponent: () => import('./shared/components/profile-settings/profile-settings.component').then(m => m.ProfileSettingsComponent),
+            title: 'Console Settings'
+          }
+        ]
       },
       {
         path: 'supervisor',
-        loadComponent: () => import('./dashboard/supervisor/supervisor.component').then(m => m.SupervisorComponent),
+        loadComponent: () => import('./shared/layouts/supervisor-layout/supervisor-layout.component').then(m => m.SupervisorLayoutComponent),
         canActivate: [authGuard],
-        title: 'Governance Management Dashboard',
-        data: { roles: ['supervisor', 'admin'] }
-      },
-      {
-        path: 'ai-diagnostics',
-        loadComponent: () => import('./dashboard/admin/ai-diagnostics.component').then(m => m.AiDiagnosticsComponent),
-        canActivate: [authGuard],
-        title: 'AI System Diagnostics',
-        data: { roles: ['admin'] }
+        data: { roles: ['supervisor', 'admin'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/supervisor/supervisor-home.component').then(m => m.SupervisorHomeComponent),
+            title: 'Supervisor Dashboard'
+          },
+          {
+            path: 'complaints',
+            loadComponent: () => import('./features/supervisor/supervisor-complaints.component').then(m => m.SupervisorComplaintsComponent),
+            title: 'Ward Workload'
+          },
+          {
+            path: 'analytics',
+            loadComponent: () => import('./shared/charts/analytics-charts/analytics-charts.component').then(m => m.AnalyticsChartsComponent),
+            title: 'Performance'
+          },
+          {
+            path: 'officers',
+            loadComponent: () => import('./shared/tables/officers-table.component').then(m => m.OfficersTableComponent),
+            title: 'Officers Roster'
+          },
+          {
+            path: 'maps',
+            loadComponent: () => import('./shared/maps/map-view/map-view.component').then(m => m.MapViewComponent),
+            title: 'Hotspot Map'
+          },
+          {
+            path: 'settings',
+            loadComponent: () => import('./shared/components/profile-settings/profile-settings.component').then(m => m.ProfileSettingsComponent),
+            title: 'Console Settings'
+          }
+        ]
       },
       {
         path: 'admin',
-        loadComponent: () => import('./dashboard/admin/admin.component').then(m => m.AdminComponent),
+        loadComponent: () => import('./shared/layouts/admin-layout/admin-layout.component').then(m => m.AdminLayoutComponent),
         canActivate: [authGuard],
-        title: 'State Intelligence Control Center',
-        data: { roles: ['admin'] }
+        data: { roles: ['admin'] },
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/admin/admin-home.component').then(m => m.AdminHomeComponent),
+            title: 'Command Center'
+          },
+          {
+            path: 'complaints',
+            loadComponent: () => import('./features/admin/admin-complaints.component').then(m => m.AdminComplaintsComponent),
+            title: 'Grievance Ledger'
+          },
+          {
+            path: 'analytics',
+            loadComponent: () => import('./shared/charts/analytics-charts/analytics-charts.component').then(m => m.AnalyticsChartsComponent),
+            title: 'System Analytics'
+          },
+          {
+            path: 'maps',
+            loadComponent: () => import('./shared/maps/map-view/map-view.component').then(m => m.MapViewComponent),
+            title: 'Hotspot Map'
+          },
+          {
+            path: 'ai-diagnostics',
+            loadComponent: () => import('./features/admin/ai-diagnostics.component').then(m => m.AiDiagnosticsComponent),
+            title: 'AI Diagnostics'
+          },
+          {
+            path: 'citizens',
+            loadComponent: () => import('./shared/tables/citizens-table.component').then(m => m.CitizensTableComponent),
+            title: 'Citizens Directory'
+          },
+          {
+            path: 'officers',
+            loadComponent: () => import('./shared/tables/officers-table.component').then(m => m.OfficersTableComponent),
+            title: 'Officers Directory'
+          },
+          {
+            path: 'reports',
+            loadComponent: () => import('./shared/tables/reports-table.component').then(m => m.ReportsTableComponent),
+            title: 'Audit Reports'
+          },
+          {
+            path: 'settings',
+            loadComponent: () => import('./shared/components/profile-settings/profile-settings.component').then(m => m.ProfileSettingsComponent),
+            title: 'Console Settings'
+          }
+        ]
       },
       {
         path: '',
-        redirectTo: 'complaints',
+        redirectTo: 'citizen',
         pathMatch: 'full'
       }
     ]
