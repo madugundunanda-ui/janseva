@@ -126,12 +126,16 @@ export class RegisterComponent implements OnInit {
   onSubmit() {
     this.loading = true;
     this.errorMessage = '';
+    console.log('Registering user payload:', this.userData);
     this.authService.register(this.userData).subscribe({
       next: () => {
+        this.loading = false;
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
-        this.errorMessage = err.message || 'Registration rejected by authentication module.';
+        console.error('Registration error occurred:', err);
+        const friendly = err?.friendlyMessage || err?.error?.message || err?.message || '';
+        this.errorMessage = friendly || 'Registration rejected by authentication module.';
         this.loading = false;
       },
     });

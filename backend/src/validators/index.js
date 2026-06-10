@@ -13,6 +13,7 @@ const registerSchema = Joi.object({
   password: Joi.string().min(6).max(128).required(),
   role: Joi.string().valid('citizen', 'officer', 'supervisor', 'admin').default('citizen'),
   phone: Joi.string().trim().allow('').optional(),
+  address: Joi.string().trim().allow('').optional(),
   aadhaarNumber: Joi.string().trim().allow('').optional(),
   firstName: Joi.string().trim().allow('').optional(),
   lastName: Joi.string().trim().allow('').optional(),
