@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 
 @Component({
   selector: 'app-chatbot-panel',
+  standalone: false,
   template: `
     <section class="chatbot-panel">
       <ng-content></ng-content>

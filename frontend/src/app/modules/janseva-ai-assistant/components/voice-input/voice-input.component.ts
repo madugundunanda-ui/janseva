@@ -2,6 +2,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-voice-input',
+  standalone: false,
   template: `
     <div class="voice-input">
       <button type="button" (click)="toggleRecording()">{{ recording ? 'Stop' : 'Record' }}</button>

@@ -2,6 +2,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-language-selection',
+  standalone: false,
   template: `
     <div class="language-selection">
       <button type="button" (click)="choose('en-IN')">English</button>

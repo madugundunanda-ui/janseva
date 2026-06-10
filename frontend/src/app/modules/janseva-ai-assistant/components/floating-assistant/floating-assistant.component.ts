@@ -17,6 +17,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
   selector: 'app-floating-assistant',
+  standalone: false,
   template: `
     <div class="floating-assistant" [ngClass]="{ expanded: isExpanded }">
       <!-- Floating Button -->

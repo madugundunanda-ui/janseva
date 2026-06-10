@@ -7,7 +7,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, Subject, interval } from 'rxjs';
 import { map, catchError, retry, switchMap, takeUntil } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
+import { environment } from '../../../../environments/environment';
 
 interface VoiceSession {
   sessionId: string;

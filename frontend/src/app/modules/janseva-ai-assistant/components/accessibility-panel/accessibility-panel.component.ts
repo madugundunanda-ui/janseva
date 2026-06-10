@@ -2,6 +2,7 @@ import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
   selector: 'app-accessibility-panel',
+  standalone: false,
   template: `
     <div class="accessibility-panel">
       <button type="button" (click)="toggleLargeText()">Large Text</button>
