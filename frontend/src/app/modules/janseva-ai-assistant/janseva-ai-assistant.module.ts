@@ -17,7 +17,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { TranslatePipe, TranslateDirective } from '@ngx-translate/core';
+import { TranslateModule } from '@ngx-translate/core';
 
 // Components
 import { FloatingAssistantComponent } from './components/floating-assistant/floating-assistant.component';
@@ -50,8 +50,7 @@ import { LocalStorageService } from './services/local-storage.service';
     ReactiveFormsModule,
     FormsModule,
     HttpClientModule,
-    TranslatePipe,
-    TranslateDirective,
+    TranslateModule,
     MatIconModule,
     MatButtonModule,
     MatCardModule,

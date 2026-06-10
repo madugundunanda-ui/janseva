@@ -16,7 +16,6 @@ import { LocalStorageService } from '../../services/local-storage.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component({
-  standalone: false,
   selector: 'app-floating-assistant',
   standalone: false,
   template: `

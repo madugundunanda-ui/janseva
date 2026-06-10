@@ -1,7 +1,6 @@
 import { Component, Input } from '@angular/core';
 
 @Component({
-  standalone: false,
   selector: 'app-chat-message',
   standalone: false,
   template: `

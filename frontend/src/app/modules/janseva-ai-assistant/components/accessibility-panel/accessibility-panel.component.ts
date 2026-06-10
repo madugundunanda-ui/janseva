@@ -1,7 +1,6 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
-  standalone: false,
   selector: 'app-accessibility-panel',
   standalone: false,
   template: `
