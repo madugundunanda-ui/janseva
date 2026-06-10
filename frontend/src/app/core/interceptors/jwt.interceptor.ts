@@ -25,11 +25,15 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
           } catch {}
-          try {
-            const returnUrl = encodeURIComponent(window.location.pathname + window.location.search || '/');
-            window.location.href = `/auth/login?returnUrl=${returnUrl}`;
-          } catch {
-            window.location.href = '/auth/login';
+          
+          const isPublicPath = window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname.startsWith('/auth');
+          if (!isPublicPath) {
+            try {
+              const returnUrl = encodeURIComponent(window.location.pathname + window.location.search || '/');
+              window.location.href = `/auth/login?returnUrl=${returnUrl}`;
+            } catch {
+              window.location.href = '/auth/login';
+            }
           }
           return throwError(() => error);
         }

@@ -1,6 +1,7 @@
 import { Component, EventEmitter, Output } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-language-selection',
   standalone: false,
   template: `

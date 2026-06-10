@@ -1030,6 +1030,7 @@ export class ComplaintsComponent implements OnInit {
     }
   }
 
+
   submitComplaint() {
     this.loadingSubmit = true;
 
