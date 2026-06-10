@@ -149,11 +149,11 @@ export class VoiceService {
       const originalOndatavailable = this.mediaRecorder.ondataavailable;
       const originalOnstop = this.mediaRecorder.onstop;
 
-      this.mediaRecorder.onstop = () => {
+      this.mediaRecorder.onstop = (event: Event) => {
         const audioBlob = new Blob(this.audioChunks, { type: this.mediaRecorder!.mimeType });
         this.recordingSubject.next(false);
         resolve(audioBlob);
-        if (originalOnstop) originalOnstop.call(this.mediaRecorder);
+        if (originalOnstop) originalOnstop.call(this.mediaRecorder!, event);
       };
 
       this.mediaRecorder.onerror = (event) => {

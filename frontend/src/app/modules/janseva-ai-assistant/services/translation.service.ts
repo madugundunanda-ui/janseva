@@ -69,8 +69,8 @@ export class TranslationService {
   private initializeTranslations(): void {
     // Add languages to ngx-translate
     const languages = Object.keys(this.SUPPORTED_LANGUAGES);
-    this.translateService.addLanguages(languages);
-    this.translateService.setDefaultLanguage('en-IN');
+    this.translateService.addLangs(languages);
+    this.translateService.setFallbackLang('en-IN').subscribe();
     this.translateService.use('en-IN');
   }
 
@@ -167,7 +167,7 @@ export class TranslationService {
           observer.next(translation);
           observer.complete();
         },
-        (error) => {
+        (error: any) => {
           console.error(`Translation error for key: ${key}`, error);
           observer.next(key); // Fallback to key if translation fails
           observer.complete();

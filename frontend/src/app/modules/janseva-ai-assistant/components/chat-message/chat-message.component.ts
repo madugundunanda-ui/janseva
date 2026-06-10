@@ -1,6 +1,7 @@
 import { Component, Input } from '@angular/core';
 
 @Component({
+  standalone: false,
   selector: 'app-chat-message',
   template: `
     <article class="chat-message" [class.user]="type === 'user'" [class.assistant]="type === 'assistant'">

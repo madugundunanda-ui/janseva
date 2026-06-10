@@ -66,6 +66,7 @@ interface DistrictContext {
 }
 
 @Component({
+  standalone: false,
   selector: 'app-complaint-assistant',
   template: `
     <section class="complaint-wizard">
