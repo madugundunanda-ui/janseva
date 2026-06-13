@@ -1,4 +1,11 @@
 @import 'tailwindcss';
+@source "../shared-ui";
+@source "../shared-theme";
+@source "../shared-components";
+@source "../janseva-citizen";
+@source "../janseva-admin";
+@source "../janseva-officer";
+@source "../janseva-supervisor";
 
 /* Gineko-Inspired Soft Editorial Palette */
 :root {

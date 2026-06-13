@@ -45,6 +45,7 @@ export class AiService {
 
     return {
       ...response,
+      status: this.isTerminalSuccess(rawStatus) ? 'completed' : (this.isTerminalFailure(rawStatus) ? 'failed' : response.status),
       verificationStatus: rawStatus,
       department: payload.department,
       category: payload.category || payload.title,
