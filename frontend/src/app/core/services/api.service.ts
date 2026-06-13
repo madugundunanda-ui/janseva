@@ -49,6 +49,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.get<ApiEnvelope<T> | T>(this.buildUrl(path), {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       retry({
@@ -71,6 +72,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.post<ApiEnvelope<T> | T>(this.buildUrl(path), body, {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
@@ -82,6 +84,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.put<ApiEnvelope<T> | T>(this.buildUrl(path), body, {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
@@ -93,6 +96,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.patch<ApiEnvelope<T> | T>(this.buildUrl(path), body, {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
@@ -104,6 +108,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.delete<ApiEnvelope<T> | T>(this.buildUrl(path), {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
@@ -115,6 +120,7 @@ export class ApiService {
     this.isLoading.set(true);
     return this.http.post<ApiEnvelope<T> | T>(this.buildUrl(path), body, {
       params: this.toParams(options.params),
+      withCredentials: true
     }).pipe(
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),

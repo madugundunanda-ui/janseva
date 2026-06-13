@@ -1,0 +1,9 @@
+{
+  "name": "janseva-citizen-e2e",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "janseva-citizen-e2e/src",
+  "implicitDependencies": ["janseva-citizen"],
+  "// targets": "to see all targets run: nx show project janseva-citizen-e2e --web",
+  "targets": {}
+}

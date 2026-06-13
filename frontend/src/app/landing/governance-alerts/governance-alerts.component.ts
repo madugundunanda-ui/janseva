@@ -25,6 +25,14 @@ import { GovernanceUpdate } from '../../core/models/update.model';
             </h2>
           </div>
           <div class="flex items-center gap-6 self-center font-mono text-[10px] uppercase tracking-wider">
+            <!-- Region Selector -->
+            <select [value]="currentState" (change)="onStateChange($event)" class="px-3 py-1.5 rounded-full border border-[#6AA9FF]/30 bg-glass-var text-[#6AA9FF] font-mono text-[9px] tracking-wider uppercase bg-transparent outline-none cursor-pointer hover:border-[#6AA9FF] transition-colors">
+              <option value="ALL" class="bg-[#0d1527] text-white">ALL REGIONS</option>
+              <option value="AP" class="bg-[#0d1527] text-white">ANDHRA PRADESH (AP)</option>
+              <option value="TS" class="bg-[#0d1527] text-white">TELANGANA (TS)</option>
+              <option value="TN" class="bg-[#0d1527] text-white">TAMIL NADU (TN)</option>
+              <option value="KA" class="bg-[#0d1527] text-white">KARNATAKA (KA)</option>
+            </select>
             <!-- Flashing global state -->
             <div class="flex items-center gap-2 px-3 py-1.5 rounded bg-emerald-950/20 border border-emerald-500/30 text-emerald-400">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping"></span>
@@ -126,6 +134,8 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
     private cdr: ChangeDetectorRef
   ) {}
 
+  currentState = 'ALL';
+
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) return;
 
@@ -134,7 +144,20 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
       this.cdr.detectChanges();
     });
 
-    this.timerId = this.updatesService.watchLiveUpdates(4500).subscribe((items) => {
+    this.restartSubscription();
+  }
+
+  onStateChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.currentState = select.value;
+    this.restartSubscription();
+  }
+
+  restartSubscription() {
+    if (this.timerId) {
+      this.timerId.unsubscribe();
+    }
+    this.timerId = this.updatesService.watchLiveUpdates(this.currentState, 4500).subscribe((items) => {
       this.alerts = items.slice(0, 4);
       this.hotspots = items.slice(0, 3).map((item, index) => ({
         id: item.id || `hotspot-${index}`,

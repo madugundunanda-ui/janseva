@@ -12,6 +12,13 @@ const geoRoutes = require('./geoRoutes');
 const adminRoutes = require('./adminRoutes');
 const updateRoutes = require('./updateRoutes');
 const governanceRoutes = require('./governanceRoutes');
+const aiAssistantRoutes = require('./aiAssistantRoutes');
+const analyticsRoutes = require('./analyticsRoutes');
+const intelligenceRoutes = require('./intelligenceRoutes');
+const transparencyRoutes = require('./transparencyRoutes');
+const eventMonitorRoutes = require('./eventMonitorRoutes');
+const infrastructureRoutes = require('./infrastructureRoutes');
+const voiceRoutes = require('./voiceRoutes');
 
 const router = express.Router();
 
@@ -28,5 +35,12 @@ router.use('/geo', geoRoutes);
 router.use('/admin', adminRoutes);
 router.use('/updates', updateRoutes);
 router.use('/governance', governanceRoutes);
+router.use('/ai-assistant', aiAssistantRoutes);
+router.use('/analytics', analyticsRoutes);
+router.use('/intelligence', intelligenceRoutes);
+router.use('/transparency', transparencyRoutes);
+router.use('/events/monitor', eventMonitorRoutes);
+router.use('/infrastructure', infrastructureRoutes);
+router.use('/voice', voiceRoutes);
 
 module.exports = router;

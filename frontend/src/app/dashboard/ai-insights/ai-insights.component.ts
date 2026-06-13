@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { AiService } from '../../core/services/ai.service';
 import { DepartmentsService } from '../../core/services/departments.service';
 import { Department } from '../../core/models/department.model';
+import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-ai-insights',
@@ -97,12 +98,12 @@ import { Department } from '../../core/models/department.model';
           <div class="space-y-4 mb-6">
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">Grievance Title</label>
-              <input type="text" [(ngModel)]="severityPayload.title" class="glass-input" placeholder="e.g. Dangling live wire over wet street">
+              <input type="text" [(ngModel)]="severityPayload.title" class="glass-input" [placeholder]="translationService.t('PH_WIRE_EXAMPLE')">
             </div>
             
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">Detailed Narrative</label>
-              <textarea [(ngModel)]="severityPayload.description" rows="3" class="glass-input" placeholder="The snapped main wire is sparking directly in front of the primary school gate. Water log around the wire creates immediate shock hazard..."></textarea>
+              <textarea [(ngModel)]="severityPayload.description" rows="3" class="glass-input" [placeholder]="translationService.t('PH_WIRE_DESC_EXAMPLE')"></textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
@@ -112,7 +113,7 @@ import { Department } from '../../core/models/department.model';
               </div>
               <div class="flex flex-col">
                 <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">Grid Location Context</label>
-                <input type="text" [(ngModel)]="severityPayload.location" class="glass-input" placeholder="Near Hospital / School">
+                <input type="text" [(ngModel)]="severityPayload.location" class="glass-input" [placeholder]="translationService.t('PH_NEAR_HOSPITAL')">
               </div>
             </div>
           </div>
@@ -254,7 +255,8 @@ export class AiInsightsComponent implements OnInit {
   constructor(
     private aiService: AiService,
     private departmentsService: DepartmentsService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    public translationService: TranslationService
   ) {}
 
   ngOnInit(): void {

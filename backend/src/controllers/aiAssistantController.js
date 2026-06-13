@@ -3,19 +3,21 @@
  * Coordinates voice interactions, session management, and workflow routing
  */
 
-const express = require('express');
-const Pool = require('pg').Pool;
-const uuid = require('uuid');
+const crypto = require('crypto');
 const logger = require('../utils/logger');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
 const voiceService = require('../services/voiceService');
 const intentClassifier = require('../services/intentClassifierService');
 const aiServiceIntegration = require('../services/aiServiceIntegration');
-const duplicateDetectionService = require('../services/duplicateDetectionService');
+const civicIntelligenceService = require('../services/civicIntelligenceService');
 
-// Database pool
-const pool = require('../config/db');
+const {
+  VoiceConversationSession,
+  VoiceConversationTurn,
+  AiAssistantWorkflow,
+  UserLanguagePreference
+} = require('../models');
 
 /**
  * POST /api/ai-assistant/init-session
@@ -29,39 +31,26 @@ const initializeSession = asyncHandler(async (req, res) => {
     return res.status(400).json(new AppError('Invalid language', 400));
   }
 
-  const sessionId = uuid.v4();
+  const sessionId = crypto.randomUUID();
   const userAgent = req.headers['user-agent'] || '';
   const ipAddress = req.ip || req.connection.remoteAddress;
 
   try {
-    // Create session record
-    const query = `
-      INSERT INTO voice_conversation_sessions 
-      (session_id, user_id, language, status, device_type, browser_info, ip_address)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, session_id, language, status
-    `;
-
-    const result = await pool.query(query, [
+    // Create session record in MongoDB
+    const session = await VoiceConversationSession.create({
       sessionId,
-      userId || null,
+      userId: userId || null,
       language,
-      'active',
+      status: 'active',
       deviceType,
-      userAgent,
+      browserInfo: userAgent,
       ipAddress
-    ]);
-
-    const session = result.rows[0];
+    });
 
     // If user is authenticated, get their language preferences
     let userPreferences = null;
     if (userId) {
-      const prefQuery = `
-        SELECT * FROM user_language_preferences WHERE user_id = $1
-      `;
-      const prefResult = await pool.query(prefQuery, [userId]);
-      userPreferences = prefResult.rows[0] || null;
+      userPreferences = await UserLanguagePreference.findOne({ userId });
     }
 
     logger.info(`Session initialized: ${sessionId} for language: ${language}`);
@@ -69,7 +58,7 @@ const initializeSession = asyncHandler(async (req, res) => {
     res.status(200).json({
       success: true,
       data: {
-        sessionId: session.session_id,
+        sessionId: session.sessionId,
         language: session.language,
         status: session.status,
         userPreferences: userPreferences,
@@ -95,7 +84,6 @@ const processVoiceInput = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Convert base64 to buffer
     const audioBuffer = Buffer.from(audioBase64, 'base64');
 
     // Detect voice activity
@@ -227,7 +215,8 @@ const generateSpeech = asyncHandler(async (req, res) => {
       responseType: 'voice',
       responseText: text,
       ttsDuration: ttsResult.duration,
-      language: language
+      language: language,
+      ttsGenerated: true
     });
 
     // Update session metrics
@@ -256,35 +245,31 @@ const initiateRaiseComplaintWorkflow = asyncHandler(async (req, res) => {
   const { sessionId, userId, language = 'en-IN' } = req.body;
 
   try {
-    const query = `
-      INSERT INTO ai_assistant_workflows 
-      (user_id, workflow_type, language, session_id, status, current_step, completed_steps)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING id, workflow_type, status, language
-    `;
+    const sessionDoc = await VoiceConversationSession.findOne({ sessionId });
+    if (!sessionDoc) {
+      return res.status(404).json(new AppError('Session not found', 404));
+    }
 
-    const result = await pool.query(query, [
-      userId,
-      'RAISE_COMPLAINT',
+    const workflow = await AiAssistantWorkflow.create({
+      userId: userId || null,
+      workflowType: 'RAISE_COMPLAINT',
       language,
-      sessionId,
-      'in_progress',
-      'image_upload',
-      JSON.stringify([])
-    ]);
-
-    const workflow = result.rows[0];
+      sessionId: sessionDoc._id,
+      status: 'in_progress',
+      currentStep: 'image_upload',
+      completedSteps: []
+    });
 
     // Update session intent
     await updateSessionIntent(sessionId, 'RAISE_COMPLAINT');
 
-    logger.info(`Raise complaint workflow initiated: ${workflow.id}`);
+    logger.info(`Raise complaint workflow initiated: ${workflow._id}`);
 
     res.status(200).json({
       success: true,
       data: {
-        workflowId: workflow.id,
-        workflowType: workflow.workflow_type,
+        workflowId: workflow._id,
+        workflowType: workflow.workflowType,
         status: workflow.status,
         currentStep: 'image_upload',
         nextSteps: ['description', 'location', 'department', 'category', 'severity', 'submit']
@@ -309,8 +294,6 @@ const analyzeComplaintImage = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Start async image analysis
-    // Return immediately, stream results via WebSocket or polling
     const imageBuffer = await readImageFile(imagePath);
 
     res.status(200).json({
@@ -324,7 +307,7 @@ const analyzeComplaintImage = asyncHandler(async (req, res) => {
       }
     });
 
-    // Start background analysis (don't wait for completion)
+    // Start background analysis
     analyzeImageInBackground(workflowId, imageBuffer, language).catch(err => {
       logger.error(`Background analysis error: ${err.message}`);
     });
@@ -342,16 +325,7 @@ const getAnalysisStatus = asyncHandler(async (req, res) => {
   const { workflowId } = req.params;
 
   try {
-    const query = `
-      SELECT id, detected_department, detected_category, detected_severity,
-             department_confidence, category_confidence, severity_confidence,
-             ai_suggestions
-      FROM ai_assistant_workflows
-      WHERE id = $1
-    `;
-
-    const result = await pool.query(query, [workflowId]);
-    const workflow = result.rows[0];
+    const workflow = await AiAssistantWorkflow.findById(workflowId);
 
     if (!workflow) {
       return res.status(404).json(new AppError('Workflow not found', 404));
@@ -362,21 +336,21 @@ const getAnalysisStatus = asyncHandler(async (req, res) => {
       data: {
         workflowId: workflowId,
         department: {
-          value: workflow.detected_department,
-          confidence: workflow.department_confidence,
-          status: workflow.detected_department ? 'complete' : 'pending'
+          value: workflow.detectedDepartment,
+          confidence: workflow.departmentConfidence,
+          status: workflow.detectedDepartment ? 'complete' : 'pending'
         },
         category: {
-          value: workflow.detected_category,
-          confidence: workflow.category_confidence,
-          status: workflow.detected_category ? 'complete' : 'pending'
+          value: workflow.detectedCategory,
+          confidence: workflow.categoryConfidence,
+          status: workflow.detectedCategory ? 'complete' : 'pending'
         },
         severity: {
-          value: workflow.detected_severity,
-          confidence: workflow.severity_confidence,
-          status: workflow.detected_severity ? 'complete' : 'pending'
+          value: workflow.detectedSeverity,
+          confidence: workflow.severityConfidence,
+          status: workflow.detectedSeverity ? 'complete' : 'pending'
         },
-        allAnalysisComplete: !!(workflow.detected_department && workflow.detected_category && workflow.detected_severity)
+        allAnalysisComplete: !!(workflow.detectedDepartment && workflow.detectedCategory && workflow.detectedSeverity)
       }
     });
   } catch (error) {
@@ -391,27 +365,14 @@ const getAnalysisStatus = asyncHandler(async (req, res) => {
  */
 const checkDuplicateComplaints = asyncHandler(async (req, res) => {
   const { workflowId } = req.params;
-  const { imagePath, description, location, department, category, language = 'en-IN' } = req.body;
+  const { description, location, department, category } = req.body;
 
   try {
-    const imageBuffer = imagePath ? await readImageFile(imagePath) : null;
-
-    const duplicateCheckResult = await duplicateDetectionService.checkForDuplicates(
-      {
-        imagePath: imagePath,
-        description: description,
-        location: location,
-        department: department,
-        category: category
-      },
-      language
-    );
-
-    // Record duplicate check
-    if (duplicateCheckResult.duplicatesFound) {
-      const similarIds = duplicateCheckResult.similarComplaints.map(c => c.complaintId);
-      await duplicateDetectionService.recordDuplicateCheck(workflowId, similarIds, {});
-    }
+    const duplicateCheckResult = await civicIntelligenceService.detectDuplicates({
+      description,
+      category: category || department,
+      location
+    });
 
     res.status(200).json({
       success: true,
@@ -431,16 +392,13 @@ const closeSession = asyncHandler(async (req, res) => {
   const { sessionId } = req.body;
 
   try {
-    const query = `
-      UPDATE voice_conversation_sessions
-      SET status = 'completed', end_time = CURRENT_TIMESTAMP
-      WHERE session_id = $1
-      RETURNING id, status
-    `;
+    const session = await VoiceConversationSession.findOneAndUpdate(
+      { sessionId },
+      { status: 'completed', endTime: new Date() },
+      { new: true }
+    );
 
-    const result = await pool.query(query, [sessionId]);
-
-    if (result.rows.length === 0) {
+    if (!session) {
       return res.status(404).json(new AppError('Session not found', 404));
     }
 
@@ -465,34 +423,27 @@ const closeSession = asyncHandler(async (req, res) => {
 
 const logConversationTurn = async (sessionId, turnData) => {
   try {
-    const getSessionQuery = `SELECT id FROM voice_conversation_sessions WHERE session_id = $1`;
-    const sessionResult = await pool.query(getSessionQuery, [sessionId]);
-    if (sessionResult.rows.length === 0) return;
+    const sessionDoc = await VoiceConversationSession.findOne({ sessionId });
+    if (!sessionDoc) return;
 
-    const sessionDbId = sessionResult.rows[0].id;
+    const turnCount = await VoiceConversationTurn.countDocuments({ sessionId: sessionDoc._id });
+    const turnNumber = turnCount + 1;
 
-    const getTurnCountQuery = `SELECT COUNT(*) as count FROM voice_conversation_turns WHERE session_id = $1`;
-    const turnCountResult = await pool.query(getTurnCountQuery, [sessionDbId]);
-    const turnNumber = (turnCountResult.rows[0].count || 0) + 1;
-
-    const insertQuery = `
-      INSERT INTO voice_conversation_turns 
-      (session_id, turn_number, user_input_type, user_input_raw, user_input_processed,
-       speech_confidence, detected_intent, intent_confidence, user_input_language)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-    `;
-
-    await pool.query(insertQuery, [
-      sessionDbId,
+    await VoiceConversationTurn.create({
+      sessionId: sessionDoc._id,
       turnNumber,
-      turnData.inputType || null,
-      turnData.inputText || null,
-      turnData.inputText || null,
-      turnData.speechConfidence || null,
-      turnData.intent || null,
-      turnData.intentConfidence || null,
-      turnData.language || 'en-IN'
-    ]);
+      userInputType: turnData.inputType || 'text',
+      userInputRaw: turnData.inputText || null,
+      userInputProcessed: turnData.inputText || null,
+      speechConfidence: turnData.speechConfidence || null,
+      detectedIntent: turnData.intent || null,
+      intentConfidence: turnData.intentConfidence || null,
+      userInputLanguage: turnData.language || 'en-IN',
+      assistantResponse: turnData.responseText || null,
+      responseType: turnData.responseType || 'text',
+      ttsGenerated: turnData.ttsGenerated || false,
+      ttsDurationMs: turnData.ttsDuration || null
+    });
   } catch (error) {
     logger.warn(`Error logging conversation turn: ${error.message}`);
   }
@@ -500,12 +451,7 @@ const logConversationTurn = async (sessionId, turnData) => {
 
 const updateSessionIntent = async (sessionId, intent) => {
   try {
-    const query = `
-      UPDATE voice_conversation_sessions
-      SET intent = $1
-      WHERE session_id = $2
-    `;
-    await pool.query(query, [intent, sessionId]);
+    await VoiceConversationSession.updateOne({ sessionId }, { intent });
   } catch (error) {
     logger.warn(`Error updating session intent: ${error.message}`);
   }
@@ -513,36 +459,23 @@ const updateSessionIntent = async (sessionId, intent) => {
 
 const updateSessionMetrics = async (sessionId, metrics) => {
   try {
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
-
+    const update = {};
     if (metrics.voiceInputCount) {
-      updates.push(`voice_input_count = voice_input_count + $${paramCount}`);
-      values.push(metrics.voiceInputCount);
-      paramCount++;
+      update.$inc = update.$inc || {};
+      update.$inc.voiceInputCount = metrics.voiceInputCount;
     }
     if (metrics.textInputCount) {
-      updates.push(`text_input_count = text_input_count + $${paramCount}`);
-      values.push(metrics.textInputCount);
-      paramCount++;
+      update.$inc = update.$inc || {};
+      update.$inc.textInputCount = metrics.textInputCount;
     }
     if (metrics.voiceOutputCount) {
-      updates.push(`voice_output_count = voice_output_count + $${paramCount}`);
-      values.push(metrics.voiceOutputCount);
-      paramCount++;
+      update.$inc = update.$inc || {};
+      update.$inc.voiceOutputCount = metrics.voiceOutputCount;
     }
 
-    if (updates.length === 0) return;
+    if (Object.keys(update).length === 0) return;
 
-    values.push(sessionId);
-    const query = `
-      UPDATE voice_conversation_sessions
-      SET ${updates.join(', ')}
-      WHERE session_id = $${paramCount}
-    `;
-
-    await pool.query(query, values);
+    await VoiceConversationSession.updateOne({ sessionId }, update);
   } catch (error) {
     logger.warn(`Error updating session metrics: ${error.message}`);
   }
@@ -552,21 +485,40 @@ const analyzeImageInBackground = async (workflowId, imageBuffer, language) => {
   try {
     const progressCallback = async (type, value, confidence) => {
       // Update workflow with progressive results
-      const query = `
-        UPDATE ai_assistant_workflows
-        SET detected_${type} = $1, ${type}_confidence = $2, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $3
-      `;
-      await pool.query(query, [value, confidence, workflowId]);
+      const update = {};
+      update[`detected${type.charAt(0).toUpperCase() + type.slice(1)}`] = value;
+      update[`${type}Confidence`] = confidence;
+
+      await AiAssistantWorkflow.findByIdAndUpdate(workflowId, update);
 
       logger.info(`Workflow ${workflowId}: ${type} = ${value} (${confidence})`);
     };
 
-    const analysisResult = await aiServiceIntegration.analyzeComplaintImage(
+    const results = await aiServiceIntegration.analyzeComplaintImage(
       imageBuffer,
       language,
       progressCallback
     );
+
+    // Log AI predictions to the audit table
+    await aiServiceIntegration.logAIPrediction(workflowId, 'department', {
+      predictedValue: results.department,
+      confidence: results.analysisMetadata.departmentConfidence,
+      explanation: results.explanation.department,
+      inputData: { language }
+    });
+    await aiServiceIntegration.logAIPrediction(workflowId, 'category', {
+      predictedValue: results.category,
+      confidence: results.analysisMetadata.categoryConfidence,
+      explanation: results.explanation.category,
+      inputData: { language }
+    });
+    await aiServiceIntegration.logAIPrediction(workflowId, 'severity', {
+      predictedValue: results.severity,
+      confidence: results.analysisMetadata.severityConfidence,
+      explanation: results.explanation.severity,
+      inputData: { language }
+    });
 
     logger.info(`Background analysis complete for workflow ${workflowId}`);
   } catch (error) {
@@ -575,7 +527,6 @@ const analyzeImageInBackground = async (workflowId, imageBuffer, language) => {
 };
 
 const readImageFile = async (imagePath) => {
-  // Placeholder - implement based on your storage solution
   const fs = require('fs').promises;
   return await fs.readFile(imagePath);
 };

@@ -23,174 +23,359 @@ interface Message {
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <!-- Floating Bubble Launcher -->
-    <div class="fixed bottom-6 right-6 z-50">
+    <!-- Premium Floating AI Launcher -->
+    <div class="fixed bottom-8 right-8 z-50">
       <button (click)="toggleChat()" 
-              class="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-cyan-500 hover:from-purple-500 hover:to-cyan-400 flex items-center justify-center shadow-[0_0_25px_rgba(6,182,212,0.45)] hover:shadow-[0_0_35px_rgba(6,182,212,0.65)] hover:scale-105 transition-all duration-300 cursor-pointer relative group">
+              class="w-[180px] h-[60px] rounded-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white flex items-center justify-start px-4 shadow-[0_8px_30px_rgb(99,102,241,0.3)] hover:shadow-[0_8px_40px_rgb(99,102,241,0.5)] hover:scale-105 transition-all duration-300 cursor-pointer relative group border border-white/20 backdrop-blur-md focus:outline-none focus:ring-4 focus:ring-indigo-500/50 overflow-hidden"
+              title="Talk to JanSeva AI"
+              aria-label="Open JanSeva Assistant">
+        
+        <!-- Background pulse effect when listening -->
         @if (voiceRecognizing) {
-          <div class="w-full h-full rounded-full border border-cyan-400 animate-ping absolute opacity-70"></div>
+          <div class="absolute inset-0 bg-white/20 animate-pulse"></div>
         }
-        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-        </svg>
-        <span class="absolute bottom-16 right-0 bg-[#0d1527]/90 text-cyan-400 text-[9px] font-mono tracking-wider px-2 py-1 rounded border border-cyan-500/35 uppercase opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-          JANSEVA CO-PILOT
-        </span>
+
+        <!-- Icon -->
+        <div class="relative flex items-center justify-center w-10 h-10 rounded-full bg-white/20 shadow-inner mr-3 shrink-0 group-hover:bg-white/30 transition-colors z-10">
+          <span class="text-xl">🤖</span>
+        </div>
+
+        <!-- Text Content -->
+        <div class="flex flex-col text-left z-10">
+          <span class="font-bold text-sm leading-tight drop-shadow-sm">JanSeva AI</span>
+          <span class="text-[10px] font-medium text-white/80 uppercase tracking-wider">Voice Assistant</span>
+        </div>
       </button>
     </div>
 
-    <!-- Chat Console Drawer (Slide Up/Left Glassmorphism) -->
+    <!-- Assistant Modal -->
     @if (isOpen) {
-      <div class="fixed right-6 bottom-24 w-[420px] max-w-[calc(100vw-2rem)] h-[580px] max-h-[80vh] rounded-2xl glass-panel border border-cyan-500/30 bg-[#0d1527]/95 shadow-[0_0_40px_rgba(0,0,0,0.6)] z-50 flex flex-col overflow-hidden transition-all duration-300">
+      <div class="fixed right-4 sm:right-8 bottom-28 w-full sm:w-[420px] max-w-[calc(100vw-2rem)] h-[700px] max-h-[85vh] rounded-[24px] bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 shadow-2xl z-50 flex flex-col overflow-hidden transition-all duration-300 animate-fade-in-up origin-bottom-right">
         
         <!-- Header -->
-        <header class="p-4 border-b border-cyan-500/20 bg-cyan-950/20 flex justify-between items-center shrink-0">
-          <div class="flex items-center gap-2.5">
-            <div class="w-5 h-5 rounded-full border border-cyan-500/40 flex items-center justify-center bg-cyan-950/40">
-              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-            </div>
-            <span class="font-mono text-xs tracking-wider uppercase font-bold text-glow">
-              JANSEVA <span class="text-cyan-400">AI CO-PILOT</span>
-            </span>
-          </div>
-
+        <header class="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 flex justify-between items-center shrink-0">
           <div class="flex items-center gap-3">
-            @if (languageLocked) {
-              <span class="px-2 py-0.5 rounded bg-cyan-500/10 border border-cyan-500/30 font-mono text-[9px] text-cyan-400 uppercase">
-                LOCK: {{ activeLang.toUpperCase() }}
-              </span>
-            }
-            <button (click)="toggleChat()" class="text-muted-var hover:text-primary-var font-mono text-xs uppercase cursor-pointer">
-              [CLOSE]
-            </button>
+            <div class="relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-md">
+              <span class="text-xl">🤖</span>
+              <span class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
+            </div>
+            <div>
+              <h3 class="font-bold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                JanSeva AI
+                @if (languageLocked) {
+                  <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-semibold border border-slate-200 dark:border-slate-700 uppercase">
+                    {{ activeLang }}
+                  </span>
+                }
+              </h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">Government Services Assistant</p>
+            </div>
           </div>
+          <button (click)="toggleChat()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Close Assistant">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
         </header>
 
         <!-- Message Stack Area -->
-        <div class="flex-1 p-4 space-y-4 overflow-y-auto font-mono text-[10px]" #messageArea>
+        <div class="flex-1 p-6 space-y-6 overflow-y-auto font-sans text-sm scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 scrollbar-track-transparent bg-slate-50/30 dark:bg-slate-900/30" #messageArea>
           
-          <!-- Welcome Message -->
+          <!-- Welcome Screen & Language Selection -->
           @if (!languageLocked) {
-            <div class="space-y-4">
-              <div class="p-3.5 rounded-xl border border-cyan-500/20 bg-cyan-950/10 text-primary-var uppercase leading-relaxed">
-                🤖 WELCOME TO JANSEVA GOVERNANCE ASSISTANT. PLEASE CHOOSE A LANGUAGE TO PROCEED / జనసేవ సహాయకుడికి స్వాగతం. దయచేసి ఒక భాషను ఎంచుకోండి.
+            <div class="space-y-6 animate-fade-in-up">
+              <div class="flex flex-col items-center justify-center py-6 text-center">
+                <div class="w-20 h-20 bg-gradient-to-tr from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 rounded-full flex items-center justify-center mb-4">
+                  <span class="text-4xl">👋</span>
+                </div>
+                <h2 class="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Hello Nanda</h2>
+                <p class="text-slate-500 dark:text-slate-400">Please choose your preferred language to continue.</p>
               </div>
-              <div class="grid grid-cols-2 gap-2">
-                <button (click)="selectLanguage('en')" class="px-3 py-2 rounded-lg border border-var hover:border-cyan-500/50 bg-white/2 hover:bg-cyan-500/5 transition-all text-xs font-bold text-primary-var cursor-pointer">ENGLISH</button>
-                <button (click)="selectLanguage('te')" class="px-3 py-2 rounded-lg border border-var hover:border-cyan-500/50 bg-white/2 hover:bg-cyan-500/5 transition-all text-xs font-bold text-primary-var cursor-pointer">తెలుగు (TELUGU)</button>
-                <button (click)="selectLanguage('ta')" class="px-3 py-2 rounded-lg border border-var hover:border-cyan-500/50 bg-white/2 hover:bg-cyan-500/5 transition-all text-xs font-bold text-primary-var cursor-pointer">தமிழ் (TAMIL)</button>
-                <button (click)="selectLanguage('kn')" class="px-3 py-2 rounded-lg border border-var hover:border-cyan-500/50 bg-white/2 hover:bg-cyan-500/5 transition-all text-xs font-bold text-primary-var cursor-pointer">ಕನ್ನಡ (KANNADA)</button>
+
+              <div class="grid grid-cols-2 gap-3">
+                <button (click)="selectLanguage('en')" class="flex flex-col items-center gap-2 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-all text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm group">
+                  <span class="text-2xl group-hover:scale-110 transition-transform">🇬🇧</span>
+                  English
+                </button>
+                <button (click)="selectLanguage('te')" class="flex flex-col items-center gap-2 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-all text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm group">
+                  <span class="text-2xl group-hover:scale-110 transition-transform">🇮🇳</span>
+                  తెలుగు
+                </button>
+                <button (click)="selectLanguage('ta')" class="flex flex-col items-center gap-2 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-all text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm group">
+                  <span class="text-2xl group-hover:scale-110 transition-transform">🇮🇳</span>
+                  தமிழ்
+                </button>
+                <button (click)="selectLanguage('kn')" class="flex flex-col items-center gap-2 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:border-indigo-200 dark:hover:border-indigo-500/50 transition-all text-sm font-semibold text-slate-700 dark:text-slate-200 cursor-pointer shadow-sm group">
+                  <span class="text-2xl group-hover:scale-110 transition-transform">🇮🇳</span>
+                  ಕನ್ನಡ
+                </button>
               </div>
             </div>
           }
 
           <!-- Conversational Dialogue -->
           @for (msg of messages; track $index) {
-            <div class="flex flex-col" [class.items-end]="msg.sender === 'user'" [class.items-start]="msg.sender === 'bot'">
+            <div class="flex flex-col animate-fade-in-up mb-6" [class.items-end]="msg.sender === 'user'" [class.items-start]="msg.sender === 'bot'">
               
-              <!-- Message Bubble -->
-              <div class="max-w-[85%] p-3.5 rounded-xl border uppercase leading-relaxed" 
-                   [ngClass]="{
-                     'bg-[#A33F93]/10 border-[#A33F93]/30 text-white rounded-br-none': msg.sender === 'user',
-                     'bg-cyan-950/10 border-cyan-500/20 text-cyan-300 rounded-bl-none': msg.sender === 'bot'
-                   }">
-                {{ msg.text }}
-
-                <!-- Custom Workflow Elements -->
-                
-                <!-- 1. Menu Buttons -->
-                @if (msg.status === 'menu') {
-                  <div class="mt-3.5 flex flex-col gap-1.5 w-full">
-                    <button (click)="triggerIntent('Raise Complaint')" class="w-full text-left px-3 py-2 rounded border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 font-bold tracking-wide transition-colors cursor-pointer">{{ getMenuLabel('Raise Complaint') }}</button>
-                    <button (click)="triggerIntent('Track Complaint')" class="w-full text-left px-3 py-2 rounded border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 font-bold tracking-wide transition-colors cursor-pointer">{{ getMenuLabel('Track Complaint') }}</button>
-                    <button (click)="triggerIntent('Government Updates')" class="w-full text-left px-3 py-2 rounded border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 font-bold tracking-wide transition-colors cursor-pointer">{{ getMenuLabel('Government Updates') }}</button>
-                    <button (click)="triggerIntent('Emergency Help')" class="w-full text-left px-3 py-2 rounded border border-cyan-500/30 bg-cyan-950/20 hover:bg-cyan-900/30 text-cyan-400 font-bold tracking-wide transition-colors cursor-pointer">{{ getMenuLabel('Emergency Help') }}</button>
+              <div class="flex gap-3 max-w-[90%]" [class.flex-row-reverse]="msg.sender === 'user'">
+                <!-- Avatar -->
+                @if (msg.sender === 'bot') {
+                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                    <span class="text-sm">🤖</span>
                   </div>
                 }
 
-                <!-- 2. Image Upload Panel -->
-                @if (msg.status === 'awaiting_image') {
-                  <div class="mt-4 p-3 rounded-lg border border-dashed border-cyan-500/30 bg-white/2 hover:bg-white/5 flex flex-col items-center justify-center cursor-pointer"
-                       (click)="botFileInput.click()">
-                    <input #botFileInput type="file" (change)="onBotFileSelected($event)" (click)="$event.stopPropagation()" class="hidden">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-cyan-400 mb-2 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-[8px] text-muted-var uppercase">CLICK TO SELECT IMAGE PROOF</span>
-                  </div>
-                }
+                <!-- Message Bubble -->
+                <div class="flex flex-col" [class.items-end]="msg.sender === 'user'">
+                  <div class="p-4 rounded-2xl shadow-sm text-[15px] leading-relaxed" 
+                       [ngClass]="{
+                         'bg-gradient-to-br from-indigo-600 to-purple-600 text-white rounded-tr-sm': msg.sender === 'user',
+                         'bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-slate-800 dark:text-slate-200 rounded-tl-sm': msg.sender === 'bot'
+                       }">
+                    <p class="whitespace-pre-wrap">{{ msg.text }}</p>
 
-                <!-- 3. AI Analysis Progress steps in Chat -->
-                @if (msg.jobId && chatbotJobProgress !== null) {
-                  <div class="mt-3.5 p-3 rounded border border-cyan-500/20 bg-cyan-950/20 space-y-2 text-[8px] uppercase">
-                    <div class="flex justify-between font-bold">
-                      <span>AI Pipeline Status:</span>
-                      <span>{{ chatbotJobProgress }}%</span>
-                    </div>
-                    <div class="space-y-1 text-muted-var">
-                      <div class="flex justify-between"><span>✓ Upload Success</span><span class="text-cyan-400">DONE</span></div>
-                      <div class="flex justify-between"><span>{{ chatbotJobProgress >= 40 ? '✓' : '●' }} Visual Classification</span><span [class.text-cyan-400]="chatbotJobProgress >= 40">{{ chatbotJobProgress >= 40 ? 'DONE' : 'RUNNING' }}</span></div>
-                      <div class="flex justify-between"><span>{{ chatbotJobProgress >= 70 ? '✓' : '●' }} Severity Indexing</span><span [class.text-cyan-400]="chatbotJobProgress >= 70">{{ chatbotJobProgress >= 70 ? 'DONE' : 'RUNNING' }}</span></div>
-                      <div class="flex justify-between"><span>{{ chatbotJobProgress >= 90 ? '✓' : '●' }} Duplicate Check</span><span [class.text-cyan-400]="chatbotJobProgress >= 90">{{ chatbotJobProgress >= 90 ? 'DONE' : 'RUNNING' }}</span></div>
-                    </div>
-                  </div>
-                }
-
-                <!-- 4. Confirm Complaint Details Form Autofill -->
-                @if (msg.status === 'confirm_details' && tempComplaintData) {
-                  <div class="mt-4 p-3 rounded-lg border border-cyan-500/25 bg-cyan-950/15 space-y-2.5 text-[8px] text-primary-var">
-                    <div>TITLE: <span class="font-bold text-white">{{ tempComplaintData.title || 'CIVIC ISSUE' }}</span></div>
-                    <div>DEPT: <span class="font-bold text-white">{{ tempComplaintData.departmentName }}</span></div>
-                    <div>SEVERITY: <span class="font-bold text-red-400">{{ tempComplaintData.priority }} (SCORE: {{ tempComplaintData.severityScore }})</span></div>
-                    <div>ETA: <span class="font-bold text-emerald-400">{{ tempComplaintData.estimatedDays }} DAYS</span></div>
+                    <!-- Custom Workflow Elements -->
                     
-                    <div class="pt-2 flex gap-2">
-                      <button (click)="submitBotComplaint()" class="flex-1 py-1.5 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold uppercase transition-colors">CONFIRM SUBMIT</button>
-                      <button (click)="cancelBotComplaint()" class="px-2.5 py-1.5 rounded border border-var hover:bg-white/5 text-primary-var uppercase">CANCEL</button>
-                    </div>
-                  </div>
-                }
+                    <!-- 1. Menu Buttons (Action Cards) -->
+                    @if (msg.status === 'menu') {
+                      <div class="mt-5 grid grid-cols-2 gap-3 w-full min-w-[280px]">
+                        <button (click)="triggerIntent('Raise Complaint')" class="flex flex-col text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group">
+                          <span class="text-2xl mb-2 group-hover:scale-110 transition-transform">📢</span>
+                          <span class="font-bold text-slate-800 dark:text-slate-100 mb-1">Raise Complaint</span>
+                          <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight">Track civic issues and report problems.</span>
+                        </button>
+                        
+                        <button (click)="triggerIntent('Track Complaint')" class="flex flex-col text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group">
+                          <span class="text-2xl mb-2 group-hover:scale-110 transition-transform">📍</span>
+                          <span class="font-bold text-slate-800 dark:text-slate-100 mb-1">Track Complaint</span>
+                          <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight">Check complaint status and updates.</span>
+                        </button>
 
-                <!-- 5. News Updates Cards -->
-                @if (msg.updateDetails && msg.updateDetails.length > 0) {
-                  <div class="mt-3.5 space-y-3">
-                    @for (upd of msg.updateDetails; track upd.id) {
-                      <div class="p-3 rounded border border-white/5 bg-white/2 space-y-1.5 text-[8px] uppercase">
-                        <div class="flex justify-between text-cyan-400 font-bold">
-                          <span>{{ upd.department }}</span>
-                          <span>{{ upd.timestamp | date:'shortDate' }}</span>
-                        </div>
-                        <p class="text-primary-var font-semibold">{{ upd.message }}</p>
+                        <button (click)="triggerIntent('Government Updates')" class="flex flex-col text-left p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-700 hover:border-indigo-300 dark:hover:border-indigo-500 hover:shadow-md transition-all cursor-pointer group">
+                          <span class="text-2xl mb-2 group-hover:scale-110 transition-transform">🏛</span>
+                          <span class="font-bold text-slate-800 dark:text-slate-100 mb-1">Updates</span>
+                          <span class="text-xs text-slate-500 dark:text-slate-400 leading-tight">Latest schemes and announcements.</span>
+                        </button>
+
+                        <button (click)="triggerIntent('Emergency Help')" class="flex flex-col text-left p-4 rounded-2xl border border-red-200 dark:border-red-900/30 bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-500/50 hover:shadow-md transition-all cursor-pointer group">
+                          <span class="text-2xl mb-2 group-hover:scale-110 transition-transform">🚨</span>
+                          <span class="font-bold text-red-700 dark:text-red-400 mb-1">Emergency</span>
+                          <span class="text-xs text-red-600/80 dark:text-red-400/80 leading-tight">Immediate emergency assistance.</span>
+                        </button>
                       </div>
                     }
-                  </div>
-                }
 
-                <!-- 6. Emergency Details -->
-                @if (msg.emergencyDetails) {
-                  <div class="mt-3.5 p-3 rounded border border-red-500/35 bg-red-950/20 text-red-400 space-y-2.5">
-                    <div class="font-bold">🚨 EMERGENCY RESPONSE DIAL:</div>
-                    <a href="tel:112" class="block w-full text-center py-2 rounded bg-red-500 hover:bg-red-400 text-black font-bold uppercase tracking-wider transition-colors">CALL HOTLINE 112</a>
-                    <a href="tel:18004251111" class="block w-full text-center py-2 rounded border border-red-500/40 hover:bg-red-900/10 text-red-400 font-bold uppercase transition-colors">CALL WARD ASSISTANCE</a>
-                  </div>
-                }
+                    <!-- 2. Image Upload Panel (Complaint Workflow Step 1) -->
+                    @if (msg.status === 'awaiting_image') {
+                      <div class="mt-5">
+                        <div class="flex items-center gap-2 mb-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">1</span>
+                          Upload Image
+                        </div>
+                        <div class="p-6 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-500 dark:hover:border-indigo-400 bg-slate-50 dark:bg-slate-800/50 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                             (click)="botFileInput.click()"
+                             tabindex="0"
+                             (keydown.enter)="botFileInput.click()">
+                          <input #botFileInput type="file" accept="image/*" (change)="onBotFileSelected($event)" (click)="$event.stopPropagation()" class="hidden" aria-label="Upload image proof">
+                          <div class="w-14 h-14 rounded-full bg-white dark:bg-slate-800 shadow-sm group-hover:shadow-md group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/30 flex items-center justify-center mb-4 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                          </div>
+                          <span class="text-sm font-bold text-slate-700 dark:text-slate-200 mb-1">Click to upload photo</span>
+                          <span class="text-xs text-slate-500 dark:text-slate-400">JPG, PNG up to 10MB</span>
+                        </div>
+                      </div>
+                    }
 
+                    <!-- 3. AI Analysis Progress steps in Chat -->
+                    @if (msg.jobId && chatbotJobProgress !== null) {
+                      <div class="mt-5 p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                          <span class="text-sm font-bold text-slate-800 dark:text-slate-200">AI Analysis Progress</span>
+                          <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ chatbotJobProgress }}%</span>
+                        </div>
+                        <!-- Progress bar -->
+                        <div class="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+                          <div class="bg-gradient-to-r from-indigo-500 to-purple-500 h-2 rounded-full transition-all duration-500" [style.width.%]="chatbotJobProgress"></div>
+                        </div>
+                        
+                        <!-- Timeline Stepper -->
+                        <div class="space-y-3 pt-2">
+                          <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <span class="text-sm font-medium text-slate-700 dark:text-slate-300">Image Uploaded</span>
+                          </div>
+                          
+                          <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0" 
+                                 [ngClass]="chatbotJobProgress >= 40 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'border-2 border-indigo-200 dark:border-indigo-900 border-t-indigo-500 dark:border-t-indigo-400 animate-spin'">
+                              @if (chatbotJobProgress >= 40) {
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                              }
+                            </div>
+                            <span class="text-sm font-medium" [ngClass]="chatbotJobProgress >= 40 ? 'text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'">Detecting Department</span>
+                          </div>
+
+                          <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0" 
+                                 [ngClass]="chatbotJobProgress >= 70 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : (chatbotJobProgress >= 40 ? 'border-2 border-indigo-200 dark:border-indigo-900 border-t-indigo-500 dark:border-t-indigo-400 animate-spin' : 'border-2 border-slate-200 dark:border-slate-700')">
+                              @if (chatbotJobProgress >= 70) {
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                              }
+                            </div>
+                            <span class="text-sm font-medium" [ngClass]="chatbotJobProgress >= 70 ? 'text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'">Detecting Category</span>
+                          </div>
+
+                          <div class="flex items-center gap-3">
+                            <div class="w-6 h-6 rounded-full flex items-center justify-center shrink-0" 
+                                 [ngClass]="chatbotJobProgress >= 90 ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : (chatbotJobProgress >= 70 ? 'border-2 border-indigo-200 dark:border-indigo-900 border-t-indigo-500 dark:border-t-indigo-400 animate-spin' : 'border-2 border-slate-200 dark:border-slate-700')">
+                              @if (chatbotJobProgress >= 90) {
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                              }
+                            </div>
+                            <span class="text-sm font-medium" [ngClass]="chatbotJobProgress >= 90 ? 'text-slate-700 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400'">Detecting Severity</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- 4. Confirm Complaint Details Form Autofill -->
+                    @if (msg.status === 'confirm_details' && tempComplaintData) {
+                      <div class="mt-5">
+                        <div class="flex items-center gap-2 mb-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                          <span class="w-5 h-5 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">4</span>
+                          Review & Submit
+                        </div>
+                        <div class="p-5 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm space-y-4">
+                          
+                          <div class="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-3">
+                            <div class="flex flex-col">
+                              <span class="text-xs text-slate-500 dark:text-slate-400 mb-1">Category</span>
+                              <span class="text-sm font-bold text-slate-800 dark:text-slate-100">{{ tempComplaintData.title || 'Civic Issue' }}</span>
+                            </div>
+                            
+                            <div class="flex flex-col">
+                              <span class="text-xs text-slate-500 dark:text-slate-400 mb-1">Department</span>
+                              <span class="text-sm font-medium text-slate-700 dark:text-slate-200">{{ tempComplaintData.departmentName }}</span>
+                            </div>
+                            
+                            <div class="flex justify-between items-center pt-2 border-t border-slate-200 dark:border-slate-700">
+                              <div class="flex flex-col">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 mb-1">Severity Priority</span>
+                                <span class="text-sm font-bold flex items-center gap-2" [ngClass]="{'text-red-600 dark:text-red-400': tempComplaintData.priority === 'high' || tempComplaintData.priority === 'critical', 'text-amber-600 dark:text-amber-400': tempComplaintData.priority === 'medium', 'text-emerald-600 dark:text-emerald-400': tempComplaintData.priority === 'low'}">
+                                  <span class="capitalize">{{ tempComplaintData.priority }}</span> 
+                                </span>
+                              </div>
+                              <div class="flex flex-col items-end">
+                                <span class="text-xs text-slate-500 dark:text-slate-400 mb-1">Estimated Resolution</span>
+                                <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">{{ tempComplaintData.estimatedDays }} Days</span>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div class="flex gap-3 pt-2">
+                            <button (click)="submitBotComplaint()" class="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition-all shadow-md hover:shadow-lg focus:ring-4 focus:ring-indigo-500/30">Submit Complaint</button>
+                            <button (click)="cancelBotComplaint()" class="px-5 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold transition-all">Cancel</button>
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- 5. News Updates Cards -->
+                    @if (msg.updateDetails && msg.updateDetails.length > 0) {
+                      <div class="mt-5 space-y-4">
+                        @for (upd of msg.updateDetails; track upd.id) {
+                          <div class="p-4 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm hover:shadow-md transition-shadow group cursor-pointer">
+                            <div class="flex justify-between items-start mb-2">
+                              <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-bold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300">{{ upd.department }}</span>
+                              <span class="text-xs text-slate-500 dark:text-slate-400">{{ upd.timestamp | date:'mediumDate' }}</span>
+                            </div>
+                            <p class="text-sm text-slate-800 dark:text-slate-200 font-medium leading-relaxed">{{ upd.message }}</p>
+                          </div>
+                        }
+                      </div>
+                    }
+
+                    <!-- 6. Emergency Details -->
+                    @if (msg.emergencyDetails) {
+                      <div class="mt-5 p-5 rounded-2xl bg-red-50 dark:bg-red-900/10 border-2 border-red-200 dark:border-red-900/30">
+                        <div class="flex items-center gap-3 font-bold text-red-700 dark:text-red-400 text-lg mb-4">
+                          <span class="p-2 rounded-full bg-red-100 dark:bg-red-900/50">🚨</span>
+                          Emergency Services
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                          <a href="tel:100" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 hover:border-red-400 hover:shadow-md transition-all text-center group">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">🚓</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">Police</span>
+                            <span class="text-red-600 dark:text-red-400 font-bold">100</span>
+                          </a>
+                          <a href="tel:108" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 hover:border-red-400 hover:shadow-md transition-all text-center group">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">🚑</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">Ambulance</span>
+                            <span class="text-red-600 dark:text-red-400 font-bold">108</span>
+                          </a>
+                          <a href="tel:101" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 hover:border-red-400 hover:shadow-md transition-all text-center group">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">🚒</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">Fire Service</span>
+                            <span class="text-red-600 dark:text-red-400 font-bold">101</span>
+                          </a>
+                          <a href="tel:1091" class="flex flex-col items-center gap-2 p-3 rounded-xl bg-white dark:bg-slate-800 border border-red-100 dark:border-red-900/30 hover:border-red-400 hover:shadow-md transition-all text-center group">
+                            <span class="text-2xl group-hover:scale-110 transition-transform">👩</span>
+                            <span class="font-bold text-slate-800 dark:text-slate-100 text-sm">Women Help</span>
+                            <span class="text-red-600 dark:text-red-400 font-bold">1091</span>
+                          </a>
+                        </div>
+                        <a href="tel:112" class="mt-3 flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all focus:ring-4 focus:ring-red-500/30">
+                          📞 National Emergency (112)
+                        </a>
+                      </div>
+                    }
+
+                  </div>
+
+                  <!-- Message Timestamp -->
+                  <span class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 px-2 font-medium" [class.text-right]="msg.sender === 'user'">{{ msg.timestamp | date:'shortTime' }}</span>
+                </div>
               </div>
-
-              <!-- Message Timestamp -->
-              <span class="text-[8px] text-muted-var mt-1">{{ msg.timestamp | date:'shortTime' }}</span>
             </div>
           }
 
-          <!-- Micro-animation voice response indicator -->
-          @if (botIsSpeaking) {
-            <div class="flex items-center gap-1.5 p-2 rounded bg-cyan-500/5 border border-cyan-500/10 max-w-[150px]">
-              <span class="text-[8px] text-cyan-400 animate-pulse">Assistant Speaking</span>
-              <!-- CSS soundwave bars -->
-              <div class="flex gap-0.5 items-end h-3">
-                <div class="w-0.5 bg-cyan-400 animate-sound-bar-1 h-3"></div>
-                <div class="w-0.5 bg-cyan-400 animate-sound-bar-2 h-1.5"></div>
-                <div class="w-0.5 bg-cyan-400 animate-sound-bar-3 h-2.5"></div>
+          <!-- Micro-animation voice listening indicator / Typing indicator -->
+          @if (voiceRecognizing) {
+            <div class="flex items-start gap-3 mb-6 animate-fade-in-up">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                <span class="text-sm">🤖</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="p-4 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm max-w-[200px]">
+                  <div class="flex flex-col items-center gap-2">
+                    <span class="text-sm font-bold text-indigo-600 dark:text-indigo-400">Listening...</span>
+                    <!-- CSS soundwave bars -->
+                    <div class="flex gap-1.5 items-end h-6 mt-1">
+                      <div class="w-1.5 bg-indigo-500 rounded-full animate-sound-bar-1 h-6"></div>
+                      <div class="w-1.5 bg-indigo-500 rounded-full animate-sound-bar-2 h-3"></div>
+                      <div class="w-1.5 bg-indigo-500 rounded-full animate-sound-bar-3 h-5"></div>
+                      <div class="w-1.5 bg-indigo-500 rounded-full animate-sound-bar-1 h-4" style="animation-delay: 0.2s"></div>
+                      <div class="w-1.5 bg-indigo-500 rounded-full animate-sound-bar-2 h-6" style="animation-delay: 0.1s"></div>
+                    </div>
+                  </div>
+                </div>
+                <span class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 px-2 font-medium">Speak now</span>
+              </div>
+            </div>
+          } @else if (botIsSpeaking || chatbotState === 'raise_awaiting_image') {
+            <!-- Just basic typing indicator style if bot is thinking but not voice reco -->
+            <div class="flex items-start gap-3 mb-6 animate-fade-in-up">
+              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shrink-0 shadow-sm mt-1">
+                <span class="text-sm">🤖</span>
+              </div>
+              <div class="p-4 rounded-2xl rounded-tl-sm bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm">
+                 <div class="flex gap-1.5 items-end h-5">
+                  <div class="w-1.5 bg-indigo-400 rounded-full animate-sound-bar-1 h-5"></div>
+                  <div class="w-1.5 bg-indigo-400 rounded-full animate-sound-bar-2 h-2.5"></div>
+                  <div class="w-1.5 bg-indigo-400 rounded-full animate-sound-bar-3 h-4"></div>
+                </div>
               </div>
             </div>
           }
@@ -199,33 +384,50 @@ interface Message {
 
         <!-- Chat Input Footer Console -->
         @if (languageLocked) {
-          <footer class="p-3 border-t border-cyan-500/20 bg-cyan-950/20 flex gap-2 items-center shrink-0">
-            <input type="text" 
-                   [(ngModel)]="userInputText"
-                   (keyup.enter)="sendTextMessage()"
-                   [disabled]="voiceRecognizing || chatbotJobProgress !== null"
-                   class="flex-1 glass-input !py-2 !px-3 font-mono text-[10px] uppercase text-primary-var outline-none" 
-                   placeholder="SPEAK OR TYPE HERE...">
+          <footer class="p-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex gap-3 items-end shrink-0 relative">
+            <div class="flex-1 bg-slate-100 dark:bg-slate-800 border border-transparent focus-within:border-indigo-500 focus-within:bg-white dark:focus-within:bg-slate-900 focus-within:ring-4 focus-within:ring-indigo-500/20 rounded-2xl transition-all flex items-end min-h-[52px]">
+              <textarea
+                     [(ngModel)]="userInputText"
+                     (keydown.enter)="onEnterPress($event)"
+                     [disabled]="voiceRecognizing || chatbotJobProgress !== null"
+                     class="flex-1 bg-transparent w-full py-3.5 px-4 text-[15px] text-slate-800 dark:text-slate-200 outline-none resize-none max-h-32 placeholder-slate-400 dark:placeholder-slate-500 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-700 disabled:opacity-50" 
+                     [placeholder]="translationService.t('PH_MSG_JANSEVA_AI')"
+                     rows="1"
+                     aria-label="Message input"
+                     (input)="autoResize($event)"></textarea>
+            </div>
 
-            <!-- Mic Trigger Button -->
-            <button (click)="toggleVoiceListening()" 
-                    [disabled]="chatbotJobProgress !== null"
-                    [class.bg-red-950/30]="voiceRecognizing"
-                    [class.border-red-500/40]="voiceRecognizing"
-                    [class.text-red-400]="voiceRecognizing"
-                    [class.animate-pulse]="voiceRecognizing"
-                    class="p-2.5 rounded-xl border border-cyan-500/30 text-cyan-400 bg-cyan-950/20 hover:bg-cyan-900/30 transition-all cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-              </svg>
-            </button>
+            <div class="flex gap-2 shrink-0">
+              <!-- Mic Trigger Button -->
+              <button (click)="toggleVoiceListening()" 
+                      [disabled]="chatbotJobProgress !== null"
+                      [class.bg-red-500]="voiceRecognizing"
+                      [class.text-white]="voiceRecognizing"
+                      [class.shadow-lg]="voiceRecognizing"
+                      [class.animate-pulse]="voiceRecognizing"
+                      [class.bg-slate-100]="!voiceRecognizing"
+                      [class.dark:bg-slate-800]="!voiceRecognizing"
+                      [class.text-slate-600]="!voiceRecognizing"
+                      [class.dark:text-slate-300]="!voiceRecognizing"
+                      [class.hover:bg-slate-200]="!voiceRecognizing"
+                      [class.dark:hover:bg-slate-700]="!voiceRecognizing"
+                      class="p-3.5 rounded-2xl transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center h-[52px] w-[52px]"
+                      aria-label="Voice input">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              </button>
 
-            <!-- Send button -->
-            <button (click)="sendTextMessage()"
-                    [disabled]="voiceRecognizing || chatbotJobProgress !== null"
-                    class="px-4 py-2 rounded bg-cyan-500 hover:bg-cyan-400 text-black font-bold uppercase transition-colors cursor-pointer text-[10px]">
-              SEND
-            </button>
+              <!-- Send button -->
+              <button (click)="sendTextMessage()"
+                      [disabled]="voiceRecognizing || chatbotJobProgress !== null || !userInputText.trim()"
+                      class="p-3.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md hover:shadow-lg cursor-pointer disabled:opacity-50 disabled:shadow-none flex items-center justify-center h-[52px] w-[52px]"
+                      aria-label="Send message">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
           </footer>
         }
 
@@ -237,20 +439,25 @@ interface Message {
       display: block;
     }
     @keyframes soundwave-1 {
-      0%, 100% { height: 4px; }
-      50% { height: 12px; }
+      0%, 100% { height: 6px; }
+      50% { height: 16px; }
     }
     @keyframes soundwave-2 {
-      0%, 100% { height: 10px; }
-      50% { height: 3px; }
+      0%, 100% { height: 12px; }
+      50% { height: 4px; }
     }
     @keyframes soundwave-3 {
-      0%, 100% { height: 6px; }
-      50% { height: 11px; }
+      0%, 100% { height: 8px; }
+      50% { height: 14px; }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(15px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .animate-sound-bar-1 { animation: soundwave-1 0.6s ease-in-out infinite; }
     .animate-sound-bar-2 { animation: soundwave-2 0.7s ease-in-out infinite; }
     .animate-sound-bar-3 { animation: soundwave-3 0.5s ease-in-out infinite; }
+    .animate-fade-in-up { animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
   `]
 })
 export class VoiceAssistantComponent implements OnInit, OnDestroy {
@@ -269,7 +476,7 @@ export class VoiceAssistantComponent implements OnInit, OnDestroy {
   private consecutiveFailures = 0;
 
   // State Machine logic
-  private chatbotState: 'idle' | 'awaiting_intent' | 'raise_awaiting_image' | 'raise_awaiting_description' | 'raise_confirm' | 'track_awaiting_id' = 'idle';
+  public chatbotState: 'idle' | 'awaiting_intent' | 'raise_awaiting_image' | 'raise_awaiting_description' | 'raise_confirm' | 'track_awaiting_id' = 'idle';
 
   // Complaint building
   tempComplaintFile: File | null = null;
@@ -280,16 +487,16 @@ export class VoiceAssistantComponent implements OnInit, OnDestroy {
   // Dictionaries
   private readonly LOCALIZED_PROMPTS: Record<string, Record<string, string>> = {
     WELCOME: {
-      en: "Select a menu option or speak your request.",
-      te: "దయచేసి ఒక మెను ఎంపಿಕను చెప్పండి లేదా మీ సమస్యను చెప్పండి.",
-      ta: "தயவுசெய்து ஒரு மெனுவை தேர்வு செய்யவும் அல்லது உங்கள் கோரிக்கையை கூறவும்.",
-      kn: "ದಯವಿಟ್ಟು ಮೆನುವಿನಿಂದ ಆಯ್ಕೆ ಮಾಡಿ ಅಥವಾ ನಿಮ್ಮ ದೂರು ತಿಳಿಸಿ."
+      en: "How can I help you today?",
+      te: "నేను ఈ రోజు మీకు ఎలా సహాయపడగలను?",
+      ta: "இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?",
+      kn: "ಇಂದು ನಾನು ನಿಮಗೆ ಹೇಗೆ ಸಹಾಯ ಮಾಡಬಹುದು?"
     },
     MENU_OPTIONS: {
-      en: "You can say: Raise Complaint, Track Complaint, Government Updates, or Emergency Help.",
-      te: "మీరు చెప్పవచ్చు: ఫిర్యాదు నమోదు చేయండి, ఫిర్యాదు స్థితి తెలుసుకోండి, ప్రభుత్వ అప్డేట్లు, అత్యవసర సహాయం.",
-      ta: "நீங்கள் கூறலாம்: புகார் அளிக்கவும், புகாரைக் கண்கಾಣிக்கவும், அரசு அறிவிப்புகள், அவசர உதவி.",
-      kn: "ನೀವು ಹೇಳಬಹುದು: ದೂರು ನೋಂದಾಯಿಸಿ, ದೂರು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ, ಸರ್ಕಾರದ ಅಪ್ಡೇಟ್ಗಳು, ತುರ್ತು ಸಹಾಯ."
+      en: "Choose an option below or speak your request.",
+      te: "దయచేసి ఒక మెను ఎంపికను ఎంచుకోండి లేదా మీ సమస్యను చెప్పండి.",
+      ta: "கீழே உள்ள ஒரு விருப்பத்தை தேர்வு செய்யவும் அல்லது உங்கள் கோரிக்கையை கூறவும்.",
+      kn: "ಕೆಳಗಿನ ಆಯ್ಕೆಯನ್ನು ಆರಿಸಿ ಅಥವಾ ನಿಮ್ಮ ದೂರು ತಿಳಿಸಿ."
     },
     REFUSAL: {
       en: "Sorry, I can only help with government-related services. Please choose:\n\nRaise Complaint\nTrack Complaint\nGovernment Updates\nEmergency Help.",
@@ -551,10 +758,30 @@ export class VoiceAssistantComponent implements OnInit, OnDestroy {
   }
 
   sendTextMessage() {
-    if (!this.userInputText.trim()) return;
+    if (!this.userInputText?.trim()) return;
     const text = this.userInputText.trim();
     this.userInputText = '';
+    
+    // Reset textarea height if exists
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        const textareas = document.querySelectorAll('textarea');
+        textareas.forEach(ta => ta.style.height = 'auto');
+      }, 0);
+    }
+    
     this.processUserInput(text);
+  }
+
+  onEnterPress(event: Event) {
+    event.preventDefault();
+    this.sendTextMessage();
+  }
+
+  autoResize(event: Event) {
+    const el = event.target as HTMLTextAreaElement;
+    el.style.height = 'auto';
+    el.style.height = (el.scrollHeight) + 'px';
   }
 
   // --- Processing intents ---

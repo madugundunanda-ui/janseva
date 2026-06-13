@@ -13,6 +13,7 @@ interface UpdateItem {
   link: string;
   isLive: boolean;
   priority: 'normal' | 'elevated' | 'critical';
+  state: 'AP' | 'TS' | 'TN' | 'KA';
 }
 
 @Component({
@@ -82,15 +83,35 @@ interface UpdateItem {
                 </div>
               </div>
 
+              <!-- State Filter Tabs -->
+              <div class="mb-6 flex flex-wrap gap-2 items-center font-mono text-[9px] uppercase tracking-wider">
+                <span class="text-muted-var mr-2">STATE FILTER:</span>
+                <button (click)="setSelectedState('ALL')" [class.bg-[#6AA9FF]/20]="selectedState === 'ALL'" [class.text-[#6AA9FF]]="selectedState === 'ALL'" [class.border-[#6AA9FF]/30]="selectedState === 'ALL'" class="px-2.5 py-1 rounded border border-white/10 bg-white/5 transition-all duration-200 cursor-pointer hover:border-[#6AA9FF]/30">
+                  ALL
+                </button>
+                <button (click)="setSelectedState('AP')" [class.bg-[#6AA9FF]/20]="selectedState === 'AP'" [class.text-[#6AA9FF]]="selectedState === 'AP'" [class.border-[#6AA9FF]/30]="selectedState === 'AP'" class="px-2.5 py-1 rounded border border-white/10 bg-white/5 transition-all duration-200 cursor-pointer hover:border-[#6AA9FF]/30">
+                  AP (Andhra Pradesh)
+                </button>
+                <button (click)="setSelectedState('TS')" [class.bg-[#6AA9FF]/20]="selectedState === 'TS'" [class.text-[#6AA9FF]]="selectedState === 'TS'" [class.border-[#6AA9FF]/30]="selectedState === 'TS'" class="px-2.5 py-1 rounded border border-white/10 bg-white/5 transition-all duration-200 cursor-pointer hover:border-[#6AA9FF]/30">
+                  TS (Telangana)
+                </button>
+                <button (click)="setSelectedState('TN')" [class.bg-[#6AA9FF]/20]="selectedState === 'TN'" [class.text-[#6AA9FF]]="selectedState === 'TN'" [class.border-[#6AA9FF]/30]="selectedState === 'TN'" class="px-2.5 py-1 rounded border border-white/10 bg-white/5 transition-all duration-200 cursor-pointer hover:border-[#6AA9FF]/30">
+                  TN (Tamil Nadu)
+                </button>
+                <button (click)="setSelectedState('KA')" [class.bg-[#6AA9FF]/20]="selectedState === 'KA'" [class.text-[#6AA9FF]]="selectedState === 'KA'" [class.border-[#6AA9FF]/30]="selectedState === 'KA'" class="px-2.5 py-1 rounded border border-white/10 bg-white/5 transition-all duration-200 cursor-pointer hover:border-[#6AA9FF]/30">
+                  KA (Karnataka)
+                </button>
+              </div>
+
               <!-- List of news items -->
               <div class="space-y-4">
                 @for (item of filteredUpdates; track item.id) {
                   <article class="relative rounded-xl border border-var bg-white/2 p-4 transition-all duration-300 hover:border-[#6AA9FF]/30">
                     <!-- Left color priority bar -->
                     <div class="absolute left-0 top-3 bottom-3 w-[3px] rounded-r animate-pulse"
-                      [class.bg-emerald-500]="item.priority === 'normal'"
-                      [class.bg-amber-500]="item.priority === 'elevated'"
-                      [class.bg-red-500]="item.priority === 'critical'"></div>
+                       [class.bg-emerald-500]="item.priority === 'normal'"
+                       [class.bg-amber-500]="item.priority === 'elevated'"
+                       [class.bg-red-500]="item.priority === 'critical'"></div>
 
                     <div class="ml-2">
                       <!-- Badge Row -->
@@ -100,6 +121,9 @@ interface UpdateItem {
                             LIVE
                           </span>
                         }
+                        <span class="rounded bg-[#6AA9FF]/10 border border-[#6AA9FF]/30 px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider text-[#6AA9FF] font-bold">
+                          {{ item.state }}
+                        </span>
                         <span class="rounded bg-white/5 border border-white/10 px-2 py-0.5 font-mono text-[8px] uppercase tracking-wider text-muted-var">
                           {{ translationService.t(item.departmentKey) }}
                         </span>
@@ -226,6 +250,7 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
   districtIndex = 'A+';
 
   showLive = true;
+  selectedState: 'AP' | 'TS' | 'TN' | 'KA' | 'ALL' = 'ALL';
   heatmap = this.buildHeatmap();
   private timer: ReturnType<typeof setInterval> | null = null;
 
@@ -242,7 +267,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: 'Live Update',
       link: 'https://janseva.gov.in/news/upd-1',
       isLive: true,
-      priority: 'critical'
+      priority: 'critical',
+      state: 'AP'
     },
     {
       id: 'upd-2',
@@ -252,7 +278,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: 'Live Update',
       link: 'https://janseva.gov.in/news/upd-2',
       isLive: true,
-      priority: 'normal'
+      priority: 'normal',
+      state: 'TS'
     },
     {
       id: 'upd-3',
@@ -262,7 +289,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: 'Live Update',
       link: 'https://janseva.gov.in/news/upd-3',
       isLive: true,
-      priority: 'elevated'
+      priority: 'elevated',
+      state: 'TN'
     },
     {
       id: 'upd-4',
@@ -272,7 +300,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: '15 Days Ago',
       link: 'https://janseva.gov.in/news/upd-4',
       isLive: false,
-      priority: 'normal'
+      priority: 'normal',
+      state: 'KA'
     },
     {
       id: 'upd-5',
@@ -282,7 +311,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: '20 Days Ago',
       link: 'https://janseva.gov.in/news/upd-5',
       isLive: false,
-      priority: 'normal'
+      priority: 'normal',
+      state: 'AP'
     },
     {
       id: 'upd-6',
@@ -292,7 +322,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: '25 Days Ago',
       link: 'https://janseva.gov.in/news/upd-6',
       isLive: false,
-      priority: 'normal'
+      priority: 'normal',
+      state: 'TS'
     },
     {
       id: 'upd-7',
@@ -302,7 +333,8 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       publishedDate: '30 Days Ago',
       link: 'https://janseva.gov.in/news/upd-7',
       isLive: false,
-      priority: 'normal'
+      priority: 'normal',
+      state: 'KA'
     }
   ];
 
@@ -491,8 +523,17 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
     this.applyTabFilter();
   }
 
+  setSelectedState(state: 'AP' | 'TS' | 'TN' | 'KA' | 'ALL') {
+    this.selectedState = state;
+    this.applyTabFilter();
+  }
+
   applyTabFilter() {
-    this.filteredUpdates = this.allUpdates.filter(u => u.isLive === this.showLive);
+    this.filteredUpdates = this.allUpdates.filter(u => {
+      const matchesTab = u.isLive === this.showLive;
+      const matchesState = this.selectedState === 'ALL' || u.state === this.selectedState;
+      return matchesTab && matchesState;
+    });
   }
 
   getTranslatedText(key: string): string {

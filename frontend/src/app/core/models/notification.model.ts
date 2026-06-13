@@ -8,6 +8,7 @@ export interface NotificationItem {
   message: string;
   timestamp: string;
   read: boolean;
+  priority?: 'Low' | 'Medium' | 'High' | 'Critical';
   targetRole?: string;
   channel: NotificationChannel;
 }

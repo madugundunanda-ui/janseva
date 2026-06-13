@@ -5,9 +5,13 @@ const assignmentService = require('../services/assignmentService');
 const { resolveDepartmentId } = require('../services/dashboardService');
 const aiService = require('../services/aiService');
 const { sendSuccess } = require('../utils/apiResponse');
+const { extractDepartmentInfo } = require('../services/aiService');
+const { enqueueAiJob } = require('../utils/aiJobManager');
+const eventBus = require('../services/eventBus');
 const fs = require('fs');
 const path = require('path');
 const logger = require('../utils/logger');
+const civicIntelligenceService = require('../services/civicIntelligenceService');
 
 function getDistanceInKm(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the earth in km
@@ -78,8 +82,8 @@ const getComplaints = asyncHandler(async (req, res) => {
 
   // Route Optimization if requested
   if (req.query.optimize === 'true' && req.query.lat && req.query.lng) {
-    const geoService = require('../services/geoService');
-    complaints = geoService.optimizeRoute(req.query.lat, req.query.lng, complaints);
+    const geoUtilityService = require('../services/geoUtilityService');
+    complaints = geoUtilityService.optimizeRoute(req.query.lat, req.query.lng, complaints);
   }
 
   sendSuccess(res, 200, 'Complaints fetched successfully', {
@@ -330,226 +334,19 @@ const createComplaint = asyncHandler(async (req, res) => {
     }
   });
 
-  setImmediate(async () => {
-    try {
-      const extraction = await aiService.analyzeComplaintImage(savedFileContext);
-      logger.info('Background AI image detection completed', { extraction });
-
-      let resolvedDeptId = departmentId;
-      if (extraction.department) {
-        resolvedDeptId = await resolveDepartmentId(extraction.department);
-        if (!resolvedDeptId) {
-          resolvedDeptId = departmentId;
-        }
-      }
-
-      // Update the complaint document
-      complaint.aiVerification = {
-        verificationStatus: 'Completed',
-        predictedDepartment: extraction.department || 'General Inquiry',
-        confidenceScore: extraction.confidence || 0
-      };
-
-      complaint.department = resolvedDeptId;
-      if (extraction.priority) {
-        complaint.priority = extraction.priority.toLowerCase();
-      }
-      
-      // Save changes
-      await complaint.save();
-
-      // Trigger AI Auto Assign if enabled
-      try {
-        const settingsPath = path.join(__dirname, '../data/settings.json');
-        let autoAssignEnabled = false;
-        if (fs.existsSync(settingsPath)) {
-          const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
-          autoAssignEnabled = !!settings.autoAssign;
-        }
-
-        if (autoAssignEnabled && spamStatus !== 'held') {
-          logger.info('AI auto-assignment enabled. Attempting best candidate', {
-            complaintId: complaint._id.toString(),
-          });
-          const officers = await User.find({ role: 'officer', department: resolvedDeptId, activeStatus: true });
-          if (officers.length > 0) {
-            const officerIds = officers.map(o => o._id);
-            const activeStatuses = ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'];
-
-            const statsAgg = await Complaint.aggregate([
-              { $match: { assignedOfficer: { $in: officerIds } } },
-              {
-                $group: {
-                  _id: '$assignedOfficer',
-                  activeCount: {
-                    $sum: { $cond: [{ $in: ['$status', activeStatuses] }, 1, 0] }
-                  },
-                  totalAssigned: { $sum: 1 },
-                  escalatedCount: {
-                    $sum: { $cond: [{ $eq: ['$status', 'escalated'] }, 1, 0] }
-                  },
-                  resolvedCount: {
-                    $sum: { $cond: [{ $eq: ['$status', 'resolved'] }, 1, 0] }
-                  },
-                  totalResolutionMs: {
-                    $sum: {
-                      $cond: [
-                        { $eq: ['$status', 'resolved'] },
-                        { $subtract: ['$updatedAt', '$createdAt'] },
-                        0
-                      ]
-                    }
-                  }
-                }
-              }
-            ]);
-
-            const statsMap = new Map();
-            for (const s of statsAgg) {
-              statsMap.set(s._id.toString(), s);
-            }
-
-            let bestOfficer = null;
-            let bestScore = -1;
-
-            for (const officer of officers) {
-              const stats = statsMap.get(officer._id.toString()) || {
-                activeCount: 0, totalAssigned: 0, escalatedCount: 0, resolvedCount: 0, totalResolutionMs: 0
-              };
-
-              let workloadScore = 0;
-              if (stats.activeCount <= 2) workloadScore = 100;
-              else if (stats.activeCount <= 5) workloadScore = 80;
-              else if (stats.activeCount <= 9) workloadScore = 60;
-              else workloadScore = 30;
-
-              let avgResolutionDays = 3;
-              if (stats.resolvedCount > 0) {
-                avgResolutionDays = Math.max(0.1, (stats.totalResolutionMs / stats.resolvedCount) / (1000 * 60 * 60 * 24));
-              }
-
-              let speedScore = 0;
-              if (avgResolutionDays <= 2) speedScore = 100;
-              else if (avgResolutionDays <= 4) speedScore = 85;
-              else if (avgResolutionDays <= 7) speedScore = 60;
-              else speedScore = 30;
-
-              const escalationRate = stats.totalAssigned > 0 ? (stats.escalatedCount / stats.totalAssigned) : 0;
-              const emailSum = officer.email.split('').reduce((sum, c) => sum + c.charCodeAt(0), 0);
-              const basePerformance = 80 + (emailSum % 18);
-              const performanceScore = Math.max(40, Math.round(basePerformance - (escalationRate * 40)));
-
-              let locScore = 75;
-              if (officer.latitude && officer.longitude && latitude && longitude) {
-                const dist = getDistanceInKm(latitude, longitude, officer.latitude, officer.longitude);
-                if (dist <= 2) locScore = 100;
-                else if (dist <= 5) locScore = 85;
-                else if (dist <= 12) locScore = 60;
-                else locScore = 30;
-              }
-
-              const matchScore = Math.round(
-                35 + 
-                (0.25 * workloadScore) +
-                (0.15 * speedScore) +
-                (0.15 * performanceScore) +
-                (0.10 * locScore)
-              );
-
-              if (matchScore > bestScore) {
-                bestScore = matchScore;
-                bestOfficer = officer;
-              }
-            }
-
-            if (bestOfficer) {
-              complaint.assignedOfficer = bestOfficer._id;
-              complaint.status = 'assigned';
-              complaint.assignedByAI = true;
-              await complaint.save();
-              logger.info(`Complaint ${complaint._id} assigned to Officer ${bestOfficer.name}`, {
-                complaintId: complaint._id.toString(),
-                officerId: bestOfficer._id.toString(),
-                officerName: bestOfficer.name,
-                matchScore: bestScore,
-              });
-            }
-          }
-        }
-      } catch (autoAssignErr) {
-        logger.error('AI auto-assignment failed', { message: autoAssignErr.message, stack: autoAssignErr.stack });
-      }
-
-      // Trigger hotspot detection and update dynamic priorities
-      try {
-        const geoService = require('../services/geoService');
-        await geoService.detectAndProcessHotspots();
-        logger.info('Hotspot clustering updated successfully');
-      } catch (geoError) {
-        logger.error('Failed to update hotspot clustering', { message: geoError.message, stack: geoError.stack });
-      }
-
-      // Notify nearby citizens within 1km using geo-spatial index
-      try {
-        let notifiedCount = 0;
-        if (latitude && longitude && isFinite(latitude) && isFinite(longitude)) {
-          const nearbyCitizens = await User.find({
-            role: 'citizen',
-            _id: { $ne: req.user._id },
-            geoPoint: {
-              $near: {
-                $geometry: { type: 'Point', coordinates: [longitude, latitude] },
-                $maxDistance: 1000 // 1km in meters
-              }
-            }
-          }).select('name email').limit(100);
-
-          notifiedCount = nearbyCitizens.length;
-          for (const u of nearbyCitizens) {
-            logger.info('Nearby citizen notified for complaint validation', {
-              complaintId: complaint._id.toString(),
-              citizenName: u.name,
-              citizenEmail: u.email,
-            });
-          }
-        }
-        logger.info('Nearby citizen notifications sent', {
-          complaintId: complaint._id.toString(),
-          notifiedCount,
-        });
-      } catch (notifyErr) {
-        logger.error('Failed to notify nearby citizens', { message: notifyErr.message, stack: notifyErr.stack });
-      }
-
-      // Send WebSocket broadcast
-      const broadcast = req.app.get('wssBroadcast');
-      if (broadcast) {
-        const dept = await Department.findById(resolvedDeptId);
-        const deptName = dept ? dept.name : 'General';
-        broadcast([{
-          id: complaint._id.toString(),
-          timestamp: complaint.createdAt,
-          department: deptName,
-          message: `Grievance filed: "${complaint.title}" at ${complaint.location?.address || 'Ward ' + (complaint.location?.ward || 'Unknown')}`,
-          severity: complaint.priority === 'critical' || complaint.priority === 'urgent' ? 'warning' : 'info',
-          ward: complaint.location?.ward,
-          source: 'complaints'
-        }]);
-      }
-
-    } catch (err) {
-      console.error("[Background Ingestion Alert] Asynchronous extraction thread encountered an error:", err.message);
-      try {
-        complaint.aiVerification = {
-          verificationStatus: 'Failed',
-          predictedDepartment: 'General Inquiry',
-          confidenceScore: 0
-        };
-        await complaint.save();
-      } catch (saveErr) {
-        console.error("Failed to save failed status:", saveErr);
-      }
-    }
+  // Instead of synchronous heavy lifting for Civic Intelligence, Hotspots, and Notifications,
+  // we emit a standard domain event to the EventBus.
+  eventBus.publish('ComplaintCreated', {
+    complaintId: complaint._id,
+    citizenId: complaint.citizen,
+    title: complaint.title,
+    category: complaint.category,
+    department: complaint.department,
+    originalDepartmentId: departmentId,
+    priority: complaint.priority,
+    location: complaint.location,
+    file: savedFileContext,
+    spamStatus: spamStatus
   });
 });
 
@@ -595,6 +392,14 @@ const assignOfficer = asyncHandler(async (req, res) => {
     complaintId: complaint._id.toString(),
     officerId: req.body.officerId,
     actorId: req.user._id.toString(),
+  });
+
+  // Publish Domain Event
+  eventBus.publish('ComplaintAssigned', {
+    complaintId: complaint._id,
+    officerId: req.body.officerId,
+    actorId: req.user._id,
+    departmentId: complaint.department
   });
 
   sendSuccess(res, 200, 'Officer assigned successfully', {
@@ -710,25 +515,27 @@ const updateComplaint = asyncHandler(async (req, res) => {
     cObj.afterImageUrl = '';
   }
 
-  const broadcast = req.app.get('wssBroadcast');
-  if (broadcast) {
-    const deptName = rawComplaint.department?.name || 'General';
-    broadcast([{
-      id: rawComplaint._id.toString(),
-      timestamp: rawComplaint.updatedAt,
-      department: deptName,
-      message: `Grievance "${rawComplaint.title}" status changed to: ${rawComplaint.status.toUpperCase()}`,
-      severity: rawComplaint.status === 'resolved' ? 'success' : (rawComplaint.status === 'escalated' ? 'critical' : 'info'),
-      ward: rawComplaint.location?.ward,
-      source: 'complaints'
-    }]);
+  if (rawComplaint.status === 'resolved') {
+    eventBus.publish('ComplaintResolved', {
+      complaintId: rawComplaint._id,
+      citizenId: rawComplaint.citizen,
+      departmentId: rawComplaint.department,
+      status: rawComplaint.status
+    });
+  } else {
+    eventBus.publish('ComplaintStatusUpdated', {
+      complaintId: rawComplaint._id,
+      citizenId: rawComplaint.citizen,
+      departmentId: rawComplaint.department,
+      status: rawComplaint.status
+    });
   }
 
   sendSuccess(res, 200, 'Complaint updated successfully', { complaint: cObj });
 });
 
 const checkDuplicate = asyncHandler(async (req, res) => {
-  const { title, description, department: departmentInput } = req.body;
+  const { title, description, department: departmentInput, location } = req.body;
 
   if (!title || !description || !departmentInput) {
     throw new AppError('title, description, and department are required', 400);
@@ -740,98 +547,44 @@ const checkDuplicate = asyncHandler(async (req, res) => {
   }
 
   // Parse location and coordinates
-  let lat = null;
-  let lng = null;
-  const locationObj = parseJsonField(req.body.location, 'location');
+  let parsedLocation = null;
+  const locationObj = parseJsonField(location, 'location');
   if (locationObj && locationObj.coordinates) {
-    lat = parseFloat(locationObj.coordinates.lat);
-    lng = parseFloat(locationObj.coordinates.lng);
+    parsedLocation = locationObj;
   }
 
   // Save the uploaded image path if file exists
-  let newImageAbsPath = '';
   let newImageRelativePath = '';
   if (req.file) {
     newImageRelativePath = `/uploads/complaints/${req.file.filename}`;
-    newImageAbsPath = path.join(__dirname, '..', 'uploads', 'complaints', req.file.filename);
   }
 
-  // Fetch active/open complaints from the DB to compare against (in the same department)
-  const activeComplaints = await Complaint.find({
-    department: departmentId,
-    status: { $in: ['submitted', 'under_review', 'assigned', 'in_progress', 'escalated'] },
-  }).populate('department', 'name');
-
-  if (activeComplaints.length === 0) {
-    return sendSuccess(res, 200, 'No active complaints to compare against', {
-      duplicateDetected: false,
-      bestMatch: null,
-    });
-  }
-
-  // Map active complaints into the structure expected by the AI service
-  const existingComplaintsPayload = activeComplaints.map(c => {
-    let imageAbsPath = '';
-    if (c.image) {
-      const sanitizedImage = c.image.startsWith('/') ? c.image.slice(1) : c.image;
-      imageAbsPath = path.join(__dirname, '..', sanitizedImage);
-    }
-
-    return {
-      id: c._id.toString(),
-      title: c.title,
-      description: c.description,
-      image_path: imageAbsPath,
-      lat: c.location?.coordinates?.lat || null,
-      lng: c.location?.coordinates?.lng || null,
-      department_name: c.department?.name || 'General',
-      status: c.status,
-      affected_count: c.affectedCitizens || 1,
-    };
+  const departmentObj = await Department.findById(departmentId);
+  
+  // Call Civic Intelligence Service instead of AI Python API
+  const duplicateResult = await civicIntelligenceService.detectDuplicates({
+    title,
+    description,
+    category: departmentObj ? departmentObj.name : departmentInput,
+    location: parsedLocation
   });
 
-  // Call AI Service /check-duplicate
-  const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-  
-  try {
-    const abortController = new AbortController();
-    const fetchTimeout = setTimeout(() => abortController.abort(), 15000);
-
-    const aiResponse = await fetch(`${AI_SERVICE_URL}/check-duplicate`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      signal: abortController.signal,
-      body: JSON.stringify({
-        title,
-        description,
-        image_path: newImageAbsPath,
-        lat,
-        lng,
-        existing_complaints: existingComplaintsPayload,
-      }),
-    });
-
-    clearTimeout(fetchTimeout);
-
-    if (!aiResponse.ok) {
-      const errText = await aiResponse.text();
-      logger.error('Duplicate complaint detection failed', { errorText: errText });
-      throw new AppError('AI service failed to perform duplicate check', 502);
-    }
-
-    const aiResult = await aiResponse.json();
-    logger.info('Duplicate complaint detection completed', {
-      duplicateDetected: aiResult.duplicate_detected,
-      confidence: aiResult?.best_match?.confidence || null,
-      bestMatchId: aiResult?.best_match?.id || null,
-    });
-
-    let bestMatch = aiResult.best_match;
-    if (bestMatch) {
-      const matchedComplaint = activeComplaints.find(c => c._id.toString() === bestMatch.id);
-      if (matchedComplaint && matchedComplaint.image) {
+  if (duplicateResult.duplicatesFound && duplicateResult.similarComplaints.length > 0) {
+    const bestMatchInternal = duplicateResult.similarComplaints[0];
+    const matchedComplaint = await Complaint.findById(bestMatchInternal.complaintId);
+    
+    let bestMatch = null;
+    if (matchedComplaint) {
+      bestMatch = {
+        id: matchedComplaint._id.toString(),
+        title: matchedComplaint.title,
+        description: matchedComplaint.description,
+        status: matchedComplaint.status,
+        affected_count: matchedComplaint.affectedCitizens || 1,
+        confidence: bestMatchInternal.combinedScore
+      };
+      
+      if (matchedComplaint.image) {
         const host = req.get('host');
         const protocol = req.protocol;
         const imagePath = matchedComplaint.image.startsWith('/') ? matchedComplaint.image.slice(1) : matchedComplaint.image;
@@ -840,15 +593,16 @@ const checkDuplicate = asyncHandler(async (req, res) => {
     }
 
     sendSuccess(res, 200, 'Duplicate check completed', {
-      duplicateDetected: aiResult.duplicate_detected,
+      duplicateDetected: true,
       bestMatch,
       tempImageRelativePath: newImageRelativePath,
     });
-
-  } catch (error) {
-    logger.error('Duplicate complaint check request error', { message: error.message, stack: error.stack });
-    if (error instanceof AppError) throw error;
-    throw new AppError('Failed to communicate with AI service for duplicate check', 502);
+  } else {
+    sendSuccess(res, 200, 'Duplicate check completed', {
+      duplicateDetected: false,
+      bestMatch: null,
+      tempImageRelativePath: newImageRelativePath,
+    });
   }
 });
 

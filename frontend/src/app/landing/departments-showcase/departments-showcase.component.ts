@@ -6,6 +6,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
 interface DepartmentItem extends Department {
   nameKey: string;
+  key?: string;
 }
 
 @Component({
@@ -156,6 +157,36 @@ interface DepartmentItem extends Department {
             </ul>
           </div>
 
+          <!-- Services Provided -->
+          <div class="space-y-3">
+            <h4 class="font-mono text-xs text-[#6AA9FF] uppercase tracking-wider font-bold">
+              {{ translationService.t('SERVICES_LABEL') || 'Services Provided' }}
+            </h4>
+            <ul class="space-y-2">
+              @for (item of getDeptServices(selectedDept.id); track item) {
+                <li class="flex items-start gap-2 text-xs text-primary-var font-mono uppercase">
+                  <span class="text-emerald-400 mt-0.5">•</span>
+                  <span>{{ item }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
+          <!-- Core Responsibilities -->
+          <div class="space-y-3">
+            <h4 class="font-mono text-xs text-[#6AA9FF] uppercase tracking-wider font-bold">
+              {{ translationService.t('RESPONSIBILITIES_LABEL') || 'Core Responsibilities' }}
+            </h4>
+            <ul class="space-y-2">
+              @for (item of getDeptResponsibilities(selectedDept.id); track item) {
+                <li class="flex items-start gap-2 text-xs text-primary-var font-mono uppercase">
+                  <span class="text-amber-400 mt-0.5">•</span>
+                  <span>{{ item }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+
           <!-- Resolution Process Flow -->
           <div class="space-y-4">
             <h4 class="font-mono text-xs text-[#6AA9FF] uppercase tracking-wider font-bold">
@@ -219,94 +250,254 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
   showAll = false;
   selectedDept: DepartmentItem | null = null;
 
-  private readonly DEPT_DETAILS: Record<LanguageCode, Record<string, { purpose: string; complaints: string[] }>> = {
+  private readonly DEPT_DETAILS: Record<LanguageCode, Record<string, { purpose: string; complaints: string[]; services: string[]; responsibilities: string[] }>> = {
     en: {
-      roads: { purpose: 'Road maintenance, pothole repairs, street infrastructure, and road safety.', complaints: ['Potholes', 'Damaged roads', 'Missing road signs', 'Road obstructions'] },
-      water: { purpose: 'Distribution of clean drinking water, pipeline maintenance, and water quality control.', complaints: ['No water supply', 'Leakages', 'Contaminated water', 'Low water pressure'] },
-      electricity: { purpose: 'Power distribution, substation management, and street light electrical grids.', complaints: ['Power outages', 'Voltage fluctuation', 'Damaged transformers', 'Hanging wires'] },
-      sanitation: { purpose: 'Public hygiene, street sweeping, garbage collections, and public toilets.', complaints: ['Uncleaned garbage', 'Public littering', 'Dirty public toilets', 'Pest control'] },
-      health: { purpose: 'Municipal clinics, disease control, safety audits of restaurants, and immunization.', complaints: ['Vector diseases', 'Unhygienic food stalls', 'Lack of medicines', 'Clinic maintenance'] },
-      revenue: { purpose: 'Property tax collection, land records, birth/death certificates, and commercial licensing.', complaints: ['Tax billing errors', 'Delayed certificates', 'Land record disputes', 'Property disputes'] },
-      transport: { purpose: 'Public transit scheduling, bus shelters, traffic signal management, and parking.', complaints: ['Late buses', 'Broken bus shelters', 'Traffic light malfunction', 'Illegal parking'] },
-      smart_city: { purpose: 'Wi-Fi zones, CCTV monitoring, smart environmental sensors, and civic apps.', complaints: ['Public Wi-Fi down', 'CCTV malfunction', 'Civic app bugs', 'Sensor errors'] },
-      rural_dev: { purpose: 'Gram panchayat support, rural roads, water harvesting, and agricultural aid.', complaints: ['Unpaved rural roads', 'Lack of irrigation', 'Panchayat office delay', 'Farm support issues'] },
-      emergency: { purpose: 'Disaster relief, fire alerts, medical dispatch, and urgent civic hazards.', complaints: ['Fire hazards', 'Flood control issues', 'Structural collapses', 'Hazard rescue'] },
-      parks: { purpose: 'Maintenance of children playgrounds, public gardens, and open green spaces.', complaints: ['Overgrown grass', 'Broken playground equipment', 'Damaged benches', 'Poor lighting'] },
-      street_lights: { purpose: 'Installation and maintenance of public street lights and solar lighting.', complaints: ['Non-functioning street lights', 'Dark streets', 'Exposed wiring', 'Damaged poles'] },
-      waste: { purpose: 'Household waste collection, waste segregation, recycling, and composting plants.', complaints: ['Missed waste collection', 'Overflowing dumpsters', 'Open burning of waste', 'Lack of bins'] },
-      drainage: { purpose: 'Underground drainage system, sewage treatment, and clearing of storm drains.', complaints: ['Overflowing sewage', 'Blocked drains', 'Damaged manholes', 'Wastewater flooding'] },
-      animal: { purpose: 'Stray animal population control, rabies vaccination, and animal rescue.', complaints: ['Stray dog threats', 'Animal cruelty', 'Rabid animal sightings', 'Dead animal removal'] },
-      licensing: { purpose: 'Trade licenses, vendor permits, restaurant health licenses, and construction permits.', complaints: ['Illegal vending', 'Unlicensed businesses', 'Building permit violations', 'Corruption'] },
-      housing: { purpose: 'Low-income housing schemes, zoning laws, urban zoning, and building regulations.', complaints: ['Unauthorized construction', 'Encroachments', 'Slum redevelopment delays', 'Zoning violations'] },
-      pollution: { purpose: 'Monitoring air and water quality, noise pollution regulations, and tree planting.', complaints: ['Industrial smoke', 'Noise pollution', 'Dumping in water bodies', 'Illegal tree cutting'] },
-      welfare: { purpose: 'Pensions for seniors, support for disabled, women empowerment, and child care.', complaints: ['Pension delay', 'Disability support issues', 'Welfare center maintenance', 'Funding delays'] },
-      disaster: { purpose: 'Pre-disaster planning, emergency alerts, cyclone/earthquake relief centers.', complaints: ['Relief camp poor conditions', 'Blocked evacuation routes', 'Delayed emergency alerts'] }
+      roads: {
+        purpose: 'Road maintenance, pothole repairs, street infrastructure, and road safety.',
+        complaints: ['Potholes', 'Damaged roads', 'Missing road signs', 'Road obstructions'],
+        services: ['Road surfacing', 'Pothole patching', 'Sign installation', 'Sidewalk repair'],
+        responsibilities: ['Maintain safe road structures', 'Manage traffic signs', 'Upgrade pedestrian facilities', 'Inspect bridge safety']
+      },
+      water: {
+        purpose: 'Distribution of clean drinking water, pipeline maintenance, and water quality control.',
+        complaints: ['No water supply', 'Leakages', 'Contaminated water', 'Low water pressure'],
+        services: ['Drinking water supply', 'Pipeline repairs', 'Water testing', 'Meter installation'],
+        responsibilities: ['Ensure clean water delivery', 'Fix water pipeline leakages', 'Monitor water reservoir levels', 'Perform chemical quality checks']
+      },
+      electricity: {
+        purpose: 'Power distribution, substation management, and street light electrical grids.',
+        complaints: ['Power outages', 'Voltage fluctuation', 'Damaged transformers', 'Hanging wires'],
+        services: ['Grid maintenance', 'Transformer servicing', 'Electrical safety inspection', 'Power line mapping'],
+        responsibilities: ['Coordinate power supply grids', 'Address dangling or live wires', 'Prevent transformer failures', 'Maintain sub-station safety']
+      },
+      sanitation: {
+        purpose: 'Public hygiene, street sweeping, garbage collections, and public toilets.',
+        complaints: ['Uncleaned garbage', 'Public littering', 'Dirty public toilets', 'Pest control'],
+        services: ['Public restroom cleaning', 'Street sweeping', 'Drain disinfecting', 'Community cleanliness drives'],
+        responsibilities: ['Manage municipal hygiene', 'Maintain clean public restrooms', 'Coordinate health audits', 'Conduct vector control programs']
+      },
+      health: {
+        purpose: 'Municipal clinics, disease control, safety audits of restaurants, and immunization.',
+        complaints: ['Vector diseases', 'Unhygienic food stalls', 'Lack of medicines', 'Clinic maintenance'],
+        services: ['Vaccination drives', 'Clinic maintenance', 'Restaurant safety audits', 'Outbreak monitoring'],
+        responsibilities: ['Monitor local public health', 'Inspect food stall sanitation', 'Manage primary municipal health clinics', 'Distribute critical medicines']
+      },
+      revenue: {
+        purpose: 'Property tax collection, land records, birth/death certificates, and commercial licensing.',
+        complaints: ['Tax billing errors', 'Delayed certificates', 'Land record disputes', 'Property disputes'],
+        services: ['Property tax billing', 'Land registry', 'Certificate issuance', 'Trade license collection'],
+        responsibilities: ['Collect municipal tax', 'Maintain official land records', 'Issue birth/death certificates', 'Resolve commercial disputes']
+      },
+      transport: {
+        purpose: 'Public transit scheduling, bus shelters, traffic signal management, and parking.',
+        complaints: ['Late buses', 'Broken bus shelters', 'Traffic light malfunction', 'Illegal parking'],
+        services: ['Bus scheduling', 'Transit terminal care', 'Traffic signal coordination', 'Public parking management'],
+        responsibilities: ['Optimize public bus schedules', 'Repair terminal bus shelters', 'Manage traffic lights', 'Monitor public parking systems']
+      },
+      smart_city: {
+        purpose: 'Wi-Fi zones, CCTV monitoring, smart environmental sensors, and civic apps.',
+        complaints: ['Public Wi-Fi down', 'CCTV malfunction', 'Civic app bugs', 'Sensor errors'],
+        services: ['Public Wi-Fi maintenance', 'CCTV feed monitoring', 'IoT sensor check', 'Digital civic portal support'],
+        responsibilities: ['Maintain municipal Wi-Fi networks', 'Manage safety CCTV cameras', 'Monitor air/noise sensor inputs', 'Debug e-governance app portals']
+      },
+      rural_dev: {
+        purpose: 'Gram panchayat support, rural roads, water harvesting, and agricultural aid.',
+        complaints: ['Unpaved rural roads', 'Lack of irrigation', 'Panchayat office delay', 'Farm support issues'],
+        services: ['Panchayat construction', 'Irrigation canal care', 'Agricultural seed subsidy', 'Rural road paving'],
+        responsibilities: ['Support gram panchayat offices', 'Pave rural connector roads', 'Construct irrigation canals', 'Deliver farm welfare programs']
+      },
+      emergency: {
+        purpose: 'Disaster relief, fire alerts, medical dispatch, and urgent civic hazards.',
+        complaints: ['Fire hazards', 'Flood control issues', 'Structural collapses', 'Hazard rescue'],
+        services: ['Hazard evacuation', 'Disaster rescue', 'Fire safety reviews', 'Flood relief camp setup'],
+        responsibilities: ['Deploy immediate disaster relief', 'Rescue trapped citizens', 'Coordinate fire hazards', 'Bypass bureaucratic queues for safety']
+      }
     },
     te: {
-      roads: { purpose: 'రోడ్ల నిర్మాణం మరియు రహదారుల నిర్వహణ.', complaints: ['గుంతలు', 'దెబ్బతిన్న రోడ్లు', 'రహదారి అడ్డంకులు'] },
-      water: { purpose: 'త్రాగునీటి సరఫరా మరియు పైప్‌లైన్ నిర్వహణ.', complaints: ['నీటి లీకేజీలు', 'తక్కువ పీడనం', 'కలుషిత నీరు'] },
-      electricity: { purpose: 'విద్యుత్ పంపిణీ మరియు భద్రత.', complaints: ['విద్యుత్ కోతలు', 'వేలాడే వైర్లు', 'వోల్టేజ్ హెచ్చుతగ్గులు'] },
-      sanitation: { purpose: 'ప్రజా పరిశుభ్రత మరియు వీధుల సఫాయి.', complaints: ['మురికి వీధులు', 'చెత్త పేరుకుపోవడం', 'బహిరంగ మూత్రవిసర్జన'] },
-      health: { purpose: 'మున్సిపల్ క్లినిక్‌లు మరియు ప్రజారోగ్య రక్షణ.', complaints: ['దోమల పెరుగుదల', 'క్లినిక్ సదుపాయాల లేమి', 'ఆహార కల్తీ'] },
-      revenue: { purpose: 'పన్ను వసూలు మరియు పౌర రికార్డుల నిర్వహణ.', complaints: ['పన్ను బిల్లింగ్ లోపాలు', 'సర్టిఫికెట్ల ఆలస్యం'] },
-      transport: { purpose: 'ప్రభుత్వ బస్సులు, ట్రాఫిక్ సిగ్నల్స్ మరియు పార్కింగ్.', complaints: ['రవాణా ఆలస్యం', 'సిగ్నల్ పనిచేయకపోవడం', 'అనధికార పార్కింగ్'] },
-      smart_city: { purpose: 'సీసీటీవీ నెట్‌వర్క్, వైఫై జోన్లు మరియు స్మార్ట్ యాప్స్.', complaints: ['పబ్లిక్ వైఫై వైఫల్యం', 'సీసీటీవీ పనిచేయకపోవడం'] },
-      rural_dev: { purpose: 'గ్రామీణ వార్డుల అభివృద్ధి మరియు వ్యవసాయ సాయం.', complaints: ['మురికి గ్రామీణ రోడ్లు', 'సాగునీటి ఆలస్యం'] },
-      emergency: { purpose: 'అత్యవసర స్పందన మరియు విపత్తు నివారణ.', complaints: ['అగ్ని ప్రమాదాలు', 'ముంపు నివారణ లోపాలు'] },
-      parks: { purpose: 'పార్కులు, తోటలు మరియు పిల్లల ఆట స్థలాల నిర్వహణ.', complaints: ['పెరిగిన పిచ్చి మొక్కలు', 'విరిగిన ఆట సామాగ్రి'] },
-      street_lights: { purpose: 'వీధి దీపాలు మరియు సోలార్ లైట్ల ఏర్పాటు.', complaints: ['పనిచేయని వీధి దీపాలు', 'చీకటి వీధులు'] },
-      waste: { purpose: 'ఘన వ్యర్థాల సేకరింపు మరియు రీసైక్లింగ్.', complaints: ['చెత్త సేకరించకపోవడం', 'ఓవర్‌ఫ్లో డబ్బాలు'] },
-      drainage: { purpose: 'భూగర్భ డ్రైనేజీ మరియు మురుగునీటి శుద్ధి.', complaints: ['మురుగు పొంగడం', 'మూసుకుపోయిన మ్యాన్‌హోల్స్'] },
-      animal: { purpose: 'వీధి జంతువుల నియంత్రణ మరియు జంతు సంరక్షణ.', complaints: ['వీధి కుక్కల గుంపులు', 'చనిపోయిన జంతువుల తొలగింపు'] },
-      licensing: { purpose: 'మున్సిపల్ లైసెన్సులు మరియు నిర్మాణ అనుమతులు.', complaints: ['అనుమతి లేని వ్యాపారాలు', 'అనధికార నిర్మాణాలు'] },
-      housing: { purpose: 'బలహీన వర్గాల గృహనిర్మాణం మరియు పట్టణ ప్రణాళిక.', complaints: ['అనధికార జోనింగ్', 'స్థలాల ఆక్రమణలు'] },
-      pollution: { purpose: 'గాలి, నీరు, మరియు శబ్ద కాలుష్య నియంత్రణ.', complaints: ['పారిశ్రామిక పొగ', 'విపరీతమైన శబ్దం', 'చెట్లు నరకడం'] },
-      welfare: { purpose: 'వృద్ధాప్య పింఛన్లు మరియు సామాజిక సంక్షేమ పథకాలు.', complaints: ['పింఛన్ల ఆలస్యం', 'సహాయ నిధుల నిలిపివేత'] },
-      disaster: { purpose: 'వరద రక్షణ మరియు తుఫాను సహాయ కేంద్రాలు.', complaints: ['విపత్తు హెచ్చరికల ఆలస్యం', 'సహాయ శిబిరాల సమస్యలు'] }
+      roads: {
+        purpose: 'రోడ్ల నిర్మాణం మరియు రహదారుల నిర్వహణ.',
+        complaints: ['గుంతలు', 'దెబ్బతిన్న రోడ్లు', 'రహదారి అడ్డంకులు'],
+        services: ['రోడ్ల ఉపరితల నిర్మాణం', 'గుంతలు పూడ్చడం', 'చిహ్నాల వ్యవస్థాపన', 'ఫుట్‌పాత్ మరమ్మత్తు'],
+        responsibilities: ['సురక్షిత రోడ్ల నిర్మాణం నిర్వహించడం', 'ట్రాఫిక్ చిహ్నాలను నిర్వహించడం', 'పాదచారుల సౌకర్యాలను అప్‌గ్రేడ్ చేయడం', 'వంతెనల భద్రతను తనిఖీ చేయడం']
+      },
+      water: {
+        purpose: 'త్రాగునీటి సరఫరా మరియు పైప్‌లైన్ నిర్వహణ.',
+        complaints: ['నీటి లీకేజీలు', 'తక్కువ పీడనం', 'కలుషిత నీరు'],
+        services: ['త్రాగునీటి సరఫరా', 'పైప్‌లైన్ మరమ్మతులు', 'నీటి నాణ్యత పరీక్ష', 'మీటర్ వ్యవస్థాపన'],
+        responsibilities: ['స్వచ్ఛమైన నీటి పంపిణీని నిర్ధారించడం', 'నీటి పైప్‌లైన్ లీకేజీలను పరిష్కరించడం', 'నీటి నిల్వల స్థాయిలను పర్యవేక్షించడం', 'రసాయన నాణ్యత తనిఖీలను నిర్వహించడం']
+      },
+      electricity: {
+        purpose: 'విద్యుత్ పంపిణీ మరియు భద్రత.',
+        complaints: ['విద్యుత్ కోతలు', 'వేలాడే వైర్లు', 'వోల్టేజ్ హెచ్చుతగ్గులు'],
+        services: ['గ్రిడ్ నిర్వహణ', 'ట్రాన్స్‌ఫార్మర్ సర్వీసింగ్', 'విద్యుత్ భద్రతా తనిఖీ', 'పవర్ లైన్ మ్యాపింగ్'],
+        responsibilities: ['విద్యుత్ సరఫరా గ్రిడ్‌లను సమన్వయం చేయడం', 'వేలాడే లేదా సజీవ వైర్లను పరిష్కరించడం', 'ట్రాన్స్‌ఫార్మర్ వైఫల్యాలను నిరోధించడం', 'సబ్ స్టేషన్ భద్రతను నిర్వహించడం']
+      },
+      sanitation: {
+        purpose: 'ప్రజా పరిశుభ్రత మరియు వీధుల సఫాయి.',
+        complaints: ['మురికి వీధులు', 'చెత్త పేరుకుపోవడం', 'బహిరంగ మూత్రవిసర్జన'],
+        services: ['ప్రజా మరుగుదొడ్ల శుభ్రత', 'వీధుల ఊడ్చివేత', 'డ్రైన్ల క్రిమిసంహారక చర్యలు', 'పరిశుభ్రత ప్రచారాలు'],
+        responsibilities: ['మున్సిపల్ పరిశుభ్రతను నిర్వహించడం', 'ప్రజా శౌచాలయాలను శుభ్రంగా ఉంచడం', 'ఆరోగ్య ఆడిట్లను నిర్వహించడం', 'దోమల నివారణ చర్యలు చేపట్టడం']
+      },
+      health: {
+        purpose: 'మున్సిపల్ క్లినిక్‌లు మరియు ప్రజారోగ్య రక్షణ.',
+        complaints: ['దోమల పెరుగుదల', 'క్లినిక్ సదుపాయాల లేమి', 'ఆహార కల్తీ'],
+        services: ['టీకా డ్రైవ్‌లు', 'క్లినిక్ నిర్వహణ', 'రెస్టారెంట్ భద్రతా ఆడిట్లు', 'వ్యాధుల వ్యాప్తి పర్యవేక్షణ'],
+        responsibilities: ['స్థానిక ప్రజారోగ్యాన్ని పర్యవేక్షించడం', 'ఆహారశాలల పరిశుభ్రతను తనిఖీ చేయడం', 'మున్సిపల్ ప్రాథమిక ఆరోగ్య కేంద్రాల నిర్వహణ', 'ముఖ్యమైన ఔషధాల పంపిణీ']
+      },
+      revenue: {
+        purpose: 'పన్ను వసూలు మరియు పౌర రికార్డుల నిర్వహణ.',
+        complaints: ['పన్ను బిల్లింగ్ లోపాలు', 'సర్టిఫికెట్ల ఆలస్యం'],
+        services: ['ఆస్తి పన్ను బిల్లింగ్', 'భూమి రిజిస్ట్రేషన్', 'ధృవీకరణ పత్రాల జారీ', 'వ్యాపార లైసెన్స్ రుసుము వసూలు'],
+        responsibilities: ['మున్సిపల్ పన్ను వసూలు', 'భూ రికార్డుల నిర్వహణ', 'జనన/మరణ ధృవీకరణ పత్రాల జారీ', 'వాణిజ్య వివాదాల పరిష్కారం']
+      },
+      transport: {
+        purpose: 'ప్రభుత్వ బస్సులు, ట్రాఫిక్ సిగ్నల్స్ మరియు పార్కింగ్.',
+        complaints: ['రవాణా ఆలస్యం', 'సిగ్నల్ పనిచేయకపోవడం', 'అనధికార పార్కింగ్'],
+        services: ['బస్సుల సమయ పట్టిక పర్యవేక్షణ', 'బస్సు షెల్టర్ల నిర్వహణ', 'ట్రాఫిక్ సిగ్నల్స్ సమన్వయం', 'పార్కింగ్ స్థలాల నిర్వహణ'],
+        responsibilities: ['ప్రజా రవాణా సమయాలను ఆప్టిమైజ్ చేయడం', 'బస్సు షెల్టర్లను మరమ్మతు చేయడం', 'ట్రాఫిక్ సిగ్నల్స్ నిర్వహణ', 'పార్కింగ్ వ్యవస్థలను పర్యవేక్షించడం']
+      },
+      smart_city: {
+        purpose: 'సీసీటీవీ నెట్‌వర్క్, వైఫై జోన్లు మరియు స్మార్ట్ యాప్స్.',
+        complaints: ['పబ్లిక్ వైఫై వైఫల్యం', 'సీసీటీవీ పనిచేయకపోవడం'],
+        services: ['ఉచిత వైఫై నిర్వహణ', 'సీసీటీవీ పర్యవేక్షణ', 'సెన్సార్ల తనిఖీ', 'డిజిటల్ పోర్టల్ సహాయం'],
+        responsibilities: ['మున్సిపಲ್ వైఫై వ్యవస్థను నిర్వహించడం', 'భద్రతా సీసీటీవీల పర్యవేక్షణ', 'గాలి/శబ్ద కాలుష్య సెన్సార్ల పర్యవేక్షణ', 'ఈ-గవర్నెన్స్ యాప్స్ సమస్యల పరిష్కారం']
+      },
+      rural_dev: {
+        purpose: 'గ్రామీణ వార్డుల అభివృద్ధి మరియు వ్యవసాయ సాయం.',
+        complaints: ['మురికి గ్రామీణ రోడ్లు', 'సాగునీటి ఆలస్యం'],
+        services: ['గ్రామ పంచాయతీల నిర్మాణం', 'సాగునీటి కాలువల నిర్వహణ', 'వ్యవసాయ రాయితీలు', 'గ్రామీణ రోడ్ల నిర్మాణం'],
+        responsibilities: ['గ్రామ పంచాయతీ కార్యాలయాలకు మద్దతు', 'గ్రామీణ అనుసంధాన రోడ్ల నిర్మాణం', 'సాగునీటి కాలువల మరమ్మతులు', 'రైతు సంక్షేమ పథకాల పంపిణీ']
+      },
+      emergency: {
+        purpose: 'అత్యవసర స్పందన మరియు విపత్తు నివారణ.',
+        complaints: ['అగ్ని ప్రమాదాలు', 'ముంపు నివారణ లోపాలు'],
+        services: ['సహాయక చర్యలు', 'విపత్తు రక్షణ', 'అగ్ని ప్రమాదాల తనిఖీలు', 'వరద సహాయ శిబిరాల ఏర్పాటు'],
+        responsibilities: ['తక్షణ విపత్తు ఉపశమనం అందించడం', 'చిక్కుకున్న పౌరులను రక్షించడం', 'అగ్ని ప్రమాదాల సమన్వయం', 'భద్రత కోసం అత్యవసర చర్యలు చేపట్టడం']
+      }
     },
     ta: {
-      roads: { purpose: 'சாலை அமைத்தல் மற்றும் நெடுஞ்சாலை பராமரிப்பு.', complaints: ['சாலை பள்ளங்கள்', 'சேதமடைந்த சாலைகள்', 'சாலை அடைப்புகள்'] },
-      water: { purpose: 'குடிநீர் விநியோகம் மற்றும் குழாய் பராமரிப்பு.', complaints: ['குடிநீர் கசிவு', 'குறைந்த அழுத்தம்', 'அசுத்தமான நீர்'] },
-      electricity: { purpose: 'மின் விநியோகம் மற்றும் மின்சார பாதுகாப்பு.', complaints: ['மின் தடை', 'தொங்கும் கம்பிகள்', 'மின்னழுத்த மாறுபாடுகள்'] },
-      sanitation: { purpose: 'பொது சுகாதாரம் மற்றும் வீதி துப்புரவு.', complaints: ['அழுக்கு வீதிகள்', 'குப்பை குவியல்கள்', 'பொது கழிப்பறை வசதியின்மை'] },
-      health: { purpose: 'நகராட்சி மருத்துவமனைகள் மற்றும் பொது சுகாதார சேவைகள்.', complaints: ['கொசு தொல்லை', 'மருத்துவமனை குறைபாடுகள்', 'உணவு கலம்படம்'] },
-      revenue: { purpose: 'வரி வசூல் மற்றும் நில ஆவணங்கள் பராமரிப்பு.', complaints: ['வரி விதிப்பு பிழைகள்', 'சான்றிதழ் தாமதங்கள்'] },
-      transport: { purpose: 'பொது போக்குவரத்து மற்றும் போக்குவரத்து சிக்னல்கள்.', complaints: ['பேருந்து தாமதங்கள்', 'சிக்னல் பழுது', 'சட்டவிரோத வாகன நிறுத்தம்'] },
-      smart_city: { purpose: 'சிசிடிவி கண்காணிப்பு மற்றும் பொது வைஃபை மண்டலங்கள்.', complaints: ['வைஃபை பழுது', 'சிசிடிவி செயலிழப்பு'] },
-      rural_dev: { purpose: 'கிராமப்புற மேம்பாடு மற்றும் விவசாய உதவிகள்.', complaints: ['மண் சாலைகள்', 'நீர் பாசன குறைபாடுகள்'] },
-      emergency: { purpose: 'அவசரக்கால உதவி மற்றும் பேரிடர் மீட்பு.', complaints: ['தீ விபத்து அபாயங்கள்', 'கட்டட இடிபாடுகள்'] },
-      parks: { purpose: 'பூங்காக்கள் மற்றும் விளையாட்டு மைதானங்கள் பராமரிப்பு.', complaints: ['பூங்கா புதர் மண்டுதல்', 'உடைந்த விளையாட்டு உபகரணங்கள்'] },
-      street_lights: { purpose: 'தெரு விளக்குகள் மற்றும் சோலார் விளக்குகள் பராமரிப்பு.', complaints: ['எரியாத தெரு விளக்குகள்', 'இருண்ட பகுதிகள்'] },
-      waste: { purpose: 'குப்பை சேகரிப்பு மற்றும் கழிவு மேலாண்மை.', complaints: ['குப்பை எடுக்காமை', 'குப்பை தொட்டி நிரம்புதல்'] },
-      drainage: { purpose: 'கழிவுநீர் வடிகால் மற்றும் பாதாள சாக்கடை பராமரிப்பு.', complaints: ['கழிவுநீர் பெருக்கெடுத்தல்', 'வடிகால் அடைப்பு'] },
-      animal: { purpose: 'தெரு விலங்குகள் கட்டுப்பாடு மற்றும் விலங்கு மீட்பு.', complaints: ['தெரு நாய் தொல்லை', 'இறந்த விலங்கு அகற்றம்'] },
-      licensing: { purpose: 'வர்த்தக உரிமங்கள் மற்றும் கட்டுமான அனுமதி.', complaints: ['அனுமதியற்ற கடைகள்', 'ஆக்கிரமிப்புகள்'] },
-      housing: { purpose: 'ஏழை எளியோர் வீட்டுவசதி மற்றும் நகர திட்டமிடல்.', complaints: ['அனுமதியற்ற கட்டுமானங்கள்', 'இட ஆக்கிரமிப்பு'] },
-      pollution: { purpose: 'காற்று, நீர் மற்றும் ஒலி மாசு கட்டுப்பாடு.', complaints: ['தொழிற்சாலை புகை', 'அதிக ஒலி மாசு', 'மரம் வெட்டுதல்'] },
-      welfare: { purpose: 'முதியோர் ஓய்வೂதியம் மற்றும் நலத்திட்டங்கள்.', complaints: ['ஒய்வூதிய தாமதம்', 'நல நிதி உதவி பெறாமை'] },
-      disaster: { purpose: 'வெள்ள மீட்பு மற்றும் பேரிடர் உதவி முகாம்கள்.', complaints: ['எச்சரிக்கை தாமதம்', 'முகாம் குறைபாடுகள்'] }
+      roads: {
+        purpose: 'சாலை அமைத்தல் மற்றும் நெடுஞ்சாலை பராமரிப்பு.',
+        complaints: ['சாலை பள்ளங்கள்', 'சேதமடைந்த சாலைகள்', 'சாலை அடைப்புகள்'],
+        services: ['சாலை அமைத்தல்', 'பள்ளம் சரிசெய்தல்', 'சிக்னல் நிறுவுதல்', 'நடைபாதை பராமரிப்பு'],
+        responsibilities: ['பாதுகாப்பான சாலை கட்டமைப்புகளை பராமரித்தல்', 'போக்குவரத்து சிக்னல்களை நிர்வகித்தல்', 'நடைபாதை வசதிகளை மேம்படுத்துதல்', 'பாலங்களின் பாதுகாப்பை ஆய்வு செய்தல்']
+      },
+      water: {
+        purpose: 'குடிநீர் விநியோகம் மற்றும் குழாய் பராமரிப்பு.',
+        complaints: ['குடிநீர் கசிவு', 'குறைந்த அழுத்தம்', 'அசுத்தமான நீர்'],
+        services: ['குடிநீர் விநியோகம்', 'குழாய் பழுதுபார்ப்பு', 'நீர் தரம் சோதனை', 'மீட்டர் நிறுவுதல்'],
+        responsibilities: ['சுத்தமான குடிநீர் விநியோகத்தை உறுதி செய்தல்', 'குடிநீர் குழாய் கசிவுகளை சரிசெய்தல்', 'நீர் தேக்க நிலைகளை கண்காணித்தல்', 'வேதியியல் தர சோதனைகளை மேற்கொள்வது']
+      },
+      electricity: {
+        purpose: 'மின் விநியோகம் மற்றும் மின்சார பாதுகாப்பு.',
+        complaints: ['மின் தடை', 'தொங்கும் கம்பிகள்', 'மின்னழுத்த மாறுபாடுகள்'],
+        services: ['மின் கட்டமைப்பு பராமரிப்பு', 'மின்மாற்றி பழுதுபார்ப்பு', 'மின் பாதுகாப்பு தணிக்கை', 'மின் கம்பி வரைபடம்'],
+        responsibilities: ['மின் விநியோகத்தை ஒருங்கிணைத்தல்', 'தொங்கும் அல்லது மின்சார கம்பிகளை சரிசெய்தல்', 'மின்மாற்றி பழுதடைவதைத் தடுத்தல்', 'துணை மின் நிலைய பாதுகாப்பை பராமரித்தல்']
+      },
+      sanitation: {
+        purpose: 'பொது சுகாதாரம் மற்றும் வீதி துப்புரவு.',
+        complaints: ['அழுக்கு வீதிகள்', 'குப்பை குவியல்கள்', 'பொது கழிப்பறை வசதியின்மை'],
+        services: ['பொது கழிப்பறை சுத்தம் செய்தல்', 'வீதி துப்புரவு பணி', 'சாக்கடை கிருமிநாசினி தெளிப்பு', 'சமூக தூய்மை பிரச்சாரம்'],
+        responsibilities: ['நகராட்சி சுகாதாரத்தை நிர்வகித்தல்', 'பொது கழிப்பறைகளை தூய்மையாக வைத்திருத்தல்', 'சுகாதார தணிக்கைகளை ஒருங்கிணைத்தல்', 'கொசு/பூச்சி கட்டுப்பாட்டு திட்டங்களை மேற்கொள்வது']
+      },
+      health: {
+        purpose: 'நகராட்சி மருத்துவமனைகள் மற்றும் பொது சுகாதார சேவைகள்.',
+        complaints: ['கொசு தொல்லை', 'மருத்துவமனை குறைபாடுகள்', 'உணவு கலம்படம்'],
+        services: ['தடுப்பூசி முகாம்கள்', 'மருத்துவமனை பராமரிப்பு', 'உணவக பாதுகாப்பு தணிக்கை', 'நோய் கண்காணிப்பு'],
+        responsibilities: ['உள்ளூர் பொது சுகாதாரத்தை கண்காணித்தல்', 'உணவக சுகாதாரத்தை ஆய்வு செய்தல்', 'நகராட்சி ஆரம்ப சுகாதார நிலையங்களை நிர்வகித்தல்', 'முக்கிய மருந்துகளை விநியோகித்தல்']
+      },
+      revenue: {
+        purpose: 'வரி வசூல் மற்றும் நில ஆவணங்கள் பராமரிப்பு.',
+        complaints: ['வரி விதிப்பு பிழைகள்', 'சான்றிதழ் தாமதங்கள்'],
+        services: ['சொத்து வரி மதிப்பீடு', 'நில பதிவு', 'சான்றிதழ் வழங்குதல்', 'வர்த்தக உரிமம் வசூல்'],
+        responsibilities: ['நகராட்சி வரி வசூல்', 'நில ஆவணங்களை பராமரித்தல்', 'பிறப்பு/இறப்பு சான்றிதழ்களை வழங்குதல்', 'வணிக ரீதியான தகராறுகளை தீர்ப்பது']
+      },
+      transport: {
+        purpose: 'பொது போக்குவரத்து மற்றும் போக்குவரத்து சிக்னல்கள்.',
+        complaints: ['பேருந்து தாமதங்கள்', 'சிக்னல் பழுது', 'சட்டவிரோத வாகன நிறுத்தம்'],
+        services: ['பேருந்து கால அட்டவணை', 'பேருந்து நிறுத்த பராமரிப்பு', 'போக்குவரத்து சிக்னல் ஒருங்கிணைப்பு', 'வாகன நிறுத்த மேலாண்மை'],
+        responsibilities: ['பேருந்து கால அட்டவணையை மேம்படுத்துதல்', 'பேருந்து நிறுத்தங்களை பழுதுபார்ப்பது', 'சிக்னல்களை நிர்வகித்தல்', 'வாகன நிறுத்தங்களை கண்காணித்தல்']
+      },
+      smart_city: {
+        purpose: 'சிசிடிவி கண்காணிப்பு மற்றும் பொது வைஃபை மண்டலங்கள்.',
+        complaints: ['வைஃபை பழுது', 'சிசிடிவி செயலிழப்பு'],
+        services: ['பொது வைஃபை பராமரிப்பு', 'சிசிடிவி கண்காணிப்பு', 'சென்சார் சரிபார்ப்பு', 'இணைய போர்டல் ஆதரவு'],
+        responsibilities: ['நகராட்சி வைஃபை நெட்வொர்க்குகளை பராமரித்தல்', 'பாதுகாப்பு கேமராக்களை நிர்வகித்தல்', 'காற்று/ஒலி சென்சார்களை கண்காணித்தல்', 'இணைய செயலிகளை சரிசெய்தல்']
+      },
+      rural_dev: {
+        purpose: 'கிராமப்புற மேம்பாடு மற்றும் விவசாய உதவிகள்.',
+        complaints: ['மண் சாலைகள்', 'நீர் பாசன குறைபாடுகள்'],
+        services: ['பஞ்சாயத்து கட்டடங்கள்', 'நீர் பாசன கால்வாய்', 'விவசாய மானியம்', 'கிராமப்புற சாலை அமைத்தல்'],
+        responsibilities: ['கிராம பஞ்சாயத்து அலுவலகங்களை ஆதரித்தல்', 'இணைப்பு சாலைகளை அமைத்தல்', 'பாசன கால்வாய்களை உருவாக்குதல்', 'விவசாயிகளுக்கான நலத்திட்டங்களை வழங்குதல்']
+      },
+      emergency: {
+        purpose: 'அவசரக்கால உதவி மற்றும் பேரிடர் மீட்பு.',
+        complaints: ['தீ விபத்து அபாயங்கள்', 'கட்டட இடிபாடுகள்'],
+        services: ['தீயணைப்பு மீட்பு', 'அவசர சிகிச்சை முகாம்', 'வெள்ள நிவாரண முகாம்', 'அபாய மீட்பு பணி'],
+        responsibilities: ['உடனடி பேரிடர் நிவாரணங்களை வழங்குதல்', 'மக்களை பாதுகாப்பாக மீட்பது', 'தீ விபத்துகளை ஒருங்கிணைத்தல்', 'பாதுகாப்பிற்கான அவசர முடிவுகளை எடுப்பது']
+      }
     },
     kn: {
-      roads: { purpose: 'ರಸ್ತೆಗಳ ನಿರ್ಮಾಣ ಮತ್ತು ಹೆದ್ದಾರಿಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ರಸ್ತೆ ಗುಂಡಿಗಳು', 'ಹಾನಿಗೊಳಗಾದ ರಸ್ತೆಗಳು', 'ರಸ್ತೆ ತಡೆಗಳು'] },
-      water: { purpose: 'ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಮತ್ತು ಪೈಪ್‌ಲೈನ್ ನಿರ್ವಹಣೆ.', complaints: ['ನೀರು ಸೋರಿಕೆ', 'ಕಡಿಮೆ ಒತ್ತಡ', 'ಕಲುಷಿತ ನೀರು'] },
-      electricity: { purpose: 'ವಿದ್ಯುತ್ ವಿತರಣೆ ಮತ್ತು ವಿದ್ಯುತ್ ಸುರಕ್ಷತೆ.', complaints: ['ವಿದ್ಯುತ್ ಕಡಿತ', 'ನೇತಾಡುವ ವೈರ್‌ಗಳು', 'ವೋಲ್ಟೇಜ್ ಏರುಪೇರು'] },
-      sanitation: { purpose: 'ಸಾರ್ವಜನಿಕ ಸ್ವಚ್ಛತೆ ಮತ್ತು ಬೀದಿಗಳ ಗುಡಿಸುವಿಕೆ.', complaints: ['ಕೊಳಕು ಬೀದಿಗಳು', 'ಕಸದ ರಾಶಿ', 'ಸಾರ್ವಜನಿಕ ಮೂತ್ರ ವಿಸರ್ಜನೆ'] },
-      health: { purpose: 'ಮುನ್ಸಿಪಲ್ ಕ್ಲಿನಿಕ್‌ಗಳು ಮತ್ತು ಸಾರ್ವಜನಿಕ ಆರೋಗ್ಯ ರಕ್ಷಣೆ.', complaints: ['ಸೊಳ್ಳೆಗಳ ಕಾಟ', 'ಕ್ಲಿನಿಕ್ ಸೌಲಭ್ಯಗಳ ಕೊರತೆ', 'ಆಹಾರ ಕಲಬೆರಕೆ'] },
-      revenue: { purpose: 'ತೆರಿಗೆ ವಸೂಲಿ ಮತ್ತು ನಾಗರಿಕ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ತೆರಿಗೆ ಬಿಲ್ಲಿಂಗ್ ದೋಷಗಳು', 'ಪ್ರಮಾಣಪತ್ರಗಳ ವಿಳಂಬ'] },
-      transport: { purpose: 'ಸಾರ್ವಜನಿಕ ಬಸ್‌ಗಳು, ಟ್ರಾಫಿಕ್ ಸಿಗ್ನಲ್‌ಗಳು ಮತ್ತು ಪಾರ್ಕಿಂಗ್.', complaints: ['ಬಸ್ ವಿಳಂಬ', 'ಸಿಗ್ನಲ್ ದೋಷಗಳು', 'ಅನಧಿಕೃತ ಪಾರ್ಕಿಂಗ್'] },
-      smart_city: { purpose: 'ಸಿಸಿಟಿವಿ ನೆಟ್‌ವರ್ಕ್, ವೈಫೈ ವಲಯಗಳು ಮತ್ತು ಸ್ಮಾರ್ಟ್ ಆ್ಯಪ್‌ಗಳು.', complaints: ['ಸಾರ್ವಜನಿಕ ವೈಫೈ ವೈಫಲ್ಯ', 'ಸಿಸಿಟಿವಿ ಆಫ್‌ಲೈನ್'] },
-      rural_dev: { purpose: 'ಗ್ರಾಮೀಣ ವಾರ್ಡ್‌ಗಳ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಕೃಷಿ ನೆರವು.', complaints: ['ಕಚ್ಚಾ ರಸ್ತೆಗಳು', 'ನೀರಾವರಿ ವಿಳಂಬ'] },
-      emergency: { purpose: 'ತುರ್ತು ಸ್ಪಂದನೆ ಮತ್ತು ಅಪಾಯಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ಬೆಂಕಿ ಆಕಸ್ಮಿಕಗಳು', 'ಕಟ್ಟಡ ಕುಸಿತದ ಅಪಾಯಗಳು'] },
-      parks: { purpose: 'ಉದ್ಯಾನವನಗಳು ಮತ್ತು ಮಕ್ಕಳ ಆಟದ ಮೈದಾನಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ಬೆಳೆದ ಕಳೆಗಳು', 'ಮುರಿದ ಆಟದ ಸಾಮಗ್ರಿಗಳು'] },
-      street_lights: { purpose: 'ಬೀದಿ ದೀಪಗಳು ಮತ್ತು ಸೋಲಾರ್ ದೀಪಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ಬೀದಿ ದೀಪಗಳು ಆಫ್ ಆಗಿರುವುದು', 'ಕತ್ತಲೆ ರಸ್ತೆಗಳು'] },
-      waste: { purpose: 'ಘನತ್ಯಾಜ್ಯ ಸಂಗ್ರಹಣೆ ಮತ್ತು ಮರುಬಳಕೆ.', complaints: ['ಕಸ ಸಂಗ್ರಹಿಸದಿರುವುದು', 'ತುಂಬಿ ಹರಿಯುವ ತೊಟ್ಟಿಗಳು'] },
-      drainage: { purpose: 'ಒಳಚರಂಡಿ ಮತ್ತು ಮಳೆನೀರು ಚರಂಡಿಗಳ ನಿರ್ವಹಣೆ.', complaints: ['ಚರಂಡಿ ಉಕ್ಕಿ ಹರಿಯುವುದು', 'ಮ್ಯಾನ್‌ಹೋಲ್ ಬ್ಲಾಕ್'] },
-      animal: { purpose: 'ಬೀದಿ ಪ್ರಾಣಿಗಳ ನಿಯಂತ್ರಣ ಮತ್ತು ಪ್ರಾಣಿಗಳ ರಕ್ಷಣೆ.', complaints: ['ಬೀದಿ ನಾಯಿಗಳ ಹಾವಳಿ', 'ಸತ್ತ ಪ್ರಾಣಿಗಳ ತೆರವು'] },
-      licensing: { purpose: 'ವ್ಯಾಪಾರ ಪರವಾನಗಿಗಳು ಮತ್ತು ಕಟ್ಟಡ ಅನುಮತಿಗಳು.', complaints: ['ಪರವಾನಗಿ ಇಲ್ಲದ ವ್ಯಾಪಾರ', 'ಒತ್ತುವರಿ'] },
-      housing: { purpose: 'ವಸತಿ ಯೋಜನೆಗಳು ಮತ್ತು ನಗರ ಯೋಜನೆ.', complaints: ['ವಲಯ ನಿಯಮಗಳ ಉಲ್ಲಂಘನೆ', 'ಜಾಗದ ಒತ್ತುವರಿ'] },
-      pollution: { purpose: 'ವಾಯು, ಜಲ ಮತ್ತು ಶಬ್ದ ಮಾಲಿನ್ಯ ನಿಯಂತ್ರಣ.', complaints: ['ಕೈಗಾರಿಕಾ ಹೊಗೆ', 'ಅತಿಯಾದ ಶಬ್ದ', 'ಅಕ್ರಮ ಮರ ಕಡಿಯುವುದು'] },
-      welfare: { purpose: 'ವೃದ್ಧಾಪ್ಯ ವೇತನ ಮತ್ತು ಸಾಮಾಜಿಕ ಕಲ್ಯಾಣ ಯೋಜನೆಗಳು.', complaints: ['ಪಿಂಚಣಿ ವಿಳಂಬ', 'ಸಹಾಯಧನ ತಡೆಹಿಡಿಯುವಿಕೆ'] },
-      disaster: { purpose: 'ಪ್ರವಾಹ ರಕ್ಷಣೆ ಮತ್ತು ಚಂಡಮಾರುತ ಪರಿಹಾರ ಕೇಂದ್ರಗಳು.', complaints: ['ವಿಪತ್ತು ಎಚ್ಚರಿಕೆಗಳ ವಿಳಂಬ', 'ಪರಿಹಾರ ಶಿಬಿರಗಳ ಕೊರತೆ'] }
+      roads: {
+        purpose: 'ರಸ್ತೆಗಳ ನಿರ್ಮಾಣ ಮತ್ತು ಹೆದ್ದಾರಿಗಳ ನಿರ್ವಹಣೆ.',
+        complaints: ['ರಸ್ತೆ ಗುಂಡಿಗಳು', 'ಹಾನಿಗೊಳಗಾದ ರಸ್ತೆಗಳು', 'ರಸ್ತೆ ತಡೆಗಳು'],
+        services: ['ರಸ್ತೆ ಡಾಂಬರೀಕರಣ', 'ರಸ್ತೆ ಗುಂಡಿ ಮುಚ್ಚುವುದು', 'ರಸ್ತೆ ಚಿಹ್ನೆಗಳ ಅಳವಡಿಕೆ', 'ಫುಟ್‌ಪಾತ್ ದುರಸ್ತಿ'],
+        responsibilities: ['ಸುರಕ್ಷಿತ ರಸ್ತೆ ಕಾಮಗಾರಿಗಳ ನಿರ್ವಹಣೆ', 'ಟ್ರಾಫಿಕ್ ಚಿಹ್ನೆಗಳ ನಿಯಂತ್ರಣ', 'ಪಾದಚಾರಿಗಳ ಸೌಲಭ್ಯಗಳನ್ನು ಉತ್ತಮಗೊಳಿಸುವುದು', 'ಸೇತುವೆಗಳ ಸುರಕ್ಷತೆ ಪರಿಶೀಲನೆ']
+      },
+      water: {
+        purpose: 'ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು ಮತ್ತು ಪೈಪ್‌ಲೈನ್ ನಿರ್ವಹಣೆ.',
+        complaints: ['ನೀರು ಸೋರಿಕೆ', 'ಕಡಿಮೆ ಒತ್ತಡ', 'ಕಲುಷಿತ ನೀರು'],
+        services: ['ಕುಡಿಯುವ ನೀರು ಸರಬರಾಜು', 'ಪೈಪ್‌ಲೈನ್ ದುರಸ್ತಿ', 'ನೀರಿನ ಗುಣಮಟ್ಟ ಪರೀಕ್ಷೆ', 'ಮೀಟರ್ ಅಳವಡಿಕೆ'],
+        responsibilities: ['ಸ್ವಚ್ಛ ನೀರಿನ ವಿತರಣೆಯನ್ನು ಖಚಿತಪಡಿಸುವುದು', 'ನೀರಿನ ಪೈಪ್‌ಲೈನ್ ಸೋರಿಕೆಗಳನ್ನು ಸರಿಪಡಿಸುವುದು', 'ಜಲಾಶಯಗಳ ಮಟ್ಟವನ್ನು ಮೇಲ್ವಿಚಾರಣೆ ಮಾಡುವುದು', 'ರಾಸಾಯನಿಕ ಗುಣಮಟ್ಟ ಪರೀಕ್ಷೆಗಳನ್ನು ನಡೆಸುವುದು']
+      },
+      electricity: {
+        purpose: 'ವಿದ್ಯುತ್ ವಿತರಣೆ ಮತ್ತು ವಿದ್ಯುತ್ ಸುರಕ್ಷತೆ.',
+        complaints: ['ವಿದ್ಯುತ್ ಕಡಿತ', 'ನೇತಾಡುವ ವೈರ್‌ಗಳು', 'ವೋಲ್ಟೇಜ್ ಏರುಪೇರು'],
+        services: ['ವಿದ್ಯುತ್ ಗ್ರಿಡ್ ನಿರ್ವಹಣೆ', 'ಟ್ರಾನ್ಸ್‌ಫಾರ್ಮರ್ ದುರಸ್ತಿ', 'ವಿದ್ಯುತ್ ಸುರಕ್ಷತೆ ತಪಾಸಣೆ', 'ವೈರಿಂಗ್ ನಕ್ಷೆ ತಯಾರಿಕೆ'],
+        responsibilities: ['ವಿದ್ಯುತ್ ಸರಬರಾಜು ಜಾಲವನ್ನು ಸಮನ್ವಯಗೊಳಿಸುವುದು', 'ನೇತಾಡುವ ವಿದ್ಯುತ್ ತಂತಿಗಳನ್ನು ಸರಿಪಡಿಸುವುದು', 'ಟ್ರಾನ್ಸ್‌ಫಾರ್ಮರ್ ವೈಫಲ್ಯಗಳನ್ನು ತಡೆಯುವುದು', 'ಸಬ್ ಸ್ಟೇಷನ್ ಸುರಕ್ಷತೆಯನ್ನು ಕಾಪಾಡುವುದು']
+      },
+      sanitation: {
+        purpose: 'ಸಾರ್ವಜನಿಕ ಸ್ವಚ್ಛತೆ ಮತ್ತು ಬೀದಿಗಳ ಗುಡಿಸುವಿಕೆ.',
+        complaints: ['ಕೊಳಕು ಬೀದಿಗಳು', 'ಕಸದ ರಾಶಿ', 'ಸಾರ್ವಜನಿಕ ಮೂತ್ರ ವಿಸರ್ಜನೆ'],
+        services: ['ಸಾರ್ವಜನಿಕ ಶೌಚಾಲಯಗಳ ಸ್ವಚ್ಛತೆ', 'ಬೀದಿಗಳ ಗುಡಿಸುವಿಕೆ', 'ಚರಂಡಿ ಕ್ರಿಮಿನಾಶಕ ಸಿಂಪಡಣೆ', 'ಸ್ವಚ್ಛತಾ ಅಭಿಯಾನಗಳು'],
+        responsibilities: ['ನಗರ ಸ್ವಚ್ಛತೆಯನ್ನು ನಿರ್ವಹಿಸುವುದು', 'ಸಾರ್ವಜನಿಕ ಶೌಚಾಲಯಗಳನ್ನು ಸ್ವಚ್ಛವಾಗಿಡುವುದು', 'ಆರೋಗ್ಯ ತಪಾಸಣೆಗಳನ್ನು ಆಯೋಜಿಸುವುದು', 'ಸೊಳ್ಳೆ ನಿಯಂತ್ರಣ ಕ್ರಮಗಳನ್ನು ಕೈಗೊಳ್ಳುವುದು']
+      },
+      health: {
+        purpose: 'ಮುನ್ಸಿಪಲ್ ಕ್ಲಿನಿಕ್‌ಗಳು ಮತ್ತು ಸಾರ್ವಜನಿಕ ಆರೋಗ್ಯ ರಕ್ಷಣೆ.',
+        complaints: ['ಸೊಳ್ಳೆಗಳ ಕಾಟ', 'ಕ್ಲಿನಿಕ್ ಸೌಲಭ್ಯಗಳ ಕೊರತೆ', 'ಆಹಾರ ಕಲಬೆರಕೆ'],
+        services: ['ಲಸಿಕಾ ಅಭಿಯಾನಗಳು', 'ಕ್ಲಿನಿಕ್ ನಿರ್ವಹಣೆ', 'ಹೋಟೆಲ್‌ಗಳ ಸುರಕ್ಷತಾ ತಪಾಸಣೆ', 'ರೋಗ ಹರಡುವಿಕೆಯ ಮೇಲ್ವಿಚಾರಣೆ'],
+        responsibilities: ['ಸ್ಥಳೀಯ ಸಾರ್ವಜನಿಕ ಆರೋಗ್ಯದ ಉಸ್ತುವಾರಿ', 'ಆಹಾರದ ಗುಣಮಟ್ಟ ಪರಿಶೀಲಿಸುವುದು', 'ಪ್ರಾಥಮಿಕ ಆರೋಗ್ಯ ಕೇಂದ್ರಗಳ ನಿರ್ವಹಣೆ', 'ಅಗತ್ಯ ಔಷಧಗಳ ವಿತರಣೆ']
+      },
+      revenue: {
+        purpose: 'ತೆರಿಗೆ ವಸೂಲಿ ಮತ್ತು ನಾಗರಿಕ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ.',
+        complaints: ['ತೆರಿಗೆ ಬಿಲ್ಲಿಂಗ್ ದೋಷಗಳು', 'ಪ್ರಮಾಣಪತ್ರಗಳ ವಿಳಂಬ'],
+        services: ['ಆಸ್ತಿ ತೆರಿಗೆ ಸಂಗ್ರಹಣೆ', 'ಭೂ ನೋಂದಣಿ', 'ಪ್ರಮಾಣಪತ್ರಗಳ ವಿತರಣೆ', 'ವ್ಯಾಪಾರ ಪರವಾನಗಿ ಶುಲ್ಕ'],
+        responsibilities: ['ಪುರಸಭೆಯ ತೆರಿಗೆ ಸಂಗ್ರಹಣೆ', 'ಭೂ ದಾಖಲೆಗಳ ನಿರ್ವಹಣೆ', 'ಜನನ/ಮರಣ ಪ್ರಮಾಣಪತ್ರಗಳ ವಿತರಣೆ', 'ವಾಣಿಜ್ಯ ವಿವಾದಗಳ ಇತ್ಯರ್ಥ']
+      },
+      transport: {
+        purpose: 'ಸಾರ್ವಜನಿಕ ಬಸ್‌ಗಳು, ಟ್ರಾಫಿಕ್ ಸಿಗ್ನಲ್‌ಗಳು ಮತ್ತು ಪಾರ್ಕಿಂಗ್.',
+        complaints: ['ಬಸ್ ವಿಳಂಬ', 'ಸಿಗ್ನಲ್ ದೋಷಗಳು', 'ಅನಧಿಕೃತ ಪಾರ್ಕಿಂಗ್'],
+        services: ['ಬಸ್ ವೇಳಾಪಟ್ಟಿ ಪರಿಶೀಲನೆ', 'ಬಸ್ ನಿಲ್ದಾಣಗಳ ನಿರ್ವಹಣೆ', 'ಟ್ರಾಫಿಕ್ ಸಿಗ್ನಲ್ ಸಮನ್ವಯ', 'ಪಾರ್ಕಿಂಗ್ ನಿರ್ವಹಣೆ'],
+        responsibilities: ['ಸಾರ್ವಜನಿಕ ಸಾರಿಗೆ ಸಮಯವನ್ನು ಉತ್ತಮಗೊಳಿಸುವುದು', 'ಬಸ್ ನಿಲ್ದಾಣಗಳನ್ನು ದುರಸ್ತಿ ಮಾಡುವುದು', 'ಟ್ರಾಫಿಕ್ ಸಿಗ್ನಲ್‌ಗಳನ್ನು ನಿಯಂತ್ರಿಸುವುದು', 'ಪಾರ್ಕಿಂಗ್ ವ್ಯವಸ್ಥೆಗಳನ್ನು ಗಮನಿಸುವುದು']
+      },
+      smart_city: {
+        purpose: 'ಸಿಸಿಟಿವಿ ನೆಟ್‌ವರ್ಕ್, ವೈಫೈ ವಲಯಗಳು ಮತ್ತು ಸ್ಮಾರ್ಟ್ ಆ್ಯಪ್‌ಗಳು.',
+        complaints: ['ಸಾರ್ವಜನಿಕ ವೈಫೈ ವೈಫಲ್ಯ', 'ಸಿಸಿಟಿವಿ ಆಫ್‌ಲೈನ್'],
+        services: ['ಸಾರ್ವಜನಿಕ ವೈಫೈ ನಿರ್ವಹಣೆ', 'ಸಿಸಿಟಿವಿ ಕಣ್ಗಾವಲು', 'ಸೆನ್ಸಾರ್ ಪರಿಶೀಲನೆ', 'ಇಂಟರ್ನೆಟ್ ಪೋರ್ಟಲ್ ಬೆಂಬಲ'],
+        responsibilities: ['ಪುರಸಭೆಯ ವೈಫೈ ನೆಟ್‌ವರ್ಕ್‌ಗಳನ್ನು ನಿರ್ವಹಿಸುವುದು', 'ಸುರಕ್ಷತಾ ಕ್ಯಾಮೆರಾಗಳ ಮೇಲ್ವಿಚಾರಣೆ', 'ಗಾಳಿ/ಶಬ್ದ ಮಾಲಿನ್ಯ ಸೆನ್ಸಾರ್ ಮಾಹಿತಿ ಸಂಗ್ರಹಣೆ', 'ಇ-ಆಡಳಿತ ಆಪ್‌ಗಳನ್ನು ದುರಸ್ತಿ ಮಾಡುವುದು']
+      },
+      rural_dev: {
+        purpose: 'ಗ್ರಾಮೀಣ ವಾರ್ಡ್‌ಗಳ ಅಭಿವೃದ್ಧಿ ಮತ್ತು ಕೃಷಿ ನೆರವು.',
+        complaints: ['ಕಚ್ಚಾ ರಸ್ತೆಗಳು', 'ನೀರಾವರಿ ವಿಳಂಬ'],
+        services: ['ಪಂಚಾಯತ್ ಕಟ್ಟಡ ನಿರ್ಮಾಣ', 'ನೀರಾವರಿ ಕಾಲುವೆಗಳ ನಿರ್ವಹಣೆ', 'ಕೃಷಿ ಸಹಾಯಧನ ವಿತರಣೆ', 'ಗ್ರಾಮೀಣ ರಸ್ತೆಗಳ ನಿರ್ಮಾಣ'],
+        responsibilities: ['ಗ್ರಾಮ ಪಂಚಾಯತ್ ಕಚೇರಿಗಳಿಗೆ ಸಹಾಯ ಮಾಡುವುದು', 'ಗ್ರಾಮೀಣ ಸಂಪರ್ಕ ರಸ್ತೆಗಳನ್ನು ನಿರ್ಮಿಸುವುದು', 'ನೀರಾವರಿ ಕಾಲುವೆಗಳ ದುರಸ್ತಿ', 'ರೈತ ಕಲ್ಯಾಣ ಯೋಜನೆಗಳ ತಲುಪಿಸುವಿಕೆ']
+      },
+      emergency: {
+        purpose: 'ತುರ್ತು ಸ್ಪಂದನೆ ಮತ್ತು ಅಪಾಯಗಳ ನಿರ್ವಹಣೆ.',
+        complaints: ['ಬೆಂಕಿ ಆಕಸ್ಮಿಕಗಳು', 'ಕಟ್ಟಡ ಕುಸಿತದ ಅಪಾಯಗಳು'],
+        services: ['ಅಗ್ನಿಶಾಮಕ ರಕ್ಷಣೆ', 'ತುರ್ತು ಚಿಕಿತ್ಸಾ ಶಿಬಿರ', 'ಪ್ರವಾಹ ಪರಿಹಾರ ಶಿಬಿರ', 'ತುರ್ತು ರಕ್ಷಣಾ ಕಾರ್ಯ'],
+        responsibilities: ['ತಕ್ಷಣದ ವಿಪತ್ತು ಪರಿಹಾರ ಒದಗಿಸುವುದು', 'ಸಂಕಷ್ಟದಲ್ಲಿರುವ ನಾಗರಿಕರನ್ನು ರಕ್ಷಿಸುವುದು', 'ಬೆಂಕಿ ಅವಘಡಗಳ ಸಮನ್ವಯ', 'ಸುರಕ್ಷತೆಗಾಗಿ ತುರ್ತು ಕ್ರಮಗಳನ್ನು ಕೈಗೊಳ್ಳುವುದು']
+      }
     }
   };
 
@@ -329,6 +520,7 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
     this.departmentsService.loadDepartments().subscribe((items) => {
       // Merge live data with our static 20 departments list
       this.allDepartments = this.allDepartments.map(staticDept => {
+        const key = staticDept.key || staticDept.id;
         // Find matching dept from database by matching either ID or normalized name
         const liveDept = items.find(d => 
           d.name.toLowerCase() === staticDept.name.toLowerCase() ||
@@ -341,6 +533,7 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
         if (liveDept) {
           return {
             ...staticDept,
+            key: key,
             id: liveDept.id, // Use database MongoDB ID so clicks work
             activeComplaints: liveDept.activeComplaints || staticDept.activeComplaints,
             resolutionRate: liveDept.resolutionRate || staticDept.resolutionRate,
@@ -348,7 +541,10 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
             liveStatus: liveDept.liveStatus || staticDept.liveStatus
           };
         }
-        return staticDept;
+        return {
+          ...staticDept,
+          key: key
+        };
       });
 
       this.updateDisplayedDepartments();
@@ -388,14 +584,34 @@ export class DepartmentsShowcaseComponent implements OnInit, AfterViewInit {
 
   getDeptPurpose(id: string): string {
     const lang = this.translationService.currentLang();
-    const fallback = this.DEPT_DETAILS['en'][id]?.purpose || '';
-    return this.DEPT_DETAILS[lang]?.[id]?.purpose || fallback;
+    const dept = this.allDepartments.find(d => d.id === id);
+    const key = dept?.key || id;
+    const fallback = this.DEPT_DETAILS['en'][key]?.purpose || '';
+    return this.DEPT_DETAILS[lang]?.[key]?.purpose || fallback;
   }
 
   getDeptComplaints(id: string): string[] {
     const lang = this.translationService.currentLang();
-    const fallback = this.DEPT_DETAILS['en'][id]?.complaints || [];
-    return this.DEPT_DETAILS[lang]?.[id]?.complaints || fallback;
+    const dept = this.allDepartments.find(d => d.id === id);
+    const key = dept?.key || id;
+    const fallback = this.DEPT_DETAILS['en'][key]?.complaints || [];
+    return this.DEPT_DETAILS[lang]?.[key]?.complaints || fallback;
+  }
+
+  getDeptServices(id: string): string[] {
+    const lang = this.translationService.currentLang();
+    const dept = this.allDepartments.find(d => d.id === id);
+    const key = dept?.key || id;
+    const fallback = this.DEPT_DETAILS['en'][key]?.services || [];
+    return this.DEPT_DETAILS[lang]?.[key]?.services || fallback;
+  }
+
+  getDeptResponsibilities(id: string): string[] {
+    const lang = this.translationService.currentLang();
+    const dept = this.allDepartments.find(d => d.id === id);
+    const key = dept?.key || id;
+    const fallback = this.DEPT_DETAILS['en'][key]?.responsibilities || [];
+    return this.DEPT_DETAILS[lang]?.[key]?.responsibilities || fallback;
   }
 
   getWorkflowSteps(): string[] {

@@ -42,7 +42,7 @@ import { TranslationService } from '../../core/services/translation.service';
           <!-- Photo Url Input field -->
           <div class="w-full flex flex-col">
             <label class="font-mono text-[8px] tracking-widest text-muted-var uppercase mb-1.5">Profile Photo URL</label>
-            <input type="text" [(ngModel)]="profileData.profilePhotoUrl" class="glass-input font-mono text-[9px]" placeholder="https://example.com/photo.jpg">
+            <input type="text" [(ngModel)]="profileData.profilePhotoUrl" class="glass-input font-mono text-[9px]" [placeholder]="translationService.t('PH_PHOTO_URL')">
           </div>
 
           <!-- Trust score dashboard metric (for citizens) -->
@@ -92,12 +92,12 @@ import { TranslationService } from '../../core/services/translation.service';
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Aadhaar ID Number</label>
-              <input type="text" [(ngModel)]="profileData.aadhaarNumber" class="glass-input" placeholder="12-digit UIDAI ID">
+              <input type="text" [(ngModel)]="profileData.aadhaarNumber" class="glass-input" [placeholder]="translationService.t('PH_UIDAI')">
             </div>
 
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Occupation</label>
-              <input type="text" [(ngModel)]="profileData.occupation" class="glass-input" placeholder="e.g. Student, Self-employed">
+              <input type="text" [(ngModel)]="profileData.occupation" class="glass-input" [placeholder]="translationService.t('PH_OCCUPATION')">
             </div>
           </div>
 
@@ -119,14 +119,14 @@ import { TranslationService } from '../../core/services/translation.service';
 
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">Municipal Ward</label>
-              <input type="text" [(ngModel)]="profileData.ward" class="glass-input" placeholder="e.g. 12">
+              <input type="text" [(ngModel)]="profileData.ward" class="glass-input" [placeholder]="translationService.t('PH_WARD')">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">District / Zone</label>
-              <input type="text" [(ngModel)]="profileData.district" class="glass-input" placeholder="e.g. Zone 3 / Dadar">
+              <input type="text" [(ngModel)]="profileData.district" class="glass-input" [placeholder]="translationService.t('PH_DISTRICT')">
             </div>
 
             <div class="flex flex-col">

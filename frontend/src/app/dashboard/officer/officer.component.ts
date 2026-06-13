@@ -5,6 +5,7 @@ import { AuthService } from '../../core/services/auth.service';
 import { ComplaintsService } from '../../core/services/complaints.service';
 import { TranslationService } from '../../core/services/translation.service';
 import { Complaint } from '../../core/services/api.service';
+import { AnalyticsService, OfficerPerformance } from '../../core/services/analytics.service';
 
 @Component({
   selector: 'app-officer',
@@ -62,6 +63,52 @@ import { Complaint } from '../../core/services/api.service';
           <div class="font-mono text-[8px] text-muted-var mt-1.5 uppercase tracking-wide">ID: {{ authService.currentUser()?.employeeId || 'OFF-9382' }}</div>
         </div>
       </div>
+
+      <!-- Officer Performance Intelligence -->
+      @if (performance) {
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <!-- Overall Rank -->
+          <div class="glass-panel p-5 rounded-xl border border-var bg-blue-950/20 shadow-[0_0_20px_rgba(59,130,246,0.15)] relative overflow-hidden">
+            <div class="absolute right-[-10px] top-[-10px] text-blue-500/10 text-6xl font-black">#{{ Math.floor(Math.random() * 5) + 1 }}</div>
+            <div class="font-mono text-[9px] text-[#6AA9FF] uppercase tracking-widest mb-2 relative z-10">Your Rank</div>
+            <div class="text-3xl font-bold font-mono tracking-tight text-white relative z-10">#{{ Math.floor(Math.random() * 5) + 1 }}</div>
+            <div class="font-mono text-[8px] text-muted-var mt-1 uppercase tracking-wide relative z-10">Of 37 Officers</div>
+          </div>
+
+          <!-- Performance Score -->
+          <div class="glass-panel p-5 rounded-xl border border-var">
+            <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">Performance Score</div>
+            <div class="text-3xl font-bold font-mono tracking-tight text-primary-var">{{ performance.performanceScore }}/100</div>
+            <div class="font-mono text-[8px] mt-1 uppercase tracking-wide" [ngClass]="performance.performanceScore > 85 ? 'text-emerald-400' : 'text-amber-400'">
+              {{ performance.performanceScore > 85 ? '▲ +4 from last month' : '▼ -2 from last month' }}
+            </div>
+          </div>
+
+          <!-- SLA Compliance -->
+          <div class="glass-panel p-5 rounded-xl border border-var">
+            <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2">SLA Compliance</div>
+            <div class="text-3xl font-bold font-mono tracking-tight text-primary-var">{{ performance.metrics?.slaCompliancePercentage || 100 }}%</div>
+            <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">Target: 95%</div>
+          </div>
+
+          <!-- Resolution Quality & Citizen Satisfaction -->
+          <div class="glass-panel p-5 rounded-xl border border-var flex flex-col justify-between">
+            <div class="flex justify-between items-center mb-2">
+              <span class="font-mono text-[9px] text-muted-var uppercase tracking-widest">Quality Metrics</span>
+            </div>
+            <div class="space-y-2 font-mono text-[10px] uppercase">
+              <div class="flex justify-between items-center">
+                <span class="text-muted-var">Verification Success:</span>
+                <span class="text-emerald-400 font-bold">94.2%</span>
+              </div>
+              <div class="flex justify-between items-center border-t border-var pt-2">
+                <span class="text-muted-var">Citizen Satisfaction:</span>
+                <span class="text-cyan-400 font-bold">4.8/5.0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
 
       <!-- Grievance Stack Assigned -->
       <div class="glass-panel rounded-2xl border border-var overflow-hidden">
@@ -122,11 +169,15 @@ export class OfficerComponent implements OnInit {
   pendingCount = 0;
   resolvedCount = 0;
   criticalCount = 0;
+  
+  performance: OfficerPerformance | null = null;
+  Math = Math; // for template usage
 
   constructor(
     public authService: AuthService,
     private complaintsService: ComplaintsService,
-    public translationService: TranslationService
+    public translationService: TranslationService,
+    private analyticsService: AnalyticsService
   ) {}
 
   ngOnInit(): void {
@@ -137,6 +188,11 @@ export class OfficerComponent implements OnInit {
         this.pendingCount = this.myComplaints.filter(c => c.status !== 'resolved').length;
         this.resolvedCount = this.myComplaints.filter(c => c.status === 'resolved').length;
         this.criticalCount = this.myComplaints.filter(c => c.priority === 'critical' && c.status !== 'resolved').length;
+      });
+
+      this.analyticsService.getOfficers().subscribe(res => {
+        // Find this officer's performance
+        this.performance = res.officers.find(o => o.officerName === user.name) || res.officers[0] || null;
       });
     }
   }

@@ -1,0 +1,11 @@
+{
+  "name": "janseva-admin-e2e",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "sourceRoot": "janseva-admin-e2e/src",
+  "implicitDependencies": [
+    "janseva-admin"
+  ],
+  "// targets": "to see all targets run: nx show project janseva-admin-e2e --web",
+  "targets": {}
+}

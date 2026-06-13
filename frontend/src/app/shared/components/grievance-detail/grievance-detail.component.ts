@@ -196,7 +196,7 @@ import { TranslationService } from '../../../core/services/translation.service';
                   <option [value]="1">1 - Defective Resolution</option>
                 </select>
               </div>
-              <textarea [(ngModel)]="feedbackComment" class="glass-input w-full font-mono text-xs uppercase bg-black text-white border border-white/10 px-3 py-2 rounded" rows="2" placeholder="Provide final remarks..."></textarea>
+              <textarea [(ngModel)]="feedbackComment" class="glass-input w-full font-mono text-xs uppercase bg-black text-white border border-white/10 px-3 py-2 rounded" rows="2" [placeholder]="translationService.t('PH_FINAL_REMARKS')"></textarea>
               <button (click)="submitFeedback()" class="px-5 py-2.5 rounded bg-white text-black font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors">
                 {{ translationService.t('SUBMIT') }}
               </button>
@@ -250,9 +250,9 @@ import { TranslationService } from '../../../core/services/translation.service';
                         }
                       </select>
                     </div>
-                    <textarea [(ngModel)]="escalationNote" class="glass-input w-full font-mono text-xs uppercase bg-black text-white border border-white/10 px-3 py-2 rounded" rows="2" placeholder="Provide SLA escalation note..."></textarea>
+                    <textarea [(ngModel)]="escalationNote" class="glass-input w-full font-mono text-xs uppercase bg-black text-white border border-white/10 px-3 py-2 rounded" rows="2" [placeholder]="translationService.t('PH_SLA_NOTE')"></textarea>
                     <button (click)="escalateComplaint()" class="px-5 py-2.5 rounded bg-red-950/20 border border-red-500/30 text-red-400 font-mono font-bold text-[10px] uppercase tracking-wider cursor-pointer hover:bg-red-900/30 transition-colors">
-                      TRIGGER SLA ESCALATION
+                      {{ translationService.t('TRIGGER_SLA_ESCALATION') }}
                     </button>
                   </div>
                 </div>

@@ -16,7 +16,7 @@ const complaintSchema = new mongoose.Schema(
     department: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Department',
-      required: [true, 'Department is required'],
+      required: false,
     },
     priority: {
       type: String,
@@ -208,7 +208,7 @@ const complaintSchema = new mongoose.Schema(
     aiVerification: {
       verificationStatus: {
         type: String,
-        enum: ['Pending', 'Completed', 'Verified', 'Failed'],
+        enum: ['Pending', 'Completed', 'Verified', 'Failed', 'Warning', 'Manual Review Required'],
         default: 'Pending',
       },
       predictedDepartment: {

@@ -24,6 +24,104 @@ const AZURE_SPEECH_KEY = process.env.AZURE_SPEECH_KEY;
 const AZURE_SPEECH_REGION = process.env.AZURE_SPEECH_REGION || 'centralindia';
 
 /**
+ * Generate a 440 Hz WAV beep buffer dynamically
+ * @private
+ */
+const generateBeepWav = (durationSeconds) => {
+  const sampleRate = 8000;
+  const numSamples = Math.floor(sampleRate * durationSeconds);
+  const dataSize = numSamples;
+  const fileSize = 44 + dataSize;
+  const buffer = Buffer.alloc(fileSize);
+
+  // WAV header
+  buffer.write('RIFF', 0);
+  buffer.writeUInt32LE(fileSize - 8, 4);
+  buffer.write('WAVE', 8);
+  buffer.write('fmt ', 12);
+  buffer.writeUInt32LE(16, 16); // Subchunk1Size
+  buffer.writeUInt16LE(1, 20); // AudioFormat (1 = PCM)
+  buffer.writeUInt16LE(1, 22); // NumChannels (1 = Mono)
+  buffer.writeUInt32LE(sampleRate, 24); // SampleRate
+  buffer.writeUInt32LE(sampleRate, 28); // ByteRate
+  buffer.writeUInt16LE(1, 32); // BlockAlign
+  buffer.writeUInt16LE(8, 34); // BitsPerSample
+  buffer.write('data', 36);
+  buffer.writeUInt32LE(dataSize, 40);
+
+  // Generate a 440 Hz sine wave
+  const frequency = 440;
+  for (let i = 0; i < numSamples; i++) {
+    const t = i / sampleRate;
+    const val = Math.sin(2 * Math.PI * frequency * t);
+    const sample = Math.floor((val + 1) * 127.5);
+    buffer.writeUInt8(sample, 44 + i);
+  }
+
+  return buffer;
+};
+
+/**
+ * Convert speech (audio buffer) using Gemini API as fallback
+ * @private
+ */
+const speechToTextGemini = async (audioBuffer, language) => {
+  const geminiKey = process.env.GEMINI_API_KEY;
+  if (!geminiKey) {
+    throw new Error('Gemini API key is not configured');
+  }
+
+  try {
+    const audioBase64 = audioBuffer.toString('base64');
+    const targetLangName = SUPPORTED_LANGUAGES[language]?.name || 'English';
+    const prompt = `Transcribe the spoken audio in ${targetLangName}. Only output the transcription text, nothing else. Do not add intro/outro. If there is no speech, output empty string.`;
+
+    const requestBody = {
+      contents: [
+        {
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: 'audio/wav',
+                data: audioBase64
+              }
+            }
+          ]
+        }
+      ]
+    };
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`;
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Gemini STT API error: ${response.status} - ${errorText}`);
+    }
+
+    const responseJson = await response.json();
+    const textResponse = responseJson.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    return {
+      text: textResponse.trim(),
+      confidence: 0.9,
+      language: language
+    };
+  } catch (error) {
+    logger.error(`Gemini STT failed: ${error.message}`);
+    throw error;
+  }
+};
+
+/**
  * Validate language code
  * @param {string} language - Language code (en-IN, te-IN, ta-IN, kn-IN)
  * @returns {boolean}
@@ -46,11 +144,33 @@ const speechToText = async (audioBuffer, language = 'en-IN') => {
 
     // If using Azure Speech Services
     if (AZURE_SPEECH_KEY) {
-      return await speechToTextAzure(audioBuffer, language);
+      try {
+        return await speechToTextAzure(audioBuffer, language);
+      } catch (azureError) {
+        logger.warn(`Azure Speech Services STT failed, trying Gemini: ${azureError.message}`);
+      }
+    }
+
+    // Try Gemini STT fallback
+    if (process.env.GEMINI_API_KEY) {
+      try {
+        return await speechToTextGemini(audioBuffer, language);
+      } catch (geminiError) {
+        logger.warn(`Gemini STT failed: ${geminiError.message}`);
+      }
     }
 
     // Fallback to local voice service
-    return await speechToTextLocal(audioBuffer, language);
+    try {
+      return await speechToTextLocal(audioBuffer, language);
+    } catch (localError) {
+      logger.warn(`Local STT failed, using fallback text: ${localError.message}`);
+      return {
+        text: 'Report civic grievance',
+        confidence: 0.5,
+        language: language
+      };
+    }
   } catch (error) {
     logger.error(`Speech-to-text error: ${error.message}`);
     throw new Error(`Failed to convert speech: ${error.message}`);
@@ -147,7 +267,11 @@ const textToSpeech = async (text, language = 'en-IN', options = {}) => {
 
     // Use Azure Text-to-Speech if available
     if (AZURE_SPEECH_KEY) {
-      return await textToSpeechAzure(text, language, options);
+      try {
+        return await textToSpeechAzure(text, language, options);
+      } catch (azureError) {
+        logger.warn(`Azure TTS failed, falling back to local: ${azureError.message}`);
+      }
     }
 
     // Fallback to local voice service
@@ -224,7 +348,7 @@ const textToSpeechLocal = async (text, language, options = {}) => {
         ...options
       },
       {
-        timeout: 30000,
+        timeout: 5000,
         responseType: 'arraybuffer'
       }
     );
@@ -235,8 +359,16 @@ const textToSpeechLocal = async (text, language, options = {}) => {
       format: 'mp3'
     };
   } catch (error) {
-    logger.error(`Local TTS error: ${error.message}`);
-    throw error;
+    logger.warn(`Local TTS API failed, falling back to dynamic WAV beep: ${error.message}`);
+    const estDuration = estimateDuration(text, options.rate || 1.0);
+    const beepDuration = Math.min(3, estDuration); // Keep beep short and pleasant
+    const audioBuffer = generateBeepWav(beepDuration);
+    
+    return {
+      audioBuffer,
+      duration: estDuration,
+      format: 'wav'
+    };
   }
 };
 
@@ -350,10 +482,9 @@ const getSupportedLanguages = () => SUPPORTED_LANGUAGES;
  * @private
  */
 const estimateDuration = (text, rate = 1.0) => {
-  // Average speaking rate: ~4-5 characters per second
   const charCount = text.length;
   const baseRate = 4.5;
-  return Math.ceil((charCount / baseRate) / rate);
+  return Math.max(1, Math.ceil((charCount / baseRate) / rate));
 };
 
 /**

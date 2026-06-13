@@ -3,11 +3,12 @@ import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/rou
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationsService } from '../../../core/services/notifications.service';
 import { TranslationService, LanguageCode } from '../../../core/services/translation.service';
+import { NotificationCenterComponent } from '../../components/notification-center/notification-center.component';
 
 @Component({
   selector: 'app-admin-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationCenterComponent],
   template: `
     <div class="min-h-screen bg-transparent text-primary-var flex relative overflow-hidden tech-dots-bg w-screen h-screen">
       
@@ -134,6 +135,9 @@ import { TranslationService, LanguageCode } from '../../../core/services/transla
             <h1 class="font-mono text-xs tracking-widest text-muted-var uppercase text-gray-300">JANSEVA STATE COMMAND CENTER // MAIN CONSOLE</h1>
           </div>
           <div class="flex items-center gap-4">
+            <!-- Notification Bell -->
+            <app-notification-center></app-notification-center>
+            
             <!-- Language Switcher -->
             <select [value]="translationService.currentLang()" (change)="onLanguageChange($event)" class="px-2.5 py-1 rounded-full border border-white/10 bg-black text-white font-mono text-[9px] tracking-wider uppercase bg-transparent outline-none cursor-pointer hover:border-cyan-500/50 transition-colors">
               <option value="en" class="bg-black text-white">EN</option>

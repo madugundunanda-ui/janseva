@@ -40,4 +40,14 @@ const departmentSchema = new mongoose.Schema(
 departmentSchema.index({ name: 1, tenantId: 1 }, { unique: true });
 departmentSchema.index({ code: 1, tenantId: 1 }, { unique: true });
 
+departmentSchema.set('toJSON', {
+  virtuals: true,
+  transform: function (doc, ret) {
+    ret.id = ret._id;
+    delete ret._id;
+    delete ret.__v;
+    return ret;
+  }
+});
+
 module.exports = mongoose.model('Department', departmentSchema);

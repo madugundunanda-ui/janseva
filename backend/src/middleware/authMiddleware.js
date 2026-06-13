@@ -1,14 +1,17 @@
 const jwt = require('jsonwebtoken');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
-const { User } = require('../models');
+const userRepository = require('../repositories/userRepository');
 const logger = require('../utils/logger');
+const cacheService = require('../services/cacheService');
+const redisConfig = require('../config/redis');
+const { roleBasedLimiter } = require('./rateLimiter');
 
 const protect = asyncHandler(async (req, res, next) => {
   if (process.env.BYPASS_AUTH === 'true' && process.env.NODE_ENV === 'test') {
-    let user = await User.findOne({ role: 'citizen' });
+    let user = await userRepository.findOne({ role: 'citizen' });
     if (!user) {
-      user = await User.findOne({});
+      user = await userRepository.findOne({});
     }
     if (user) {
       req.user = user;
@@ -18,7 +21,9 @@ const protect = asyncHandler(async (req, res, next) => {
 
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.query && req.query.token) {
     token = req.query.token;
@@ -51,26 +56,34 @@ const protect = asyncHandler(async (req, res, next) => {
     throw error;
   }
 
-  const user = await User.findById(decoded.id).select('-password');
+  const user = await userRepository.findOne({ _id: decoded.id }, { select: '-password' });
 
   if (!user) {
-    logger.warn('Unauthorized attempt: user from token no longer exists', {
-      userId: decoded.id,
-      url: req.originalUrl,
-      method: req.method,
-      ip: req.ip || req.connection?.remoteAddress,
-    });
+    logger.warn('Unauthorized attempt: user from token no longer exists');
     throw new AppError('Not authorized, user no longer exists', 401);
   }
 
+  // Validate Redis Session
+  const sessionKey = `session:${user._id.toString()}:${token}`;
+  const session = await cacheService.getCache(sessionKey);
+  
+  if (!session && redisConfig.getIsRedisAvailable()) {
+    logger.warn(`Unauthorized attempt: Token revoked for user ${user._id}`);
+    throw new AppError('Session expired or revoked', 401);
+  }
+
   req.user = user;
-  next();
+  
+  // Enforce role-based rate limits securely after authentication
+  return roleBasedLimiter(req, res, next);
 });
 
 const optionalProtect = asyncHandler(async (req, res, next) => {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
   } else if (req.query && req.query.token) {
     token = req.query.token;
@@ -86,7 +99,7 @@ const optionalProtect = asyncHandler(async (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id).select('-password');
+    const user = await userRepository.findOne({ _id: decoded.id }, { select: '-password' });
     if (user) {
       req.user = user;
     }

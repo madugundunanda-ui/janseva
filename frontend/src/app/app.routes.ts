@@ -182,6 +182,11 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'transparency',
+    loadComponent: () => import('./transparency/transparency-portal.component').then(m => m.TransparencyPortalComponent),
+    title: 'Public Transparency Portal'
+  },
+  {
     path: '**',
     redirectTo: ''
   }

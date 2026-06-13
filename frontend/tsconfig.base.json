@@ -1,0 +1,37 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "ES2022",
+    "module": "preserve",
+    "skipLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "src/*": [
+        "src/*"
+      ],
+      "@janseva/shared-ui": [
+        "./shared-ui/src/index.ts"
+      ],
+      "@janseva/shared-auth": [
+        "./shared-auth/src/index.ts"
+      ],
+      "@janseva/shared-services": [
+        "./shared-services/src/index.ts"
+      ],
+      "@janseva/shared-models": [
+        "./shared-models/src/index.ts"
+      ],
+      "@janseva/shared-utils": [
+        "./shared-utils/src/index.ts"
+      ],
+      "@janseva/shared-theme": [
+        "./shared-theme/src/index.ts"
+      ],
+      "shared-core": [
+        "./shared-core/src/index.ts"
+      ]
+    }
+  }
+}

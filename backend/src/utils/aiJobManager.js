@@ -85,24 +85,25 @@ class AIJobManager extends EventEmitter {
 
         // Save to database
         try {
-          const resolvedDeptId = await resolveDepartmentId(job.results.department);
-          let targetDeptId = resolvedDeptId;
-          if (!targetDeptId) {
-            targetDeptId = await resolveDepartmentId('Public Safety');
-            if (!targetDeptId) {
-              const firstDept = await Department.findOne({}).select('_id');
-              if (firstDept) targetDeptId = firstDept._id;
-            }
+          let targetDeptId = await resolveDepartmentId(job.results.department);
+          let aiVerificationStatus = 'Verified';
+          let finalDeptSaved = targetDeptId;
+
+          if (!targetDeptId || job.results.confidence < 70) {
+            aiVerificationStatus = 'Manual Review Required';
+            finalDeptSaved = null;
+          } else if (job.results.confidence >= 70 && job.results.confidence <= 89) {
+            aiVerificationStatus = 'Warning';
           }
 
           await Complaint.findByIdAndUpdate(jobId, {
             title: job.results.title || 'Civic Grievance',
             description: job.results.description,
-            department: targetDeptId,
+            department: finalDeptSaved,
             priority: (job.results.priority || 'medium').toLowerCase(),
             severityScore: job.results.severityScore || 50,
             severityReason: job.results.reasons || [],
-            'aiVerification.verificationStatus': 'Verified',
+            'aiVerification.verificationStatus': aiVerificationStatus,
             'aiVerification.predictedDepartment': job.results.department || '',
             'aiVerification.confidenceScore': job.results.confidence || 0,
           });
@@ -123,6 +124,8 @@ class AIJobManager extends EventEmitter {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
+    const pipelineStart = Date.now();
+
     try {
       job.status = 'processing';
       job.progress = 10;
@@ -132,7 +135,9 @@ class AIJobManager extends EventEmitter {
       logger.info('Starting structured inference pipeline...', { jobId });
 
       // Step 1: Run vision prediction first to get details
+      const geminiStart = Date.now();
       const prediction = await analyzeComplaintImage(job.file);
+      const geminiEnd = Date.now();
       job.results = {
         ...job.results,
         title: prediction.title || '',
@@ -147,6 +152,8 @@ class AIJobManager extends EventEmitter {
         topKPredictions: Array.isArray(prediction.top_k_predictions) ? prediction.top_k_predictions : [],
         emergency: !!prediction.emergency
       };
+
+      logger.info('[PARSER_SUCCESS] AI Response parsed successfully', { jobId });
 
       job.progress = 40;
       this.emit(jobId, { 
@@ -247,38 +254,59 @@ class AIJobManager extends EventEmitter {
       }
 
       // Update the Complaint document in database
-      const resolvedDeptId = await resolveDepartmentId(job.results.department);
-      let targetDeptId = resolvedDeptId;
-      if (!targetDeptId) {
-        targetDeptId = await resolveDepartmentId('Public Safety');
-        if (!targetDeptId) {
-          const firstDept = await Department.findOne({}).select('_id');
-          if (firstDept) targetDeptId = firstDept._id;
-        }
+      const mappingStart = Date.now();
+      let targetDeptId = await resolveDepartmentId(job.results.department);
+      const mappingEnd = Date.now();
+
+      let aiVerificationStatus = 'Verified';
+      let finalDeptSaved = targetDeptId;
+
+      if (!targetDeptId || job.results.confidence < 70) {
+        aiVerificationStatus = 'Manual Review Required';
+        finalDeptSaved = null;
+      } else if (job.results.confidence >= 70 && job.results.confidence <= 89) {
+        aiVerificationStatus = 'Warning';
       }
 
       await Complaint.findByIdAndUpdate(jobId, {
         title: job.results.title || 'Civic Grievance',
         description: job.results.description || 'No description provided',
-        department: targetDeptId,
+        department: finalDeptSaved,
         priority: (job.results.priority || 'medium').toLowerCase(),
         severityScore: job.results.severityScore || 50,
         severityReason: job.results.reasons || [],
-        'aiVerification.verificationStatus': 'Verified',
+        'aiVerification.verificationStatus': aiVerificationStatus,
         'aiVerification.predictedDepartment': job.results.department || '',
         'aiVerification.confidenceScore': job.results.confidence || 0,
       });
 
-      // Log AI inference to AiAuditLog collection
+      const pipelineEnd = Date.now();
+
+      if (process.env.AI_DEBUG === 'true') {
+        logger.info(`[AI_DEBUG] Analysis Time: ${(geminiEnd - geminiStart) / 1000}s`);
+        logger.info(`[AI_DEBUG] JSON Parse / Prep Time: -`); // Usually internal to analyzeComplaintImage
+        logger.info(`[AI_DEBUG] Department Mapping Time: ${mappingEnd - mappingStart}ms`);
+        logger.info(`[AI_DEBUG] Total Processing Time: ${(pipelineEnd - pipelineStart) / 1000}s`);
+        logger.info(`[AI_DEBUG] Confidence: ${job.results.confidence}%`);
+        logger.info(`[AI_DEBUG] Predicted Department: ${job.results.department}`);
+      }
+
+      logger.info('[AUTOFILL_SUCCESS] Complaint successfully auto-filled from AI', { jobId });
+
+      // Log AI inference to AiPredictionAudit collection
       try {
-        const { AiAuditLog } = require('../models');
-        await AiAuditLog.create({
+        const { AiPredictionAudit } = require('../models');
+        await AiPredictionAudit.create({
           complaintId: jobId,
-          provider: process.env.VISION_PROVIDER === 'mock' ? 'Mock' : 'Gemini',
+          imageHash: job.hash,
+          predictedDepartment: job.results.department || 'General Inquiry',
+          predictedCategory: job.results.category || '',
           confidence: job.results.confidence || 0,
-          department: job.results.department || 'General Inquiry',
-          priority: job.results.priority || 'medium',
-          reasons: job.results.classificationReasons || []
+          emergencyFlag: !!job.results.emergency,
+          explanationReasons: job.results.classificationReasons || [],
+          finalDepartmentChosen: finalDeptSaved ? job.results.department : null,
+          finalCategoryChosen: finalDeptSaved ? job.results.category : null,
+          processingTimeMs: pipelineEnd - pipelineStart
         });
         logger.info('[AI-AUDIT-LOG] AI inference logged to database', { complaintId: jobId });
       } catch (logErr) {

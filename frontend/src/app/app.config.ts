@@ -1,6 +1,7 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners, ErrorHandler } from '@angular/core';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners, ErrorHandler, importProvidersFrom } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { routes } from './app.routes';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
@@ -13,7 +14,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withInterceptors([jwtInterceptor]), withFetch()),
     provideClientHydration(withEventReplay()),
-    { provide: ErrorHandler, useClass: GlobalErrorHandler }
+    { provide: ErrorHandler, useClass: GlobalErrorHandler },
+    importProvidersFrom(TranslateModule.forRoot())
   ]
 };
 

@@ -2,15 +2,26 @@ const asyncHandler = require('../utils/asyncHandler');
 const authService = require('../services/authService');
 const { sendSuccess } = require('../utils/apiResponse');
 const logger = require('../utils/logger');
-const { User } = require('../models');
+const userRepository = require('../repositories/userRepository');
+const eventBus = require('../services/eventBus');
+
+const setAuthCookie = (res, token) => {
+  res.cookie('token', token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    domain: process.env.NODE_ENV === 'production' ? '.janseva.gov.in' : 'localhost'
+  });
+};
 
 const register = asyncHandler(async (req, res) => {
   const normalizedEmail =
     typeof req.body.email === 'string' ? req.body.email.toLowerCase().trim() : req.body.email;
-  const normalizedAadhaarNumber =
+  const normalizedAadhaarLast4 =
     typeof req.body.aadhaarNumber === 'string'
-      ? req.body.aadhaarNumber.trim()
-      : req.body.aadhaarNumber;
+      ? req.body.aadhaarNumber.slice(-4)
+      : null;
   const normalizedRole =
     typeof req.body.role === 'string' ? req.body.role.toLowerCase().trim() : 'citizen';
 
@@ -48,11 +59,11 @@ const register = asyncHandler(async (req, res) => {
   }
 
   const orConditions = [{ email: normalizedEmail }];
-  if (normalizedAadhaarNumber) {
-    orConditions.push({ aadhaarNumber: normalizedAadhaarNumber });
+  if (normalizedAadhaarLast4) {
+    orConditions.push({ 'aadhaar.last4Digits': normalizedAadhaarLast4 });
   }
 
-  const existingUser = await User.findOne({
+  const existingUser = await userRepository.findOne({
     $or: orConditions,
   });
 
@@ -65,20 +76,32 @@ const register = asyncHandler(async (req, res) => {
     }
 
     if (
-      normalizedAadhaarNumber &&
-      existingUser.aadhaarNumber &&
-      existingUser.aadhaarNumber === normalizedAadhaarNumber
+      normalizedAadhaarLast4 &&
+      existingUser.aadhaar?.last4Digits &&
+      existingUser.aadhaar.last4Digits === normalizedAadhaarLast4
     ) {
       return res.status(400).json({
         success: false,
-        message: 'A citizen with this Aadhaar number is already registered.',
+        message: 'A citizen with this Aadhaar is already registered.',
       });
     }
   }
 
   const result = await authService.registerUser(req.body);
 
-  sendSuccess(res, 201, 'Registration successful', result);
+  if (result.token) {
+    setAuthCookie(res, result.token);
+  }
+
+  // Publish domain event
+  eventBus.publish('UserRegistered', {
+    userId: result.user._id,
+    role: result.user.role,
+    name: result.user.name,
+    email: result.user.email
+  });
+
+  sendSuccess(res, 201, 'Registration successful', { user: result.user });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -92,7 +115,31 @@ const login = asyncHandler(async (req, res) => {
     logger.info('User login success', { email, role });
   }
 
-  sendSuccess(res, 200, 'Login successful', result);
+  if (result.token) {
+    setAuthCookie(res, result.token);
+  }
+
+  sendSuccess(res, 200, 'Login successful', { user: result.user });
+});
+
+const logout = asyncHandler(async (req, res) => {
+  let token;
+  if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    token = req.headers.authorization.split(' ')[1];
+  }
+  
+  if (req.user && token) {
+    await authService.revokeSession(req.user._id.toString(), token);
+  }
+
+  res.cookie('token', 'none', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+    domain: process.env.NODE_ENV === 'production' ? '.janseva.gov.in' : 'localhost'
+  });
+  sendSuccess(res, 200, 'Logout successful', {});
 });
 
 const me = asyncHandler(async (req, res) => {
@@ -104,5 +151,6 @@ const me = asyncHandler(async (req, res) => {
 module.exports = {
   register,
   login,
+  logout,
   me,
 };

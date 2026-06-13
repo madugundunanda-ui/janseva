@@ -63,15 +63,24 @@ class GeminiVisionProvider extends BaseVisionProvider {
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       
-      logger.info('[AI_REQUEST] Sending image analysis request to Gemini API', { jobId: file.filename || file.originalname });
+      logger.info('[GEMINI_REQUEST] Sending image analysis request to Gemini API', { jobId: file.filename || file.originalname });
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -85,8 +94,13 @@ class GeminiVisionProvider extends BaseVisionProvider {
         throw new Error('Empty response from Gemini API');
       }
 
-      const results = JSON.parse(textResponse.trim());
-      logger.info('[AI_RESPONSE] Gemini Vision analysis completed successfully', { jobId: file.filename || file.originalname, results });
+      let text = textResponse.trim();
+      if (text.startsWith('```')) {
+        text = text.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+      }
+
+      const results = JSON.parse(text);
+      logger.info('[GEMINI_RESPONSE] Gemini Vision analysis completed successfully', { jobId: file.filename || file.originalname, results });
       return results;
 
     } catch (err) {
@@ -161,13 +175,24 @@ class GeminiVisionProvider extends BaseVisionProvider {
 
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
       
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      logger.info('[GEMINI_REQUEST] Sending image comparison request to Gemini API', { jobId: afterFile.filename || afterFile.originalname });
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response;
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -181,8 +206,13 @@ class GeminiVisionProvider extends BaseVisionProvider {
         throw new Error('Empty response from Gemini API during image comparison');
       }
 
-      const results = JSON.parse(textResponse.trim());
-      logger.info('Gemini image comparison verification completed', { results });
+      let text = textResponse.trim();
+      if (text.startsWith('```')) {
+        text = text.replace(/^```json/i, '').replace(/^```/, '').replace(/```$/, '').trim();
+      }
+
+      const results = JSON.parse(text);
+      logger.info('[GEMINI_RESPONSE] Gemini image comparison verification completed', { results });
       return results;
 
     } catch (err) {

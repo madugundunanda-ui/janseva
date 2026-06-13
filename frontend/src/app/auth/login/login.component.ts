@@ -110,7 +110,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
             <input type="email" name="email" [(ngModel)]="credentials.email" required 
                    class="glass-input transition-all duration-300" 
                    [ngClass]="selectedRole === 'citizen' ? '' : 'accent-gov-input'"
-                   placeholder="e.g. citizen@gmail.com">
+                   [placeholder]="translationService.t('PH_EMAIL_EXAMPLE')">
           </div>
 
           <div class="flex flex-col">
@@ -124,7 +124,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
             <input type="password" name="password" [(ngModel)]="credentials.password" required 
                    class="glass-input transition-all duration-300" 
                    [ngClass]="selectedRole === 'citizen' ? '' : 'accent-gov-input'"
-                   placeholder="••••••••">
+                   [placeholder]="translationService.t('PH_PASSWORD')">
           </div>
 
             <button type="submit" [disabled]="loading" 

@@ -45,6 +45,12 @@ const announcementSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    state: {
+      type: String,
+      enum: ['ALL', 'AP', 'TS', 'TN', 'KA'],
+      default: 'ALL',
+      index: true,
+    },
     tenantId: {
       type: String,
       default: 'default-municipality',

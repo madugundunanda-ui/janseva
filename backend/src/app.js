@@ -5,11 +5,15 @@ const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 // Validate environment variables before anything else
 const validateEnv = require('./config/env');
 validateEnv();
+
+const { initRedis } = require('./config/redis');
+initRedis();
 
 const connectDB = require('./config/db');
 const routes = require('./routes');
@@ -73,32 +77,19 @@ app.use(cors({
 // ─── Body Parsing ───────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // ─── NoSQL Injection Sanitization ───────────────────────────────
 app.use(mongoSanitize());
 
 // ─── Rate Limiting ──────────────────────────────────────────────
-// Global rate limiter: 100 requests per minute per IP
-const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests. Please try again later.' },
-  skip: () => process.env.NODE_ENV === 'test',
-});
-app.use('/api', globalLimiter);
+const { createGlobalLimiter, createAuthLimiter } = require('./middleware/rateLimiter');
 
-// Auth rate limiter: 20 requests per 15 minutes per IP
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many authentication attempts. Please try again after 15 minutes.' },
-  skip: () => process.env.NODE_ENV === 'test',
-});
-app.use('/api/auth', authLimiter);
+// Global rate limiter: 200 requests per minute per IP
+app.use('/api', createGlobalLimiter());
+
+// Auth rate limiter: 30 requests per 15 minutes per IP
+app.use('/api/v1/auth', createAuthLimiter());
 
 // Login slow-down: progressive delay after 5 attempts
 const loginSlowDown = slowDown({
@@ -137,11 +128,6 @@ app.use('/api/ai', aiLimiter);
 app.use(requestLogger);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ─── Health Check ───────────────────────────────────────────────
-const { healthz, healthDeep, redisQueueHealth } = require('./middleware/healthCheck');
-app.get('/healthz', healthz);
-app.get('/health', healthDeep);
-app.get('/health/queue', redisQueueHealth);
 app.get('/', (req, res) => {
   sendSuccess(res, 200, 'Citizen Grievance Backend Running', {
     service: 'Citizen Service Request & Municipal Grievance Resolution System',
@@ -149,12 +135,30 @@ app.get('/', (req, res) => {
   });
 });
 
-// ─── Routes ─────────────────────────────────────────────────────
-app.use('/api', routes);
+// ─── Health Monitoring ──────────────────────────────────────────
+const healthRoutes = require('./routes/healthRoutes');
+app.use('/health', healthRoutes);
+
+// ─── API Routes ─────────────────────────────────────────────────
+if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'api') {
+  app.use('/api', routes);
+}
 
 // ─── Error Handling ─────────────────────────────────────────────
 app.use(sentry.errorHandler);
 app.use(notFound);
 app.use(errorHandler);
+
+// ─── Event Consumers ──────────────────────────────────────────────
+if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'worker') {
+  const initConsumers = require('./consumers');
+  initConsumers();
+}
+
+// ─── Background Workers ─────────────────────────────────────────
+if (!process.env.SERVICE_NAME || process.env.SERVICE_NAME === 'worker') {
+  const initWorkers = require('./workers');
+  initWorkers();
+}
 
 module.exports = app;

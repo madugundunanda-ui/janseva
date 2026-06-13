@@ -1,0 +1,20 @@
+{
+  "name": "shared-services",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "shared-services/src",
+  "prefix": "lib",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "test": {
+      "executor": "@nx/vitest:test",
+      "outputs": ["{options.reportsDirectory}"],
+      "options": {
+        "reportsDirectory": "coverage/shared-services"
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    }
+  }
+}

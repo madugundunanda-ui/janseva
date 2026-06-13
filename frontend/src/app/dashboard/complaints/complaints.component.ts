@@ -42,10 +42,10 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
           <div class="p-4 rounded-xl border border-cyan-500/35 bg-cyan-950/20 text-cyan-300 font-mono text-[10px] uppercase tracking-wide flex justify-between items-center shadow-[0_0_15px_rgba(6,182,212,0.1)]">
             <div class="flex items-center gap-2">
               <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span>{{ offlineDraftsCount }} Offline drafts cached in local node</span>
+              <span>{{ offlineDraftsCount }} {{ translationService.t('OFFLINE_DRAFTS_CACHED') }}</span>
             </div>
             <button (click)="syncOfflineDrafts()" class="px-2.5 py-1 rounded bg-cyan-500 text-black font-bold text-[9px] hover:bg-cyan-400 transition-colors uppercase">
-              Sync Node
+              {{ translationService.t('SYNC_NODE') }}
             </button>
           </div>
         }
@@ -85,13 +85,13 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 <p class="text-xs text-muted-var line-clamp-2 uppercase font-mono tracking-wide">{{ complaint.description }}</p>
 
                 <div class="mt-4 flex items-center justify-between font-mono text-[9px] text-muted-var uppercase">
-                  <span>DEPT: {{ departmentName(complaint.department) }}</span>
+                  <span>{{ translationService.t('DEPT_PREFIX') }} {{ departmentName(complaint.department) }}</span>
                   <span class="text-red-400 font-semibold">{{ complaint.priority }}</span>
                 </div>
               </div>
             } @empty {
               <div class="p-10 text-center font-mono text-xs text-muted-var uppercase">
-                No tickets align with filters.
+                {{ translationService.t('NO_TICKETS_ALIGN') }}
               </div>
             }
           </div>
@@ -114,9 +114,9 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                   </svg>
                 </div>
                 <div class="space-y-2">
-                  <h4 class="font-mono text-xs text-cyan-400 font-bold uppercase tracking-wider">YOUR GRIEVANCE HELPED {{ impactResidents }} RESIDENTS</h4>
+                  <h4 class="font-mono text-xs text-cyan-400 font-bold uppercase tracking-wider">{{ translationService.t('GRIEVANCE_HELPED_CITIZENS').replace('{{ count }}', impactResidents.toString()) }}</h4>
                   <p class="font-mono text-[9px] text-muted-var uppercase leading-relaxed">
-                    By reporting this issue, you successfully initiated visual audit workflows that repaired municipal assets. You have earned +15 Civic Trust Points. Thank you for building a safer, more responsive state!
+                    {{ translationService.t('GRIEVANCE_HELPED_DESC') }}
                   </p>
                 </div>
               </div>
@@ -126,7 +126,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
             @if (selectedComplaint.priority === 'critical' || (selectedComplaint.severityScore && selectedComplaint.severityScore >= 81)) {
               <div class="p-4 rounded-xl border border-red-500/35 bg-red-950/25 text-red-400 font-mono text-[10px] uppercase tracking-wider animate-pulse flex items-center gap-3">
                 <span class="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping"></span>
-                <span>EMERGENCY PROTOCOL BYPASS ACTIVE // MUNICIPAL LEAD NODE NOTIFIED FOR IMMEDIATE DISPATCH</span>
+                <span>{{ translationService.t('EMERGENCY_PROTOCOL_BYPASS') }}</span>
               </div>
             }
 
@@ -136,10 +136,10 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">{{ selectedComplaint.id }}</span>
                 <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mt-1">{{ selectedComplaint.title }}</h3>
                 <p class="text-xs text-muted-var font-mono uppercase mt-2">
-                  COORDS: [{{ selectedComplaint.location.latitude?.toFixed(4) || selectedComplaint.location.lat?.toFixed(4) || '12.9716' }}, {{ selectedComplaint.location.longitude?.toFixed(4) || selectedComplaint.location.lng?.toFixed(4) || '77.5946' }}] | {{ selectedComplaint.location.address }}
+                  {{ translationService.t('COORDS') }} [{{ selectedComplaint.location.latitude?.toFixed(4) || selectedComplaint.location.lat?.toFixed(4) || '12.9716' }}, {{ selectedComplaint.location.longitude?.toFixed(4) || selectedComplaint.location.lng?.toFixed(4) || '77.5946' }}] | {{ selectedComplaint.location.address }}
                 </p>
                 @if (selectedComplaint.location.landmark) {
-                  <p class="text-[9px] text-[#6AA9FF] font-mono uppercase mt-1">Nearby: {{ selectedComplaint.location.landmark }}</p>
+                  <p class="text-[9px] text-[#6AA9FF] font-mono uppercase mt-1">{{ translationService.t('NEARBY') }} {{ selectedComplaint.location.landmark }}</p>
                 }
               </div>
 
@@ -155,19 +155,19 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 <div>
                   <span class="text-muted-var block mb-1">{{ translationService.t('AI_SEVERITY') }}</span>
                   <span class="text-lg font-bold text-primary-var">{{ (selectedComplaint.severityScore || selectedComplaint.aiAnalysis.severityScore) ?? 0 }}/100</span>
-                  <span class="block text-[8px] text-cyan-400 mt-1">94% Confidence</span>
+                  <span class="block text-[8px] text-cyan-400 mt-1">94% {{ translationService.t('CONFIDENCE_PCT') }}</span>
                 </div>
 
                 <div>
                   <span class="text-muted-var block mb-1">{{ translationService.t('ETA_RESOLUTION') }}</span>
                   <span class="text-lg font-bold text-primary-var">{{ selectedComplaint.aiAnalysis.estimatedDays ?? 0 }} Days</span>
-                  <span class="block text-[8px] text-emerald-400 mt-1">Delay Risk: {{ selectedComplaint.aiAnalysis.delayRisk ?? 'Low' }}</span>
+                  <span class="block text-[8px] text-emerald-400 mt-1">{{ translationService.t('DELAY_RISK') }} {{ selectedComplaint.aiAnalysis.delayRisk ?? 'Low' }}</span>
                 </div>
 
                 <div>
                   <span class="text-muted-var block mb-1">{{ translationService.t('SLA_RISK') }}</span>
                   <span class="text-lg font-bold text-primary-var">{{ selectedComplaint.aiAnalysis.escalationProbability ?? 0 }}%</span>
-                  <span class="block text-[8px] text-muted-var mt-1">Auto-Route Validated</span>
+                  <span class="block text-[8px] text-muted-var mt-1">{{ translationService.t('AUTOROUTE_VALIDATED') }}</span>
                 </div>
               </div>
             }
@@ -199,7 +199,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 @if (selectedComplaint.imageUrl || (selectedComplaint.images && selectedComplaint.images.length > 0)) {
                   <img [src]="selectedComplaint.imageUrl || selectedComplaint.images[0]?.url" class="w-32 h-20 object-cover rounded-lg border border-var hover:border-white/30 transition-colors duration-200">
                 } @else {
-                  <div class="w-32 h-20 rounded-lg border border-dashed border-var flex items-center justify-center font-mono text-[9px] text-muted-var">NO IMAGE</div>
+                  <div class="w-32 h-20 rounded-lg border border-dashed border-var flex items-center justify-center font-mono text-[9px] text-muted-var">{{ translationService.t('NO_IMAGE') }}</div>
                 }
               </div>
             </div>
@@ -209,16 +209,16 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
               <div class="p-5 rounded-xl border border-emerald-500/20 bg-emerald-950/5 space-y-4">
                 <div class="flex justify-between items-center">
                   <span class="font-mono text-[10px] tracking-widest text-emerald-400 uppercase font-bold">{{ translationService.t('VISUAL_AFTER') }}</span>
-                  <span class="text-[9px] font-mono text-muted-var">VERIFIED BY JANSEVA AI</span>
+                  <span class="text-[9px] font-mono text-muted-var">{{ translationService.t('VERIFIED_BY_AI') }}</span>
                 </div>
                 
                 <div class="grid grid-cols-2 gap-4">
                   <div>
-                    <span class="text-[8px] font-mono text-muted-var block mb-1">BEFORE (REPORTED)</span>
+                    <span class="text-[8px] font-mono text-muted-var block mb-1">{{ translationService.t('BEFORE_REPORTED') }}</span>
                     <img [src]="selectedComplaint.beforeImageUrl || selectedComplaint.imageUrl || (selectedComplaint.images && selectedComplaint.images[0]?.url)" class="w-full h-32 object-cover rounded-lg border border-var">
                   </div>
                   <div>
-                    <span class="text-[8px] font-mono text-muted-var block mb-1">AFTER (RESOLVED)</span>
+                    <span class="text-[8px] font-mono text-muted-var block mb-1">{{ translationService.t('AFTER_RESOLVED') }}</span>
                     <img [src]="selectedComplaint.afterImageUrl || (selectedComplaint.resolutionProof && selectedComplaint.resolutionProof.afterImage)" class="w-full h-32 object-cover rounded-lg border border-emerald-500/30">
                   </div>
                 </div>
@@ -226,7 +226,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 @if (selectedComplaint.verification) {
                   <div class="p-3.5 rounded bg-white/2 border border-var font-mono text-[10px] space-y-1.5 uppercase text-primary-var">
                     <div class="flex justify-between">
-                      <span>Verification Status:</span>
+                      <span>{{ translationService.t('VERIFICATION_STATUS') }}</span>
                       <span class="font-bold" [ngClass]="{
                         'text-emerald-400': selectedComplaint.verification.status === 'Verified',
                         'text-amber-400': selectedComplaint.verification.status === 'Partially Resolved',
@@ -234,16 +234,16 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                       }">{{ selectedComplaint.verification.status }}</span>
                     </div>
                     <div class="flex justify-between">
-                      <span>CLIP Model Confidence:</span>
+                      <span>{{ translationService.t('CLIP_CONFIDENCE') }}</span>
                       <span class="text-cyan-400 font-bold">{{ selectedComplaint.verification.confidence }}%</span>
                     </div>
                     <div class="flex justify-between">
-                      <span>Visual Difference Index:</span>
-                      <span class="text-primary-var font-bold">{{ selectedComplaint.verification.differenceScore }}% Delta</span>
+                      <span>{{ translationService.t('VISUAL_DIFFERENCE_INDEX') }}</span>
+                      <span class="text-primary-var font-bold">{{ selectedComplaint.verification.differenceScore }}% {{ translationService.t('DELTA_SUFFIX') }}</span>
                     </div>
                     @if (selectedComplaint.verification.reasons && selectedComplaint.verification.reasons.length > 0) {
                       <div class="pt-2 border-t border-white/5 space-y-1">
-                        <span class="text-[9px] text-muted-var block">AI Reasoning Notes:</span>
+                        <span class="text-[9px] text-muted-var block">{{ translationService.t('AI_REASONING_NOTES') }}</span>
                         @for (r of selectedComplaint.verification.reasons; track r) {
                           <div class="text-[9px] text-muted-var">• {{ r }}</div>
                         }
@@ -253,16 +253,16 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                 } @else if (selectedComplaint.resolutionProof) {
                   <div class="p-3.5 rounded bg-white/2 border border-var font-mono text-[10px] space-y-1.5 uppercase text-primary-var">
                     <div class="flex justify-between">
-                      <span>Verification Status:</span>
+                      <span>{{ translationService.t('VERIFICATION_STATUS') }}</span>
                       <span class="text-emerald-400 font-bold">Verified</span>
                     </div>
                     <div class="flex justify-between">
-                      <span>CLIP Model Confidence:</span>
+                      <span>{{ translationService.t('CLIP_CONFIDENCE') }}</span>
                       <span class="text-cyan-400 font-bold">94%</span>
                     </div>
                     <div class="flex justify-between">
-                      <span>Visual Difference Index:</span>
-                      <span class="text-primary-var font-bold">78% Delta</span>
+                      <span>{{ translationService.t('VISUAL_DIFFERENCE_INDEX') }}</span>
+                      <span class="text-primary-var font-bold">78% {{ translationService.t('DELTA_SUFFIX') }}</span>
                     </div>
                   </div>
                 }
@@ -279,14 +279,14 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                   <div class="flex items-center gap-3">
                     <span class="font-mono text-[10px] text-muted-var uppercase">{{ translationService.t('RATING') }}:</span>
                     <select [(ngModel)]="feedbackRating" class="glass-input !py-1 !px-2 font-mono text-[10px]">
-                      <option [value]="5">5 - Excellent (Instant Action)</option>
-                      <option [value]="4">4 - Very Good</option>
-                      <option [value]="3">3 - Satisfactory</option>
-                      <option [value]="2">2 - Poor Delay</option>
-                      <option [value]="1">1 - Defective Resolution</option>
+                      <option [value]="5">{{ translationService.t(\'RATING_5\') }}</option>
+                      <option [value]="4">{{ translationService.t(\'RATING_4\') }}</option>
+                      <option [value]="3">{{ translationService.t(\'RATING_3\') }}</option>
+                      <option [value]="2">{{ translationService.t(\'RATING_2\') }}</option>
+                      <option [value]="1">{{ translationService.t(\'RATING_1\') }}</option>
                     </select>
                   </div>
-                  <textarea [(ngModel)]="feedbackComment" class="glass-input w-full font-mono text-xs uppercase" rows="2" placeholder="Provide final remarks..."></textarea>
+                  <textarea [(ngModel)]="feedbackComment" class="glass-input w-full font-mono text-xs uppercase" rows="2" [placeholder]="translationService.t(\'PROVIDE_REMARKS_PLACEHOLDER\')"></textarea>
                   <button (click)="submitFeedback()" class="px-5 py-2.5 rounded bg-white text-black font-mono font-bold text-[10px] uppercase tracking-wider">
                     {{ translationService.t('SUBMIT') }}
                   </button>
@@ -297,12 +297,12 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
               @if (authService.userRole() === 'officer' && selectedComplaint.status !== 'resolved') {
                 <div class="space-y-4">
                   <h4 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase font-bold">{{ translationService.t('UPLOAD_RESOLUTION_PROOF') || 'UPLOAD RESOLUTION PROOF (AFTER IMAGE)' }}</h4>
-                  <p class="text-[9px] font-mono text-muted-var uppercase">Upload proof to trigger visual delta verification. AI will compute pixel matching coordinates before closing.</p>
+                  <p class="text-[9px] font-mono text-muted-var uppercase">{{ translationService.t('UPLOAD_RESOLUTION_PROOF_DESC') }}</p>
                   
                   <div class="flex items-center gap-4">
                     <input type="file" (change)="onResolutionFileSelected($event)" class="font-mono text-[10px]">
                     <button (click)="uploadResolution()" [disabled]="loadingUpload" class="px-5 py-2.5 rounded bg-white text-black font-mono font-bold text-[10px] uppercase tracking-wider disabled:opacity-50">
-                      @if (loadingUpload) { AUDITING PROOF... } @else { RESOLVE GRIEVANCE }
+                      @if (loadingUpload) { {{ translationService.t('AUDITING_PROOF') }} } @else { {{ translationService.t('RESOLVE_GRIEVANCE') }} }
                     </button>
                   </div>
                 </div>
@@ -316,13 +316,13 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                     <h4 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase font-bold">{{ translationService.t('WARD_OFFICER') }}</h4>
                     <div class="flex items-center gap-4">
                       <select [(ngModel)]="assignedOfficerId" class="glass-input font-mono text-[10px] uppercase">
-                        <option value="">SELECT OFFICER</option>
+                        <option value="">{{ translationService.t('SELECT_OFFICER') }}</option>
                         @for (off of officersList; track off.id) {
                           <option [value]="off.id">{{ off.name }} ({{ departmentName(off.department) }})</option>
                         }
                       </select>
                       <button (click)="assignOfficer()" class="px-5 py-2.5 rounded bg-white text-black font-mono font-bold text-[10px] uppercase tracking-wider">
-                        UPDATE ASSIGNMENT
+                        {{ translationService.t('UPDATE_ASSIGNMENT') }}
                       </button>
                     </div>
                   </div>
@@ -334,15 +334,15 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                       <div class="space-y-3">
                         <div class="flex items-center gap-4">
                           <select [(ngModel)]="assignedSupervisorId" class="glass-input font-mono text-[10px] uppercase">
-                            <option value="">SELECT SUPERVISOR</option>
+                            <option value="">{{ translationService.t('SELECT_SUPERVISOR') }}</option>
                             @for (sup of supervisorsList; track sup.id) {
                               <option [value]="sup.id">{{ sup.name }}</option>
                             }
                           </select>
                         </div>
-                        <textarea [(ngModel)]="escalationNote" class="glass-input w-full font-mono text-xs uppercase" rows="2" placeholder="Provide SLA escalation note..."></textarea>
+                        <textarea [(ngModel)]="escalationNote" class="glass-input w-full font-mono text-xs uppercase" rows="2" [placeholder]="translationService.t(\'PROVIDE_ESCALATION_NOTE\')"></textarea>
                         <button (click)="escalateComplaint()" class="px-5 py-2.5 rounded bg-red-950/20 border border-red-500/30 text-red-400 font-mono font-bold text-[10px] uppercase tracking-wider">
-                          TRIGGER SLA ESCALATION
+                          {{ translationService.t('TRIGGER_SLA_ESCALATION') }}
                         </button>
                       </div>
                     </div>
@@ -360,7 +360,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
                     <span class="text-muted-var w-32 shrink-0">{{ log.timestamp | date:'short' }}</span>
                     <div class="space-y-1">
                       <div class="text-primary-var font-semibold">{{ log.action }}</div>
-                      <div class="text-muted-var text-[9px]">BY: {{ log.performedBy }}</div>
+                      <div class="text-muted-var text-[9px]">{{ translationService.t('BY') }} {{ log.performedBy }}</div>
                       @if (log.note) {
                         <div class="text-cyan-400 text-[9px] mt-1">{{ log.note }}</div>
                       }
@@ -375,8 +375,8 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
             <svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12 text-muted-var mb-6 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
             </svg>
-            <h3 class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">TICKET VIEWER ACTIVE</h3>
-            <p class="text-xs font-mono text-muted-var uppercase max-w-xs leading-relaxed">SELECT A TICKET NODE FROM THE FEED STACK TO RUN DETAILED SEVERITY MODELS AND WORKFLOW DISPATCHERS.</p>
+            <h3 class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('TICKET_VIEWER_ACTIVE') }}</h3>
+            <p class="text-xs font-mono text-muted-var uppercase max-w-xs leading-relaxed">{{ translationService.t('SELECT_TICKET_NODE') }}</p>
           </div>
         }
       </div>
@@ -387,7 +387,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-white/65 backdrop-blur-md p-6">
         <div data-lenis-prevent class="w-full max-w-2xl glass-panel glow-card rounded-2xl p-8 relative max-h-[90vh] overflow-y-auto">
           <button (click)="closeNewComplaintModal()" class="absolute top-4 right-4 text-muted-var hover:text-primary-var font-mono text-xs uppercase cursor-pointer">
-            [CLOSE ESC]
+            {{ translationService.t('CLOSE_ESC') }}
           </button>
 
           <div class="flex justify-between items-center mb-2">
@@ -396,10 +396,17 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
               <span class="font-mono text-[9px] tracking-widest text-cyan-400 uppercase">{{ translationService.t('AI_ASSISTED_CIVIC_INTAKE') }}</span>
             </div>
             <span [ngClass]="aiService.classificationStatus() === 'VERIFIED' ? 'badge-green' : 'badge-amber'">
-              AI CORE NETWORK: {{ aiService.classificationStatus() === 'VERIFIED' ? 'ONLINE' : 'PROCESSING' }}
+              {{ translationService.t('AI_CORE_NETWORK') }} {{ aiService.classificationStatus() === 'VERIFIED' || aiService.classificationStatus() === 'DONE' ? translationService.t('ONLINE') : translationService.t('PROCESSING') }}
             </span>
           </div>
           <h3 class="text-xl font-bold uppercase tracking-tight text-primary-var mb-6 font-mono">{{ translationService.t('REGISTER_NEW_GRIEVANCE') }}</h3>
+
+          <!-- Pre-submission Validation Errors Banner -->
+          @if (submissionValidationError) {
+            <div class="p-3.5 rounded-xl border border-red-500/35 bg-red-950/25 text-red-400 font-mono text-[10px] uppercase tracking-wide mb-4 animate-pulse">
+              ⚠️ {{ submissionValidationError }}
+            </div>
+          }
 
           <!-- Form elements -->
           <div class="space-y-4 mb-6">
@@ -475,10 +482,10 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
 
               @if (gpsCaptured) {
                 <div class="space-y-1.5 text-primary-var bg-white/2 p-2.5 rounded border border-var">
-                  <div>LATITUDE: <span class="text-cyan-400 font-bold">{{ capturedCoordinates.lat.toFixed(6) }}</span></div>
-                  <div>LONGITUDE: <span class="text-cyan-400 font-bold">{{ capturedCoordinates.lng.toFixed(6) }}</span></div>
+                  <div>{{ translationService.t('LATITUDE') }} <span class="text-cyan-400 font-bold">{{ capturedCoordinates.lat.toFixed(6) }}</span></div>
+                  <div>{{ translationService.t('LONGITUDE') }} <span class="text-cyan-400 font-bold">{{ capturedCoordinates.lng.toFixed(6) }}</span></div>
                   @if (nearbyLandmark) {
-                    <div class="text-[#6AA9FF] font-bold">LANDMARK: {{ nearbyLandmark }}</div>
+                    <div class="text-[#6AA9FF] font-bold">{{ translationService.t('LANDMARK') }} {{ nearbyLandmark }}</div>
                   }
                 </div>
               }
@@ -513,24 +520,24 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
             @if (showAiStatusSteps && aiStepDuplicateDone && newComplaintData.confidence > 0) {
               <div class="p-4 rounded-xl border border-cyan-500/20 bg-cyan-950/5 space-y-2.5 font-mono text-[10px] uppercase text-left">
                 <div class="flex justify-between items-center">
-                  <span>AI CONFIDENCE LEVEL:</span>
+                  <span>{{ translationService.t('AI_CONFIDENCE_LEVEL') }}</span>
                   <span class="font-bold" [ngClass]="{
                     'text-emerald-400': newComplaintData.confidence >= 70,
                     'text-red-400 animate-pulse': newComplaintData.confidence < 70
                   }">
-                    {{ newComplaintData.confidence }}% ({{ newComplaintData.confidence >= 85 ? 'High Confidence' : (newComplaintData.confidence >= 70 ? 'Medium Confidence' : 'Low Confidence') }})
+                    {{ newComplaintData.confidence }}% ({{ newComplaintData.confidence >= 85 ? translationService.t('HIGH_CONFIDENCE') : (newComplaintData.confidence >= 70 ? translationService.t('MEDIUM_CONFIDENCE') : translationService.t('LOW_CONFIDENCE')) }})
                   </span>
                 </div>
                 
                 @if (newComplaintData.confidence < 70) {
                   <div class="p-2 bg-red-950/20 border border-red-500/30 text-red-400 font-bold rounded animate-pulse">
-                    ⚠️ Please review department selection manually.
+                    ⚠️ {{ translationService.t('REVIEW_DEPT_MANUALLY') }}
                   </div>
                 }
 
                 @if (newComplaintData.severityReason && newComplaintData.severityReason.length > 0) {
                   <div class="pt-2 border-t border-white/5 space-y-1">
-                    <span class="text-muted-var block">AI EXPLAINABILITY REASONS:</span>
+                    <span class="text-muted-var block">{{ translationService.t('EXPLAINABILITY_REASONS') }}</span>
                     @for (reason of newComplaintData.severityReason; track reason) {
                       <div class="text-[9px] text-[#6AA9FF]">• {{ reason }}</div>
                     }
@@ -542,7 +549,7 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
             <!-- Title & description -->
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('GRIEVANCE_TITLE') }}</label>
-              <input type="text" [(ngModel)]="newComplaintData.title" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" placeholder="Detected Title auto-fills...">
+              <input type="text" [(ngModel)]="newComplaintData.title" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" [placeholder]="translationService.t(\'DETECTED_TITLE_AUTOFILL\')">
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -557,13 +564,13 @@ import { normalizeDepartment } from '../../core/utils/department-normalizer';
 
               <div class="flex flex-col">
                 <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('LOCATION_ADDRESS') }}</label>
-                <input type="text" [(ngModel)]="newComplaintData.address" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" placeholder="Ward 12 Main St">
+                <input type="text" [(ngModel)]="newComplaintData.address" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input" [placeholder]="translationService.t('PH_WARD_12')">
               </div>
             </div>
 
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('DETAILED_NARRATIVE') }}</label>
-              <textarea [(ngModel)]="newComplaintData.description" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" rows="3" class="glass-input" placeholder="Detail the issue..."></textarea>
+              <textarea [(ngModel)]="newComplaintData.description" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" rows="3" class="glass-input" [placeholder]="translationService.t(\'DETAIL_THE_ISSUE\')"></textarea>
             </div>
           </div>
 
@@ -601,6 +608,7 @@ export class ComplaintsComponent implements OnInit {
   showNewComplaintModal = false;
   analyzingImage = false;
   loadingSubmit = false;
+  submissionValidationError = '';
 
   // Progressive AI states
   showAiStatusSteps = false;
@@ -650,16 +658,18 @@ export class ComplaintsComponent implements OnInit {
 
   // Proxy complaintForm object to bridge template compatibility with reactive form instructions
   complaintForm = {
+    get description(): string {
+      return (this as any)._self.newComplaintData.description;
+    },
+    set description(val: string) {
+      (this as any)._self.newComplaintData.description = val;
+      (this as any)._self.cdr.detectChanges();
+    },
+    _self: this,
     patchValue: (value: { department?: string; category?: string; title?: string }) => {
-      if (value.department) {
-        this.newComplaintData.department = value.department;
-      }
-      if (value.category) {
-        this.aiPredictedCategory = value.category;
-      }
-      if (value.title) {
-        this.newComplaintData.title = value.title;
-      }
+      this.newComplaintData.department = value.department || this.newComplaintData.department;
+      this.aiPredictedCategory = value.category || this.aiPredictedCategory;
+      this.newComplaintData.title = value.title || this.newComplaintData.title;
     }
   };
 
@@ -829,12 +839,19 @@ export class ComplaintsComponent implements OnInit {
       this.aiStepDuplicateDone = false;
       this.aiTimeoutMessage = '';
 
-      // Start fallback timeout timer (exactly 8 seconds)
+      // Start fallback timeout timer (exactly 5 seconds for <5s performance requirement)
       this.aiTimeoutTimer = setTimeout(() => {
         if (!this.aiStepDuplicateDone) {
           this.aiTimeoutMessage = this.translationService.t('AI_TIMEOUT_WARN');
+          if (this.aiStreamSub) {
+            this.aiStreamSub.unsubscribe();
+          }
+          this.aiStepDetecting = false;
+          this.aiStepSeverity = false;
+          this.aiStepETA = false;
+          this.aiStepDuplicate = false;
         }
-      }, 8000);
+      }, 5000);
 
       let fileToUpload = file;
       try {
@@ -1033,6 +1050,35 @@ export class ComplaintsComponent implements OnInit {
 
   submitComplaint() {
     this.loadingSubmit = true;
+    this.submissionValidationError = '';
+
+    // Validate required fields
+    const errors: string[] = [];
+    if (!this.newComplaintData.title || !this.newComplaintData.title.trim()) {
+      errors.push(this.translationService.t('GRIEVANCE_TITLE') + ' is required.');
+    }
+    if (!this.newComplaintData.department) {
+      errors.push(this.translationService.t('TARGET_DEPARTMENT') + ' is required.');
+    }
+    if (!this.aiPredictedCategory && !this.newComplaintData.title) {
+      errors.push('Category is required.');
+    }
+    if (!this.newComplaintData.priority) {
+      errors.push(this.translationService.t('PRIORITY') + ' is required.');
+    }
+    if (!this.newComplaintData.address || !this.newComplaintData.address.trim()) {
+      errors.push(this.translationService.t('LOCATION_ADDRESS') + ' is required.');
+    }
+    if (!this.newComplaintData.file) {
+      errors.push('Complaint image is required.');
+    }
+
+    if (errors.length > 0) {
+      this.submissionValidationError = errors.join(' ');
+      this.loadingSubmit = false;
+      this.cdr.detectChanges();
+      return;
+    }
 
     // Check if offline, save locally
     if (typeof window !== 'undefined' && !navigator.onLine) {
@@ -1095,7 +1141,7 @@ export class ComplaintsComponent implements OnInit {
   // --- Geolocation & Geofencing ---
   captureLocation() {
     if (typeof window === 'undefined' || !navigator.geolocation) {
-      alert('Geolocation is not supported by your browser.');
+      alert(this.translationService.t('GEOLOCATION_NOT_SUPPORTED') || 'Geolocation is not supported by your browser.');
       return;
     }
 
@@ -1146,7 +1192,7 @@ export class ComplaintsComponent implements OnInit {
           () => {
             this.gpsCapturing = false;
             if (!this.gpsCaptured) {
-              alert('Failed to obtain GPS coordinates. Using standard municipal grid coordinates.');
+              alert(this.translationService.t('FAILED_GPS') || 'Failed to obtain GPS coordinates. Using standard municipal grid coordinates.');
             }
           }
         );
@@ -1183,7 +1229,7 @@ export class ComplaintsComponent implements OnInit {
   toggleVoiceInput() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert('Speech Recognition is not supported by your browser.');
+      alert(this.translationService.t('SPEECH_NOT_SUPPORTED') || 'Speech Recognition is not supported by your browser.');
       return;
     }
 
@@ -1201,6 +1247,7 @@ export class ComplaintsComponent implements OnInit {
 
     recognition.onstart = () => {
       console.log('Voice transcription active...');
+      this.cdr.detectChanges();
     };
 
     recognition.onresult = (event: any) => {
@@ -1210,16 +1257,19 @@ export class ComplaintsComponent implements OnInit {
       } else {
         this.newComplaintData.description = transcript;
       }
+      this.cdr.detectChanges();
     };
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error: ', event.error);
       this.voiceRecognizing = false;
+      this.cdr.detectChanges();
     };
 
     recognition.onend = () => {
       this.voiceRecognizing = false;
       console.log('Voice transcription ended.');
+      this.cdr.detectChanges();
     };
 
     recognition.start();
@@ -1287,7 +1337,7 @@ export class ComplaintsComponent implements OnInit {
     this.checkOfflineDrafts();
     this.closeNewComplaintModal();
     this.loadingSubmit = false;
-    alert('Node Offline. Grievance saved locally as draft. It will automatically upload once network is restored.');
+    alert(this.translationService.t('OFFLINE_SAVED') || 'Node Offline. Grievance saved locally as draft. It will automatically upload once network is restored.');
   }
 
   syncOfflineDrafts() {
@@ -1418,10 +1468,10 @@ export class ComplaintsComponent implements OnInit {
       action: 'Citizen Feedback Registered',
       performedBy: user?.name || 'Citizen',
       timestamp: new Date().toISOString(),
-      note: `Rating: ${this.feedbackRating}/5 - Feedback: "${this.feedbackComment}"`
+      note: `${this.translationService.t('RATING_LABEL')} ${this.feedbackRating}/5 - Feedback: "${this.feedbackComment}"`
     });
     this.feedbackComment = '';
-    alert('Resolution feedback registered on municipal grid ledger.');
+    alert(this.translationService.t('FEEDBACK_REGISTERED') || 'Resolution feedback registered on municipal grid ledger.');
   }
 
   departmentName(dept: Department | UserDepartmentRef | string | undefined): string {

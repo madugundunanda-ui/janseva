@@ -46,11 +46,10 @@ const userSchema = new mongoose.Schema(
         },
       },
     },
-    aadhaarNumber: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true,
+    aadhaar: {
+      last4Digits: { type: String, trim: true },
+      verificationStatus: { type: Boolean, default: false },
+      verificationDate: { type: Date }
     },
     password: {
       type: String,
@@ -157,6 +156,27 @@ const userSchema = new mongoose.Schema(
       default: 'default-municipality',
       index: true,
     },
+    preferences: {
+      voiceLanguage: { type: String, default: 'en-IN' },
+      uiLanguage: { type: String, default: 'en' },
+    },
+    citizenAnalytics: {
+      complaintsFiled: { type: Number, default: 0 },
+      complaintsResolved: { type: Number, default: 0 },
+      citizensImpacted: { type: Number, default: 0 },
+      civicParticipationScore: { type: Number, default: 0 }
+    },
+    performanceMetrics: {
+      averageResolutionTime: { type: Number, default: 0 },
+      citizenFeedbackScore: { type: Number, default: 0 },
+      complaintsResolved: { type: Number, default: 0 },
+      slaCompliance: { type: Number, default: 0 }
+    },
+    aiAssignmentProfile: {
+      currentWorkload: { type: Number, default: 0 },
+      specialization: [{ type: String }],
+      preferredAreas: [{ type: String }]
+    },
   },
   {
     timestamps: { createdAt: true, updatedAt: false },
@@ -164,6 +184,12 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1, department: 1 });
+userSchema.index({ email: 1 });
+userSchema.index({ phone: 1 });
+userSchema.index({ ward: 1 });
+userSchema.index({ district: 1 });
+userSchema.index({ employeeId: 1 });
+userSchema.index({ 'preferences.uiLanguage': 1 });
 userSchema.index({ geoPoint: '2dsphere' });
 
 // Auto-populate geoPoint from latitude/longitude on save

@@ -3,9 +3,11 @@
  * Validation, error handling, and request processing
  */
 
+const mongoose = require('mongoose');
 const logger = require('../utils/logger');
 const AppError = require('../utils/AppError');
 const config = require('../config/aiAssistant.config');
+const { VoiceConversationSession } = require('../models');
 
 /**
  * Validate voice input
@@ -81,7 +83,7 @@ const validateLanguage = (req, res, next) => {
 const validateWorkflowId = (req, res, next) => {
   const { workflowId } = req.params;
 
-  if (!workflowId || isNaN(parseInt(workflowId))) {
+  if (!workflowId || !mongoose.Types.ObjectId.isValid(workflowId)) {
     return res.status(400).json(new AppError('Invalid workflowId', 400));
   }
 
@@ -99,31 +101,20 @@ const checkSessionValidity = async (req, res, next) => {
   }
 
   try {
-    const Pool = require('pg').Pool;
-    const pool = require('../config/db');
-
-    const query = `
-      SELECT id, status, user_id, language, created_at, end_time
-      FROM voice_conversation_sessions
-      WHERE session_id = $1
-    `;
-
-    const result = await pool.query(query, [sessionId]);
+    const session = await VoiceConversationSession.findOne({ sessionId });
     
-    if (result.rows.length === 0) {
+    if (!session) {
       return res.status(404).json(new AppError('Session not found', 404));
     }
 
-    const session = result.rows[0];
-
     // Check if session is expired
-    if (session.status === 'completed' || session.end_time) {
+    if (session.status === 'completed' || session.endTime) {
       return res.status(410).json(new AppError('Session expired', 410));
     }
 
     // Check if session exceeds max duration
     const now = new Date();
-    const sessionAge = now - new Date(session.created_at);
+    const sessionAge = now - new Date(session.createdAt);
     if (sessionAge > config.session.maxDuration) {
       return res.status(410).json(new AppError('Session expired', 410));
     }

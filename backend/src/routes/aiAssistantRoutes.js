@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const aiAssistantController = require('../controllers/aiAssistantController');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const { validateVoiceInput, validateIntentClassification } = require('../middleware/validate');
+const { validateVoiceInput, validateIntentClassification } = require('../middleware/aiAssistantMiddleware');
 
 /**
  * Public routes (no authentication required for initial session)

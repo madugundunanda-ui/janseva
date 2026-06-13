@@ -1,11 +1,22 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { Announcement, Complaint } = require('../models');
-
 const getLiveUpdates = asyncHandler(async (req, res) => {
+  const { state } = req.query;
+
+  const announcementQuery = { isPublished: true };
+  if (state && state !== 'ALL') {
+    announcementQuery.state = { $in: [state, 'ALL'] };
+  }
+
+  const complaintQuery = {};
+  if (state && state !== 'ALL') {
+    complaintQuery['location.state'] = state;
+  }
+
   // Fetch recent announcements and complaints
   const [announcements, complaints] = await Promise.all([
-    Announcement.find({ isPublished: true }).sort({ publishedDate: -1, createdAt: -1 }).limit(10),
-    Complaint.find().sort({ createdAt: -1 }).limit(10).populate('department', 'name')
+    Announcement.find(announcementQuery).sort({ publishedDate: -1, createdAt: -1 }).limit(10),
+    Complaint.find(complaintQuery).sort({ createdAt: -1 }).limit(10).populate('department', 'name')
   ]);
 
   const items = [];

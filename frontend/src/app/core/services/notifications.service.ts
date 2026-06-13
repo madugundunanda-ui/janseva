@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import { UpdatesService } from './updates.service';
 import { NotificationItem } from '../models/notification.model';
 import { GovernanceUpdate } from '../models/update.model';
+import { io, Socket } from 'socket.io-client';
 
 @Injectable({
   providedIn: 'root',
@@ -11,7 +12,7 @@ import { GovernanceUpdate } from '../models/update.model';
 export class NotificationsService {
   readonly notifications = signal<NotificationItem[]>([]);
 
-  private socket: WebSocket | null = null;
+  private socket: Socket | null = null;
   private pollingSub: Subscription | null = null;
   private reconnectTimeout: any = null;
 
@@ -32,33 +33,37 @@ export class NotificationsService {
     }
 
     try {
-      let wsUrl = `${environment.websocketUrl}?token=${token}`;
-      if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
-        wsUrl = wsUrl.replace(/^ws:/i, 'wss:');
-      }
-      this.socket = new WebSocket(wsUrl);
+      let wsUrl = environment.websocketUrl;
+      // Convert ws:// to http:// since socket.io expects http url
+      wsUrl = wsUrl.replace(/^ws:/i, 'http:').replace(/^wss:/i, 'https:');
       
-      this.socket.onopen = () => {
+      this.socket = io(wsUrl, {
+        auth: {
+          token
+        },
+        transports: ['websocket', 'polling']
+      });
+      
+      this.socket.on('connect', () => {
         this.stopPolling();
-      };
+      });
 
-      this.socket.onmessage = (event) => {
-        const payload = this.parsePayload(event.data);
+      this.socket.on('notification', (payload) => {
         const notifications = this.normalizePayload(payload);
         if (notifications.length > 0) {
           this.mergeNotifications(notifications);
         }
-      };
+      });
 
-      this.socket.onclose = () => {
+      this.socket.on('disconnect', () => {
         this.startPolling();
         this.scheduleReconnect();
-      };
+      });
 
-      this.socket.onerror = () => {
+      this.socket.on('connect_error', () => {
         this.startPolling();
         this.scheduleReconnect();
-      };
+      });
     } catch {
       this.startPolling();
       this.scheduleReconnect();
@@ -67,10 +72,7 @@ export class NotificationsService {
 
   disconnect(): void {
     if (this.socket) {
-      this.socket.onopen = null;
-      this.socket.onclose = null;
-      this.socket.onerror = null;
-      this.socket.close();
+      this.socket.disconnect();
       this.socket = null;
     }
     this.stopPolling();
@@ -102,7 +104,7 @@ export class NotificationsService {
 
     this.reconnectTimeout = setTimeout(() => {
       this.reconnectTimeout = null;
-      if (!this.socket || this.socket.readyState === WebSocket.CLOSED) {
+      if (!this.socket || this.socket.disconnected) {
         this.connect();
       }
     }, 15000);
@@ -147,6 +149,21 @@ export class NotificationsService {
   }
 
   private normalizePayload(payload: unknown): NotificationItem[] {
+    // If it's a single object from NotificationService
+    if (payload && typeof payload === 'object' && !Array.isArray(payload) && 'title' in payload) {
+      const update = payload as any;
+      return [{
+        id: update.id,
+        kind: this.mapKind(update.priority === 'Critical' ? 'critical' : (update.priority === 'High' ? 'warning' : 'info')),
+        title: update.title,
+        message: update.message,
+        timestamp: update.timestamp,
+        read: update.read || false,
+        channel: 'websocket',
+      }];
+    }
+    
+    // Legacy support for arrays (from broadcast)
     if (Array.isArray(payload)) {
       const first = payload[0];
       if (first && typeof first === 'object' && 'message' in first) {

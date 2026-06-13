@@ -1,6 +1,7 @@
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/AppError');
-const geoService = require('../services/geoService');
+const geoUtilityService = require('../services/geoUtilityService');
+const civicIntelligenceService = require('../services/civicIntelligenceService');
 const { Hotspot, Complaint } = require('../models');
 const { sendSuccess } = require('../utils/apiResponse');
 
@@ -10,7 +11,7 @@ const reverseGeocode = asyncHandler(async (req, res) => {
     throw new AppError('lat and lng are required', 400);
   }
 
-  const result = await geoService.reverseGeocode(parseFloat(lat), parseFloat(lng));
+  const result = await geoUtilityService.reverseGeocode(parseFloat(lat), parseFloat(lng));
   sendSuccess(res, 200, 'Coordinates reverse geocoded successfully', result);
 });
 
@@ -88,7 +89,8 @@ const getNearbyIssues = asyncHandler(async (req, res) => {
 });
 
 const triggerClustering = asyncHandler(async (req, res) => {
-  const hotspots = await geoService.detectAndProcessHotspots();
+  const tenantId = req.user?.tenantId || 'default-municipality';
+  const hotspots = await civicIntelligenceService.generateHotspots(tenantId);
   sendSuccess(res, 200, 'Hotspot clustering executed successfully', {
     hotspotsCount: hotspots.length,
     hotspots

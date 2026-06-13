@@ -195,7 +195,7 @@ interface Message {
                    (keyup.enter)="sendTextMessage()"
                    [disabled]="voiceRecognizing || chatbotJobProgress !== null"
                    class="flex-1 glass-input !py-2 !px-3 font-mono text-[10px] uppercase text-primary-var outline-none bg-black text-white border border-white/10 rounded" 
-                   placeholder="SPEAK OR TYPE HERE...">
+                   [placeholder]="translationService.t('PH_SPEAK_TYPE')">
 
             <button (click)="toggleVoiceListening()" 
                     [disabled]="chatbotJobProgress !== null"

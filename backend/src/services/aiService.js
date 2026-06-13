@@ -11,7 +11,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY || 'missing-openai-api-key',
 });
 
-const DEPARTMENTS = ['Roads', 'Water Supply', 'Electricity', 'Sanitation', 'Health', 'Transport'];
+const DEPARTMENTS = ['Roads & Highways', 'Water Supply', 'Electricity', 'Sanitation', 'Public Health', 'Revenue', 'Transport', 'Smart City Operations', 'Rural Development', 'Emergency Response'];
 const PRIORITIES = ['low', 'medium', 'high'];
 
 // Helper to calculate SHA256 of file
@@ -119,6 +119,13 @@ const validateComplaintImageAnalysis = (payload) => {
     throw new AppError('AI analysis response returned an invalid confidence score', 502);
   }
 
+  // Explanation Requirement
+  if (!payload.explanation || !Array.isArray(payload.explanation) || payload.explanation.length === 0) {
+    if (!payload.reasons || !Array.isArray(payload.reasons) || payload.reasons.length === 0) {
+      throw new AppError('AI analysis response missed explanation reasons', 502);
+    }
+  }
+
   return analysis;
 };
 
@@ -149,7 +156,7 @@ const rawAnalyzeComplaintImage = async (file) => {
     const validatedResult = {
       title: result.title || 'Civic Grievance',
       description: result.description || 'Unable to confidently identify issue type. Please select the category and fill details manually.',
-      department: result.department || 'Roads',
+      department: result.department || 'Roads & Highways',
       priority: result.priority || 'medium',
       confidence: result.confidence ?? 85,
       low_confidence: result.confidence < 45 || !!result.low_confidence,
@@ -160,6 +167,9 @@ const rawAnalyzeComplaintImage = async (file) => {
       top_k_predictions: result.top_k_predictions || [],
       emergency: !!result.emergency
     };
+
+    // Validate using the schema
+    validateComplaintImageAnalysis(validatedResult);
 
     // Save to cache
     if (imageHash && validatedResult) {
@@ -181,7 +191,7 @@ const rawAnalyzeComplaintImage = async (file) => {
 };
 
 const breaker = new CircuitBreaker(rawAnalyzeComplaintImage, {
-  timeout: 10000, // 10 seconds timeout
+  timeout: 8500, // 8.5 seconds timeout
   errorThresholdPercentage: 50,
   resetTimeout: 30000
 });
@@ -191,7 +201,7 @@ breaker.fallback((file, err) => {
   return {
     title: 'Civic Grievance (Unverified)',
     description: 'Unable to confidently identify issue type. Please select the category and fill details manually.',
-    department: 'Roads',
+    department: 'Roads & Highways',
     priority: 'medium',
     confidence: 10,
     low_confidence: true

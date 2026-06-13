@@ -173,7 +173,7 @@ import { Department } from '../../../core/models/department.model';
           <!-- Title & description -->
           <div class="flex flex-col text-gray-300">
             <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('GRIEVANCE_TITLE') }}</label>
-            <input type="text" [(ngModel)]="newComplaintData.title" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" placeholder="Detected Title auto-fills...">
+            <input type="text" [(ngModel)]="newComplaintData.title" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" [placeholder]="translationService.t('DETECTED_TITLE_AUTOFILL')">
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-gray-300">
@@ -188,13 +188,13 @@ import { Department } from '../../../core/models/department.model';
 
             <div class="flex flex-col">
               <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('LOCATION_ADDRESS') }}</label>
-              <input type="text" [(ngModel)]="newComplaintData.address" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" placeholder="Ward 12 Main St">
+              <input type="text" [(ngModel)]="newComplaintData.address" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" [placeholder]="translationService.t('PH_WARD_12')">
             </div>
           </div>
 
           <div class="flex flex-col text-gray-300">
             <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('DETAILED_NARRATIVE') }}</label>
-            <textarea [(ngModel)]="newComplaintData.description" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" rows="3" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" placeholder="Detail the issue..."></textarea>
+            <textarea [(ngModel)]="newComplaintData.description" [disabled]="showAiStatusSteps && !aiStepDuplicateDone && !aiTimeoutMessage" rows="3" class="glass-input bg-black/40 border border-white/10 px-3 py-2 rounded text-white" [placeholder]="translationService.t('DETAIL_THE_ISSUE')"></textarea>
           </div>
         </div>
 

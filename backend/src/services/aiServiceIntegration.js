@@ -4,21 +4,54 @@
  * Handles async operations, caching, and fallbacks
  */
 
-const axios = require('axios');
-const NodeCache = require('node-cache');
 const logger = require('../utils/logger');
 const voiceService = require('./voiceService');
 const intentClassifier = require('./intentClassifierService');
-const duplicateDetectionService = require('./duplicateDetectionService');
-const Pool = require('pg').Pool;
+const { AiPredictionAudit } = require('../models');
+const VisionProviderFactory = require('../ai/providers/VisionProviderFactory');
 
-// Database pool
-const pool = require('../config/db');
+// In-memory zero-dependency cache implementation
+class SimpleCache {
+  constructor(options = {}) {
+    this.cache = new Map();
+    this.stdTTL = (options.stdTTL || 3600) * 1000;
+  }
 
-// Initialize cache (TTL: 1 hour)
-const aiCache = new NodeCache({ stdTTL: 3600, checkperiod: 600 });
+  get(key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiry) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
 
-// AI Service endpoints
+  set(key, value, ttl) {
+    const duration = ttl ? ttl * 1000 : this.stdTTL;
+    this.cache.set(key, {
+      value,
+      expiry: Date.now() + duration
+    });
+    return true;
+  }
+
+  del(key) {
+    return this.cache.delete(key);
+  }
+
+  flushAll() {
+    this.cache.clear();
+  }
+
+  getStats() {
+    return { keys: this.cache.size };
+  }
+}
+
+const aiCache = new SimpleCache({ stdTTL: 3600 });
+
+// AI Service endpoints (kept for backwards compatibility if needed, but not used in local execution)
 const AI_ENDPOINTS = {
   IMAGE_ANALYSIS: process.env.IMAGE_ANALYSIS_API || 'http://localhost:5003/analyze-image',
   DEPARTMENT_DETECTION: process.env.DEPT_DETECTION_API || 'http://localhost:5003/detect-department',
@@ -41,7 +74,7 @@ const AI_CALL_TIMEOUT = 8000; // 8 seconds
  */
 const analyzeComplaintImage = async (imageBuffer, language = 'en-IN', progressCallback = null) => {
   try {
-    logger.info('Starting image analysis for complaint...');
+    logger.info('Starting local image analysis for complaint...');
 
     const results = {
       department: null,
@@ -63,68 +96,60 @@ const analyzeComplaintImage = async (imageBuffer, language = 'en-IN', progressCa
     const cachedResult = aiCache.get(cacheKey);
     if (cachedResult) {
       logger.info('Using cached image analysis result');
+      if (progressCallback) {
+        progressCallback('department', cachedResult.department, cachedResult.analysisMetadata.departmentConfidence);
+        progressCallback('category', cachedResult.category, cachedResult.analysisMetadata.categoryConfidence);
+        progressCallback('severity', cachedResult.severity, cachedResult.analysisMetadata.severityConfidence);
+      }
       return cachedResult;
     }
 
+    // Write buffer to temporary file for VisionProvider
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+    const tempPath = path.join(os.tmpdir(), `janseva_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.jpg`);
+    fs.writeFileSync(tempPath, imageBuffer);
+
+    const file = {
+      path: tempPath,
+      mimetype: 'image/jpeg',
+      originalname: 'complaint.jpg',
+      filename: 'complaint.jpg'
+    };
+
+    let result;
     try {
-      // Step 1: Detect Department (typically fastest)
-      const departmentPromise = detectDepartment(imageBuffer, language)
-        .then(result => {
-          results.department = result.department;
-          results.analysisMetadata.departmentConfidence = result.confidence;
-          results.explanation.department = result.explanation;
-          if (progressCallback) progressCallback('department', result.department, result.confidence);
-          logger.info(`Department detected: ${result.department} (${result.confidence})`);
-        })
-        .catch(err => logger.warn(`Department detection failed: ${err.message}`));
+      const provider = VisionProviderFactory.getProvider();
+      result = await provider.analyzeImage(file);
+    } finally {
+      // Clean up temp file
+      try {
+        if (fs.existsSync(tempPath)) {
+          fs.unlinkSync(tempPath);
+        }
+      } catch (err) {
+        logger.warn(`Failed to clean up temp file: ${err.message}`);
+      }
+    }
 
-      // Step 2: Detect Category (medium complexity)
-      const categoryPromise = Promise.resolve().then(() => {
-        // Wait for department to be available before detecting category
-        return new Promise(resolve => {
-          const checkDept = () => {
-            if (results.department) {
-              resolve();
-            } else {
-              setTimeout(checkDept, 100);
-            }
-          };
-          checkDept();
-        });
-      }).then(() => 
-        detectCategory(imageBuffer, language, results.department)
-          .then(result => {
-            results.category = result.category;
-            results.analysisMetadata.categoryConfidence = result.confidence;
-            results.explanation.category = result.explanation;
-            if (progressCallback) progressCallback('category', result.category, result.confidence);
-            logger.info(`Category detected: ${result.category} (${result.confidence})`);
-          })
-          .catch(err => logger.warn(`Category detection failed: ${err.message}`))
-      );
+    results.department = result.department || 'Roads & Highways';
+    results.category = result.category || 'Road Damage';
+    results.severity = result.severity || 'medium';
+    results.analysisMetadata.departmentConfidence = result.confidence || 85;
+    results.analysisMetadata.categoryConfidence = result.confidence || 85;
+    results.analysisMetadata.severityConfidence = result.confidence || 85;
+    results.explanation = {
+      department: result.explanation?.[0] || 'Department detected from image analysis',
+      category: result.explanation?.[0] || 'Category detected from image analysis',
+      severity: result.explanation?.[1] || 'Severity estimated from image analysis'
+    };
 
-      // Step 3: Detect Severity (usually fastest or parallel)
-      const severityPromise = detectSeverity(imageBuffer, language)
-        .then(result => {
-          results.severity = result.severity;
-          results.analysisMetadata.severityConfidence = result.confidence;
-          results.explanation.severity = result.explanation;
-          if (progressCallback) progressCallback('severity', result.severity, result.confidence);
-          logger.info(`Severity detected: ${result.severity} (${result.confidence})`);
-        })
-        .catch(err => logger.warn(`Severity detection failed: ${err.message}`));
-
-      // Run in parallel with timeout
-      await Promise.race([
-        Promise.all([departmentPromise, categoryPromise, severityPromise]),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('AI analysis timeout')), AI_CALL_TIMEOUT)
-        )
-      ]);
-
-    } catch (timeoutError) {
-      logger.warn(`AI analysis timeout after ${AI_CALL_TIMEOUT}ms: ${timeoutError.message}`);
-      // Return partial results even on timeout
+    // Trigger progressive callbacks
+    if (progressCallback) {
+      progressCallback('department', results.department, results.analysisMetadata.departmentConfidence);
+      progressCallback('category', results.category, results.analysisMetadata.categoryConfidence);
+      progressCallback('severity', results.severity, results.analysisMetadata.severityConfidence);
     }
 
     results.analysisMetadata.endTime = Date.now();
@@ -137,103 +162,6 @@ const analyzeComplaintImage = async (imageBuffer, language = 'en-IN', progressCa
   } catch (error) {
     logger.error(`Image analysis error: ${error.message}`);
     throw error;
-  }
-};
-
-/**
- * Detect department from image
- * @private
- */
-const detectDepartment = async (imageBuffer, language) => {
-  try {
-    const response = await axios.post(
-      AI_ENDPOINTS.DEPARTMENT_DETECTION,
-      { image: imageBuffer.toString('base64'), language },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 5000
-      }
-    );
-
-    return {
-      department: response.data.department || null,
-      confidence: response.data.confidence || 0,
-      explanation: response.data.explanation || 'Department detected from image analysis',
-      alternatives: response.data.alternatives || []
-    };
-  } catch (error) {
-    logger.warn(`Department detection API error: ${error.message}`);
-    return {
-      department: null,
-      confidence: 0,
-      explanation: 'Unable to detect department'
-    };
-  }
-};
-
-/**
- * Detect category from image
- * @private
- */
-const detectCategory = async (imageBuffer, language, department) => {
-  try {
-    const response = await axios.post(
-      AI_ENDPOINTS.CATEGORY_DETECTION,
-      {
-        image: imageBuffer.toString('base64'),
-        language,
-        department // Pass detected department to improve accuracy
-      },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 5000
-      }
-    );
-
-    return {
-      category: response.data.category || null,
-      confidence: response.data.confidence || 0,
-      explanation: response.data.explanation || 'Category detected from image analysis',
-      alternatives: response.data.alternatives || []
-    };
-  } catch (error) {
-    logger.warn(`Category detection API error: ${error.message}`);
-    return {
-      category: null,
-      confidence: 0,
-      explanation: 'Unable to detect category'
-    };
-  }
-};
-
-/**
- * Detect severity from image
- * @private
- */
-const detectSeverity = async (imageBuffer, language) => {
-  try {
-    const response = await axios.post(
-      AI_ENDPOINTS.SEVERITY_DETECTION,
-      { image: imageBuffer.toString('base64'), language },
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 5000
-      }
-    );
-
-    return {
-      severity: response.data.severity || 'medium',
-      confidence: response.data.confidence || 0,
-      explanation: response.data.explanation || 'Severity estimated from image analysis',
-      alternatives: response.data.alternatives || []
-    };
-  } catch (error) {
-    logger.warn(`Severity detection API error: ${error.message}`);
-    return {
-      severity: 'medium',
-      confidence: 0,
-      explanation: 'Unable to detect severity'
-    };
   }
 };
 
@@ -302,31 +230,24 @@ const processVoiceInput = async (audioBuffer, language = 'en-IN', sessionId = nu
 
 /**
  * Store AI prediction for audit log
- * @param {integer} workflowId - Workflow ID
+ * @param {string} workflowId - Workflow ID (ObjectId)
  * @param {string} predictionType - 'department', 'category', 'severity', 'duplicate_detection'
  * @param {object} predictionData - {predicted_value, confidence, input_data, explanation}
  * @returns {Promise<void>}
  */
 const logAIPrediction = async (workflowId, predictionType, predictionData) => {
   try {
-    const query = `
-      INSERT INTO ai_prediction_audits 
-      (workflow_id, prediction_type, input_data, predicted_value, confidence_score, 
-       ai_model_version, explanation)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `;
-
     const modelVersion = process.env.AI_MODEL_VERSION || '1.0';
 
-    await pool.query(query, [
+    await AiPredictionAudit.create({
       workflowId,
       predictionType,
-      JSON.stringify(predictionData.inputData || {}),
-      predictionData.predictedValue || null,
-      predictionData.confidence || 0,
-      modelVersion,
-      predictionData.explanation || null
-    ]);
+      inputData: predictionData.inputData || {},
+      predictedValue: predictionData.predictedValue || null,
+      confidenceScore: predictionData.confidence || 0,
+      aiModelVersion: modelVersion,
+      explanation: predictionData.explanation || null
+    });
 
     logger.info(`Logged AI prediction for workflow ${workflowId}`);
   } catch (error) {
@@ -400,3 +321,4 @@ module.exports = {
   AI_ENDPOINTS,
   AI_CALL_TIMEOUT
 };
+

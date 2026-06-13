@@ -45,7 +45,7 @@ import { TranslationService } from '../../core/services/translation.service';
       <div class="max-w-7xl mx-auto px-6 relative z-10">
         <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
           
-          <!-- Column 1: Platform identity (Branding & Description) -->
+          <!-- Column 1: Platform identity (Branding & Description & About) -->
           <div class="md:col-span-5">
             <span class="font-mono text-xs tracking-[0.2em] text-[#6AA9FF] uppercase mb-6 block animate-pulse">
               JANSEVA // PLATFORM GATEWAY
@@ -53,9 +53,14 @@ import { TranslationService } from '../../core/services/translation.service';
             <h4 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var mb-6 uppercase tracking-wider font-mono">
               JANSEVA <span class="text-[#6AA9FF]">AI</span>
             </h4>
-            <p class="text-xs text-muted-var leading-relaxed font-mono uppercase max-w-sm">
+            <p class="text-xs text-muted-var leading-relaxed font-mono uppercase max-w-sm mb-4">
               {{ translationService.t('FOOTER_PLATFORM_DESC') }}
             </p>
+            <div>
+              <a href="#about" class="text-xs text-[#6AA9FF] hover:underline font-mono uppercase tracking-wider">
+                {{ translationService.t('ABOUT_JANSEVA') }} →
+              </a>
+            </div>
           </div>
 
           <!-- Column 2: Quick Links -->
@@ -92,10 +97,11 @@ import { TranslationService } from '../../core/services/translation.service';
             </span>
             <ul class="space-y-3 font-mono text-[11px] text-muted-var uppercase">
               <li class="text-primary-var font-bold">
-                {{ translationService.t('SUPPORT_EMAIL') }}: <a href="mailto:support@janseva.gov.in" class="text-[#6AA9FF] hover:underline">support&#64;janseva.gov.in</a>
+                {{ translationService.t('EMAIL') }}: <a href="mailto:support@janseva.gov.in" class="text-[#6AA9FF] hover:underline">support&#64;janseva.gov.in</a>
               </li>
-              <li>{{ translationService.t('HELPDESK') }}: +1800-425-1111</li>
-              <li class="text-red-400 font-bold border border-red-500/35 bg-red-950/20 px-3 py-2 rounded-lg inline-block tracking-wider animate-pulse">
+              <li>{{ translationService.t('PHONE') }}: +1800-425-1111</li>
+              <li>{{ translationService.t('HELPDESK') }}: +1800-425-2222</li>
+              <li class="text-red-400 font-bold border border-red-500/35 bg-red-950/20 px-3 py-2 rounded-lg inline-block tracking-wider animate-pulse mt-2">
                 🚨 {{ translationService.t('EMERGENCY_HOTLINE') }}: 112
               </li>
             </ul>
@@ -105,9 +111,12 @@ import { TranslationService } from '../../core/services/translation.service';
         <!-- Footer Bottom Bar -->
         <div class="pt-8 border-t border-var flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-muted-var uppercase tracking-widest">
           <div>© 2026 JANSEVA Civic Intelligence Platform. All rights reserved.</div>
-          <div class="flex items-center gap-6">
-            <a href="#" class="hover:text-primary-var transition-colors duration-200">Terms of Grid</a>
-            <a href="#" class="hover:text-primary-var transition-colors duration-200">Privacy Policy</a>
+          <div class="flex flex-wrap items-center gap-6">
+            <a href="#" class="hover:text-primary-var transition-colors duration-200">{{ translationService.t('TERMS_OF_USE') }}</a>
+            <a href="#" class="hover:text-primary-var transition-colors duration-200">{{ translationService.t('PRIVACY_POLICY') }}</a>
+            <span class="text-white/20">|</span>
+            <a href="https://github.com/janseva-platform" target="_blank" rel="noopener noreferrer" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('GITHUB') }}</a>
+            <a href="https://linkedin.com/company/janseva-platform" target="_blank" rel="noopener noreferrer" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('LINKEDIN') }}</a>
           </div>
         </div>
       </div>

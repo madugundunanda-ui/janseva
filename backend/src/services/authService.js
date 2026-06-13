@@ -1,8 +1,10 @@
 const AppError = require('../utils/AppError');
 const generateToken = require('../utils/generateToken');
 const bcrypt = require('bcryptjs');
-const { User } = require('../models');
+const userRepository = require('../repositories/userRepository');
 const logger = require('../utils/logger');
+const cacheService = require('./cacheService');
+
 const failedLoginAttempts = new Map();
 
 const registerFailedAttempt = (email) => {
@@ -25,6 +27,49 @@ const clearFailedAttempts = (email) => {
   failedLoginAttempts.delete(String(email || '').toLowerCase());
 };
 
+// Store active session in Redis
+const createSession = async (userId, token) => {
+  try {
+    // We add the token to a list of active sessions for the user.
+    // In a full implementation, we'd use redis SADD or similar, but with our cacheService abstraction
+    // we can manage a simple array of tokens or validate individual tokens.
+    // Let's store the token itself as a valid session.
+    const sessionKey = `session:${userId}:${token}`;
+    await cacheService.setCache(sessionKey, { active: true }, 7 * 24 * 60 * 60); // 7 days TTL
+    
+    // Also store to a user-centric index so we can invalidate all
+    const userIndexKey = `sessions:user:${userId}`;
+    let userSessions = await cacheService.getCache(userIndexKey) || [];
+    userSessions.push(token);
+    await cacheService.setCache(userIndexKey, userSessions, 7 * 24 * 60 * 60);
+  } catch (err) {
+    logger.error('Failed to create Redis session', err);
+  }
+};
+
+const revokeSession = async (userId, token) => {
+  try {
+    const sessionKey = `session:${userId}:${token}`;
+    await cacheService.invalidateCache(sessionKey);
+  } catch (err) {
+    logger.error('Failed to revoke Redis session', err);
+  }
+};
+
+const revokeAllSessions = async (userId) => {
+  try {
+    const userIndexKey = `sessions:user:${userId}`;
+    const userSessions = await cacheService.getCache(userIndexKey) || [];
+    for (const token of userSessions) {
+      await cacheService.invalidateCache(`session:${userId}:${token}`);
+    }
+    await cacheService.invalidateCache(userIndexKey);
+    logger.info(`Revoked all sessions for user ${userId}`);
+  } catch (err) {
+    logger.error('Failed to revoke all Redis sessions', err);
+  }
+};
+
 const registerUser = async (payload) => {
   const { name, email, password } = payload;
 
@@ -34,11 +79,13 @@ const registerUser = async (payload) => {
 
   const normalizedRole = typeof payload.role === 'string' ? payload.role.toLowerCase().trim() : 'citizen';
 
-  const existingUser = await User.findOne({ email: email.toLowerCase() });
+  const existingUser = await userRepository.findOne({ email: email.toLowerCase() });
   if (existingUser) throw new AppError('User with this email already exists', 409);
 
-  const user = await User.create({ ...payload, role: normalizedRole });
+  const user = await userRepository.create({ ...payload, role: normalizedRole });
   const token = generateToken(user);
+  
+  await createSession(user._id.toString(), token);
 
   return { token, user: sanitizeUser(user) };
 };
@@ -51,7 +98,7 @@ const loginUser = async ({ email, password, role }) => {
   const normalizedEmail = email.toLowerCase().trim();
   const normalizedRole = typeof role === 'string' ? role.toLowerCase().trim() : undefined;
 
-  const user = await User.findOne({ email: normalizedEmail }).select('+password');
+  const user = await userRepository.findOne({ email: normalizedEmail }, { select: '+password' });
 
   if (!user) {
     registerFailedAttempt(normalizedEmail);
@@ -64,7 +111,6 @@ const loginUser = async ({ email, password, role }) => {
   }
 
   let isMatch = false;
-
   if (user.password) {
     isMatch = await bcrypt.compare(password, user.password);
   }
@@ -90,6 +136,8 @@ const loginUser = async ({ email, password, role }) => {
   }
 
   const token = generateToken(user);
+  await createSession(user._id.toString(), token);
+  
   clearFailedAttempts(normalizedEmail);
   return { token, user: sanitizeUser(user) };
 };
@@ -107,7 +155,7 @@ const sanitizeUser = (user) => ({
   lastName: user.lastName,
   currentAddress: user.currentAddress,
   permanentAddress: user.permanentAddress,
-  aadhaarNumber: user.aadhaarNumber,
+  aadhaar: user.aadhaar,
   occupation: user.occupation,
   age: user.age,
   gender: user.gender,
@@ -122,4 +170,6 @@ const sanitizeUser = (user) => ({
 module.exports = {
   registerUser,
   loginUser,
+  revokeSession,
+  revokeAllSessions
 };

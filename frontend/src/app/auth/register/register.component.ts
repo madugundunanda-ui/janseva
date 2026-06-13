@@ -46,30 +46,30 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('NAME') }}</label>
-              <input type="text" name="name" [(ngModel)]="userData.name" required class="glass-input" placeholder="Aarav Sharma">
+              <input type="text" name="name" [(ngModel)]="userData.name" required class="glass-input" [placeholder]="translationService.t('PH_NAME_EXAMPLE')">
             </div>
 
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('EMAIL_ADDRESS') }}</label>
-              <input type="email" name="email" [(ngModel)]="userData.email" required class="glass-input" placeholder="citizen@gmail.com">
+              <input type="email" name="email" [(ngModel)]="userData.email" required class="glass-input" [placeholder]="translationService.t('PH_EMAIL_EXAMPLE')">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div class="flex flex-col">
-              <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('PHONE') }}</label>
-              <input type="text" name="phone" [(ngModel)]="userData.phone" required class="glass-input" placeholder="9876543210">
+              <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('PHONE_NUMBER') }}</label>
+              <input type="text" name="phone" [(ngModel)]="userData.phone" required class="glass-input" [placeholder]="translationService.t('PH_PHONE_EXAMPLE')">
             </div>
 
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('ADDRESS') }}</label>
-              <input type="text" name="address" [(ngModel)]="userData.address" required class="glass-input" placeholder="Ward 12, Mumbai">
+              <input type="text" name="address" [(ngModel)]="userData.address" required class="glass-input" [placeholder]="translationService.t('PH_ADDRESS_MUMBAI')">
             </div>
           </div>
 
           <div class="flex flex-col">
             <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('PASSWORD') }}</label>
-            <input type="password" name="password" [(ngModel)]="userData.password" required class="glass-input" placeholder="••••••••">
+            <input type="password" name="password" [(ngModel)]="userData.password" required class="glass-input" [placeholder]="translationService.t('PH_PASSWORD')">
           </div>
 
           <button type="submit" [disabled]="loading" class="w-full mt-2 py-3.5 rounded bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-50">

@@ -1,0 +1,153 @@
+<div class="transparency-container">
+  <div class="transparency-header">
+    <h1>Public Transparency & Accountability Portal</h1>
+    <p>View real-time governance metrics and resolved civic issues across the state.</p>
+    
+    <nav class="portal-nav">
+      <button [class.active]="activeTab === 'overview'" (click)="setTab('overview')">Overview</button>
+      <button [class.active]="activeTab === 'departments'" (click)="setTab('departments')">Departments</button>
+      <button [class.active]="activeTab === 'actions'" (click)="setTab('actions')">Gov Actions</button>
+      <button [class.active]="activeTab === 'resolved'" (click)="setTab('resolved')">Resolved Feed</button>
+      <button [class.active]="activeTab === 'stories'" (click)="setTab('stories')">Success Stories</button>
+    </nav>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading Transparency Data...</p>
+  </div>
+
+  <div *ngIf="!loading" class="portal-content">
+    
+    <!-- OVERVIEW TAB -->
+    <div *ngIf="activeTab === 'overview'" class="tab-pane">
+      <div class="stats-grid">
+        <div class="stat-card impact">
+          <h3>Citizens Benefited</h3>
+          <div class="number">{{ impact?.totalCitizensBenefited || 0 }}</div>
+        </div>
+        <div class="stat-card resolved">
+          <h3>Total Issues Resolved</h3>
+          <div class="number">{{ stats?.resolvedComplaints || 0 }}</div>
+        </div>
+        <div class="stat-card pending">
+          <h3>Issues Pending</h3>
+          <div class="number">{{ stats?.pendingComplaints || 0 }}</div>
+        </div>
+      </div>
+
+      <div class="civic-scores-section mt-8">
+        <h2>Area Civic Health Scores</h2>
+        <div class="scores-grid">
+          <div class="score-card" *ngFor="let score of civicScores">
+            <div class="area-name">{{ score.ward || score.district || 'City' }}</div>
+            <div class="score-value" [ngClass]="{
+              'excellent': score.score >= 80,
+              'good': score.score >= 60 && score.score < 80,
+              'poor': score.score < 60
+            }">{{ Math.round(score.score) }}</div>
+          </div>
+          <div *ngIf="civicScores.length === 0" class="empty-state">No scores available yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEPARTMENTS TAB -->
+    <div *ngIf="activeTab === 'departments'" class="tab-pane">
+      <h2>Department Performance Leaderboard</h2>
+      <div class="depts-grid">
+        <div class="dept-card" *ngFor="let dept of departments">
+          <h3>{{ dept.departmentId?.name || 'Unknown Dept' }}</h3>
+          <div class="dept-stats">
+            <div class="d-stat">
+              <span class="label">Resolution Rate</span>
+              <span class="val">{{ dept.resolutionRate }}%</span>
+            </div>
+            <div class="d-stat">
+              <span class="label">SLA Compliance</span>
+              <span class="val">{{ dept.slaComplianceRate }}%</span>
+            </div>
+            <div class="d-stat">
+              <span class="label">Satisfaction Rating</span>
+              <span class="val">{{ dept.citizenSatisfactionRating }}/5</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="departments.length === 0" class="empty-state">No department metrics available.</div>
+      </div>
+    </div>
+
+    <!-- ACTIONS TAB -->
+    <div *ngIf="activeTab === 'actions'" class="tab-pane">
+      <h2>Verified Government Actions</h2>
+      <div class="feed-list">
+        <div class="feed-card" *ngFor="let action of actions">
+          <div class="action-header">
+            <span class="badge verified">Verified Action</span>
+            <span class="date">{{ action.createdAt | date:'mediumDate' }}</span>
+          </div>
+          <h3>{{ action.message }}</h3>
+          <p *ngIf="action.ward">Ward: {{ action.ward }}</p>
+        </div>
+        <div *ngIf="actions.length === 0" class="empty-state">No recent actions logged.</div>
+      </div>
+    </div>
+
+    <!-- RESOLVED FEED TAB -->
+    <div *ngIf="activeTab === 'resolved'" class="tab-pane">
+      <h2>Recently Resolved Issues</h2>
+      <div class="feed-list">
+        <div class="feed-card resolved-issue" *ngFor="let issue of resolvedComplaints">
+          <div class="issue-header">
+            <span class="category">{{ issue.category }}</span>
+            <span class="date">Resolved: {{ issue.updatedAt | date:'mediumDate' }}</span>
+          </div>
+          <h3>{{ issue.title }}</h3>
+          <p class="description">{{ issue.description }}</p>
+          <div class="meta-data">
+            <span *ngIf="issue.location?.ward">Ward: {{ issue.location.ward }}</span>
+            <span *ngIf="issue.department?.name">Dept: {{ issue.department.name }}</span>
+          </div>
+          <div class="evidence" *ngIf="issue.beforeImage || issue.afterImage">
+            <div class="img-box" *ngIf="issue.beforeImage">
+              <img [src]="issue.beforeImage" alt="Before">
+              <span>Before</span>
+            </div>
+            <div class="img-box" *ngIf="issue.afterImage">
+              <img [src]="issue.afterImage" alt="After">
+              <span>After</span>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="resolvedComplaints.length === 0" class="empty-state">No resolved issues available.</div>
+      </div>
+    </div>
+
+    <!-- SUCCESS STORIES TAB -->
+    <div *ngIf="activeTab === 'stories'" class="tab-pane">
+      <h2>Public Success Stories</h2>
+      <div class="feed-list">
+        <div class="feed-card success-story" *ngFor="let story of successStories">
+          <div class="action-header">
+            <span class="badge verified" style="background: #eebf23; color: #5a4400;">Impact Success</span>
+            <span class="date">{{ story.dateResolved | date:'mediumDate' }}</span>
+          </div>
+          <h3>{{ story.title }}</h3>
+          <p style="color: #4a5568;">Category: {{ story.category }}</p>
+          <div class="story-stats" style="display: flex; gap: 2rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #edf2f7;">
+            <div>
+              <span style="font-size: 0.8rem; color: #718096; text-transform: uppercase;">Citizens Benefited</span>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #38a169;">{{ story.benefited }}+</div>
+            </div>
+            <div>
+              <span style="font-size: 0.8rem; color: #718096; text-transform: uppercase;">Resolution Time</span>
+              <div style="font-size: 1.5rem; font-weight: 700; color: #3182ce;">{{ story.resolutionTimeDays }} Days</div>
+            </div>
+          </div>
+        </div>
+        <div *ngIf="successStories.length === 0" class="empty-state">No success stories available yet.</div>
+      </div>
+    </div>
+
+  </div>
+</div>

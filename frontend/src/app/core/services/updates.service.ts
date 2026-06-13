@@ -20,16 +20,16 @@ export class UpdatesService {
 
   constructor(private apiService: ApiService) {}
 
-  getLiveUpdates(): Observable<GovernanceUpdate[]> {
-    return this.apiService.get<LiveUpdatesResponse | GovernanceUpdate[]>('/updates/live').pipe(
+  getLiveUpdates(state: string = 'ALL'): Observable<GovernanceUpdate[]> {
+    return this.apiService.get<LiveUpdatesResponse | GovernanceUpdate[]>(`/updates/live?state=${state}`).pipe(
       map((response) => this.normalizeUpdates(response)),
-      catchError(() => this.loadAnnouncementFallback())
+      catchError(() => this.loadAnnouncementFallback(state))
     );
   }
 
-  watchLiveUpdates(intervalMs = 15000): Observable<GovernanceUpdate[]> {
+  watchLiveUpdates(state: string = 'ALL', intervalMs = 15000): Observable<GovernanceUpdate[]> {
     return timer(0, intervalMs).pipe(
-      switchMap(() => this.getLiveUpdates()),
+      switchMap(() => this.getLiveUpdates(state)),
       map((items) => {
         this.liveUpdates.set(items);
         return items;
@@ -37,7 +37,7 @@ export class UpdatesService {
     );
   }
 
-  private loadAnnouncementFallback(): Observable<GovernanceUpdate[]> {
+  private loadAnnouncementFallback(state: string): Observable<GovernanceUpdate[]> {
     return this.apiService.get<AnnouncementRecord[]>('/announcements').pipe(
       map((records) =>
         records.map((record, index) => ({
