@@ -12,19 +12,26 @@ export const authGuard: CanActivateFn = (route, state) => {
     return true;
   }
 
+  const getLoginPath = (url: string) => {
+    if (url.startsWith('/dashboard/admin') || url.startsWith('/admin')) return '/admin/login';
+    if (url.startsWith('/dashboard/officer') || url.startsWith('/officer')) return '/officer/login';
+    if (url.startsWith('/dashboard/supervisor') || url.startsWith('/supervisor')) return '/supervisor/login';
+    return '/auth/citizen/login';
+  };
+
   if (authService.isAuthenticated()) {
     // Check if path requires specific roles
     const expectedRoles = route.data?.['roles'] as Array<string>;
     const userRole = authService.userRole();
 
     if (expectedRoles && userRole && !expectedRoles.includes(userRole)) {
-      router.navigate(['/auth/login']);
+      router.navigate([getLoginPath(state.url)]);
       return false;
     }
     return true;
   }
 
   // Redirect to login if unauthenticated
-  router.navigate(['/auth/login'], { queryParams: { returnUrl: state.url } });
+  router.navigate([getLoginPath(state.url)], { queryParams: { returnUrl: state.url } });
   return false;
 };

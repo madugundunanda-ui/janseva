@@ -8,17 +8,19 @@ export const routes: Routes = [
     title: 'Citizen Grievance Resolution Platform | Home'
   },
   {
-    path: 'auth',
+    path: 'auth/citizen',
     children: [
       {
         path: 'login',
         loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
-        title: 'Sign In'
+        title: 'Sign In',
+        data: { role: 'citizen' }
       },
       {
         path: 'register',
         loadComponent: () => import('./auth/register/register.component').then(m => m.RegisterComponent),
-        title: 'Sign Up'
+        title: 'Sign Up',
+        data: { role: 'citizen' }
       },
       {
         path: '',
@@ -29,21 +31,51 @@ export const routes: Routes = [
   },
   {
     path: 'admin',
-    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
-    title: 'Admin Login',
-    data: { role: 'admin' }
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+        title: 'Admin Login',
+        data: { role: 'admin' }
+      },
+      {
+        path: '',
+        redirectTo: 'login',
+        pathMatch: 'full'
+      }
+    ]
   },
   {
     path: 'officer',
-    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
-    title: 'Officer Login',
-    data: { role: 'officer' }
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+        title: 'Officer Login',
+        data: { role: 'officer' }
+      },
+      {
+        path: '',
+        redirectTo: 'login',
+        pathMatch: 'full'
+      }
+    ]
   },
   {
     path: 'supervisor',
-    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
-    title: 'Supervisor Login',
-    data: { role: 'supervisor' }
+    children: [
+      {
+        path: 'login',
+        loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+        title: 'Supervisor Login',
+        data: { role: 'supervisor' }
+      },
+      {
+        path: '',
+        redirectTo: 'login',
+        pathMatch: 'full'
+      }
+    ]
   },
   {
     path: 'dashboard',

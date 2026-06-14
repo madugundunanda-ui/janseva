@@ -40,40 +40,12 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
           </select>
         </div>
 
-        <!-- Segmented Role Selector -->
-        <div class="mb-6">
-          <label class="font-mono text-[9px] tracking-widest text-muted-var uppercase mb-2.5 block text-center font-bold">Continue as</label>
-          <div class="grid grid-cols-4 gap-1.5 p-1 bg-white/5 border border-var rounded-xl">
-            <button type="button" 
-                    (click)="selectRole('citizen')" 
-                    [class.active-role-citizen]="selectedRole === 'citizen'"
-                    class="py-2 rounded-lg font-mono text-[9px] uppercase tracking-wider text-muted-var hover:text-primary-var transition-all duration-300 cursor-pointer">
-              Citizen
-            </button>
-            <button type="button" 
-                    (click)="selectRole('officer')" 
-                    [class.active-role-gov]="selectedRole === 'officer'"
-                    class="py-2 rounded-lg font-mono text-[9px] uppercase tracking-wider text-muted-var hover:text-primary-var transition-all duration-300 cursor-pointer">
-              Officer
-            </button>
-            <button type="button" 
-                    (click)="selectRole('supervisor')" 
-                    [class.active-role-gov]="selectedRole === 'supervisor'"
-                    class="py-2 rounded-lg font-mono text-[9px] uppercase tracking-wider text-muted-var hover:text-primary-var transition-all duration-300 cursor-pointer">
-              Superv.
-            </button>
-            <button type="button" 
-                    (click)="selectRole('admin')" 
-                    [class.active-role-gov]="selectedRole === 'admin'"
-                    class="py-2 rounded-lg font-mono text-[9px] uppercase tracking-wider text-muted-var hover:text-primary-var transition-all duration-300 cursor-pointer">
-              Admin
-            </button>
-          </div>
-        </div>
-
         <div class="text-center mb-6">
           <h2 class="text-2xl font-bold tracking-tight uppercase font-mono text-glow transition-all duration-500">
-            {{ selectedRole === 'citizen' ? translationService.t('CONSOLE_SIGN_IN') : 'STAFF AUTHENTICATION' }}
+            {{ selectedRole === 'citizen' ? 'Citizen Portal Login' :
+               selectedRole === 'officer' ? 'Officer Portal Login' :
+               selectedRole === 'supervisor' ? 'Supervisor Portal Login' :
+               'Admin Portal Login' }}
           </h2>
         </div>
 

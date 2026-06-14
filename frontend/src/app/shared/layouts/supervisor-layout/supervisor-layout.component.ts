@@ -172,6 +172,6 @@ export class SupervisorLayoutComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/supervisor/login']);
   }
 }

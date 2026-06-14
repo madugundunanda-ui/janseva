@@ -22,11 +22,11 @@ import { RouterLink } from '@angular/router';
         </p>
 
         <div class="flex flex-col sm:flex-row items-center justify-center gap-6">
-          <a [routerLink]="['/auth/register']" class="w-full sm:w-auto px-10 py-5 rounded-full bg-[#6AA9FF] hover:bg-[#5998ee] text-black font-mono font-bold text-xs tracking-wider uppercase shadow-[0_0_30px_rgba(106,169,255,0.3)] hover:scale-105 transition-all duration-300">
+          <a [routerLink]="['/auth/citizen/register']" class="w-full sm:w-auto px-10 py-5 rounded-full bg-[#6AA9FF] hover:bg-[#5998ee] text-black font-mono font-bold text-xs tracking-wider uppercase shadow-[0_0_30px_rgba(106,169,255,0.3)] hover:scale-105 transition-all duration-300">
             Submit First Grievance
           </a>
-          <a [routerLink]="['/auth/login']" class="w-full sm:w-auto px-10 py-5 rounded-full border border-var bg-glass-var hover:bg-white/10 text-primary-var font-mono text-xs tracking-wider uppercase hover:scale-105 transition-all duration-300">
-            Access Officer Portal
+          <a [routerLink]="['/auth/citizen/login']" class="w-full sm:w-auto px-10 py-5 rounded-full border border-var bg-glass-var hover:bg-white/10 text-primary-var font-mono text-xs tracking-wider uppercase hover:scale-105 transition-all duration-300">
+            Access Portal
           </a>
         </div>
       </div>

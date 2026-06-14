@@ -73,10 +73,10 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
                   {{ translationService.t('CONSOLE') }}
                 </a>
               } @else {
-                <a [routerLink]="['/auth/login']" class="px-5 py-2.5 rounded-full border border-var bg-glass-var transition-all duration-300 font-mono text-xs tracking-wider uppercase text-primary-var hover:text-[#6AA9FF]">
+                <a [routerLink]="['/auth/citizen/login']" class="px-5 py-2.5 rounded-full border border-var bg-glass-var transition-all duration-300 font-mono text-xs tracking-wider uppercase text-primary-var hover:text-[#6AA9FF]">
                   {{ translationService.t('SIGN_IN') }}
                 </a>
-                <a [routerLink]="['/auth/register']" class="px-5 py-2.5 rounded-full bg-[#6AA9FF] hover:bg-[#5998ee] text-black font-mono text-xs tracking-wider uppercase font-bold shadow-[0_0_20px_rgba(106,169,255,0.3)] transition-all duration-300">
+                <a [routerLink]="['/auth/citizen/register']" class="px-5 py-2.5 rounded-full bg-[#6AA9FF] hover:bg-[#5998ee] text-black font-mono text-xs tracking-wider uppercase font-bold shadow-[0_0_20px_rgba(106,169,255,0.3)] transition-all duration-300">
                   {{ translationService.t('JOIN_NETWORK') }}
                 </a>
               }

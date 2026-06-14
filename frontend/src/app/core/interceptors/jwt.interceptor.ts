@@ -28,11 +28,20 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
           
           const isPublicPath = window.location.pathname === '/' || window.location.pathname === '' || window.location.pathname.startsWith('/auth');
           if (!isPublicPath) {
+            let loginPath = '/auth/citizen/login';
+            if (window.location.pathname.startsWith('/dashboard/admin') || window.location.pathname.startsWith('/admin')) {
+              loginPath = '/admin/login';
+            } else if (window.location.pathname.startsWith('/dashboard/officer') || window.location.pathname.startsWith('/officer')) {
+              loginPath = '/officer/login';
+            } else if (window.location.pathname.startsWith('/dashboard/supervisor') || window.location.pathname.startsWith('/supervisor')) {
+              loginPath = '/supervisor/login';
+            }
+
             try {
               const returnUrl = encodeURIComponent(window.location.pathname + window.location.search || '/');
-              window.location.href = `/auth/login?returnUrl=${returnUrl}`;
+              window.location.href = `${loginPath}?returnUrl=${returnUrl}`;
             } catch {
-              window.location.href = '/auth/login';
+              window.location.href = loginPath;
             }
           }
           return throwError(() => error);

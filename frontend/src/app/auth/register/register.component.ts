@@ -98,9 +98,9 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
           </button>
         </form>
 
-        <div class="mt-8 text-center text-xs font-mono text-muted-var">
-          {{ translationService.t('ALREADY_ALIGNED') }} 
-          <a [routerLink]="['/auth/login']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1">{{ translationService.t('CONSOLE_LOGIN') }}</a>
+        <div class="mt-6 text-center text-[10px] font-mono text-muted-var">
+          {{ translationService.t('ALREADY_ACTIVE') }} 
+          <a [routerLink]="['/auth/citizen/login']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1 font-bold">{{ translationService.t('CONSOLE_LOGIN') }}</a>
         </div>
       </div>
     </div>

@@ -156,6 +156,6 @@ export class OfficerLayoutComponent implements OnInit, OnDestroy {
 
   logout() {
     this.authService.logout();
-    this.router.navigate(['/auth/login']);
+    this.router.navigate(['/officer/login']);
   }
 }
