@@ -51,7 +51,10 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
             <div class="flex flex-col">
               <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('EMAIL_ADDRESS') }}</label>
-              <input type="email" name="email" [(ngModel)]="userData.email" required class="glass-input" [placeholder]="translationService.t('PH_EMAIL_EXAMPLE')">
+              <input type="email" name="email" [(ngModel)]="userData.email" (ngModelChange)="validateEmail()" required class="glass-input" [placeholder]="translationService.t('PH_EMAIL_EXAMPLE')">
+              @if (emailError) {
+                <span class="text-red-500 text-[10px] mt-1 font-mono">{{ emailError }}</span>
+              }
             </div>
           </div>
 
@@ -69,10 +72,24 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 
           <div class="flex flex-col">
             <label class="font-mono text-[10px] tracking-widest text-muted-var uppercase mb-2">{{ translationService.t('PASSWORD') }}</label>
-            <input type="password" name="password" [(ngModel)]="userData.password" required class="glass-input" [placeholder]="translationService.t('PH_PASSWORD')">
+            <div class="relative">
+              <input [type]="showPassword ? 'text' : 'password'" name="password" [(ngModel)]="userData.password" required class="glass-input w-full pr-10" [placeholder]="translationService.t('PH_PASSWORD')">
+              <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-var hover:text-primary-var transition-colors">
+                <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                  <line x1="2" y1="2" x2="22" y2="22"></line>
+                </svg>
+              </button>
+            </div>
           </div>
 
-          <button type="submit" [disabled]="loading" class="w-full mt-2 py-3.5 rounded bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-50">
+          <button type="submit" [disabled]="loading || !isFormValid" class="w-full mt-2 py-3.5 rounded bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-50">
             @if (loading) {
               <span>{{ translationService.t('REGISTERING') }}</span>
             } @else {
@@ -105,6 +122,8 @@ export class RegisterComponent implements OnInit {
   };
   loading = false;
   errorMessage = '';
+  emailError = '';
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
@@ -123,7 +142,32 @@ export class RegisterComponent implements OnInit {
     this.translationService.setLang(select.value as LanguageCode);
   }
 
+  validateEmail() {
+    if (this.userData.role === 'citizen') {
+      const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      if (this.userData.email && !gmailRegex.test(this.userData.email)) {
+        this.emailError = 'Please enter a valid Gmail address. Only @gmail.com accounts are allowed.';
+      } else {
+        this.emailError = '';
+      }
+    }
+  }
+
+  get isFormValid() {
+    if (!this.userData.name || !this.userData.email || !this.userData.phone || !this.userData.address || !this.userData.password) {
+      return false;
+    }
+    if (this.userData.role === 'citizen') {
+      const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+      if (!gmailRegex.test(this.userData.email)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   onSubmit() {
+    if (!this.isFormValid) return;
     this.loading = true;
     this.errorMessage = '';
     console.log('Registering user payload:', this.userData);

@@ -28,6 +28,24 @@ export const routes: Routes = [
     ]
   },
   {
+    path: 'admin',
+    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+    title: 'Admin Login',
+    data: { role: 'admin' }
+  },
+  {
+    path: 'officer',
+    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+    title: 'Officer Login',
+    data: { role: 'officer' }
+  },
+  {
+    path: 'supervisor',
+    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent),
+    title: 'Supervisor Login',
+    data: { role: 'supervisor' }
+  },
+  {
     path: 'dashboard',
     loadComponent: () => import('./dashboard/dashboard.component').then(m => m.DashboardComponent),
     canActivate: [authGuard],

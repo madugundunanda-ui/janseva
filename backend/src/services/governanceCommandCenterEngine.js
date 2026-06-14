@@ -42,7 +42,7 @@ class GovernanceCommandCenterEngine {
 
       // Global Metrics
       const stateCivicHealthScore = stateScoreDoc ? stateScoreDoc.score : 0;
-      const slaComplianceIndex = sla && sla.metrics ? Math.round((sla.metrics.withinSla / (sla.metrics.totalResolved || 1)) * 100) : 0;
+      const slaComplianceIndex = sla && sla.metrics && sla.metrics.totalResolved ? Math.round((sla.metrics.withinSla / sla.metrics.totalResolved) * 100) : 0;
       const citizenSatisfactionIndex = stateScoreDoc && stateScoreDoc.metrics ? stateScoreDoc.metrics.citizenSatisfactionScore : 0;
 
       // Governance Effectiveness Formula

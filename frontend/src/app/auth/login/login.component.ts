@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
@@ -121,10 +121,24 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
                 {{ translationService.t('FORGOT_SECRET') }}
               </a>
             </div>
-            <input type="password" name="password" [(ngModel)]="credentials.password" required 
-                   class="glass-input transition-all duration-300" 
-                   [ngClass]="selectedRole === 'citizen' ? '' : 'accent-gov-input'"
-                   [placeholder]="translationService.t('PH_PASSWORD')">
+            <div class="relative">
+              <input [type]="showPassword ? 'text' : 'password'" name="password" [(ngModel)]="credentials.password" required 
+                     class="glass-input transition-all duration-300 w-full pr-10" 
+                     [ngClass]="selectedRole === 'citizen' ? '' : 'accent-gov-input'"
+                     [placeholder]="translationService.t('PH_PASSWORD')">
+              <button type="button" (click)="showPassword = !showPassword" class="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-var hover:text-primary-var transition-colors">
+                <svg *ngIf="!showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg *ngIf="showPassword" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+                  <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+                  <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+                  <line x1="2" y1="2" x2="22" y2="22"></line>
+                </svg>
+              </button>
+            </div>
           </div>
 
             <button type="submit" [disabled]="loading" 
@@ -173,17 +187,25 @@ export class LoginComponent implements OnInit {
   selectedRole: 'citizen' | 'officer' | 'supervisor' | 'admin' = 'citizen';
   loading = false;
   errorMessage = '';
+  showPassword = false;
 
   constructor(
     private authService: AuthService,
     public translationService: TranslationService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
     if (this.authService.isAuthenticated()) {
       this.redirectToDashboard();
     }
+    
+    this.route.data.subscribe(data => {
+      if (data['role']) {
+        this.selectRole(data['role'] as any);
+      }
+    });
   }
 
   selectRole(role: 'citizen' | 'officer' | 'supervisor' | 'admin') {

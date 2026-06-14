@@ -1,5 +1,5 @@
 const asyncHandler = require('../utils/asyncHandler');
-const { sendSuccess } = require('../utils/responseFormatter');
+const { sendSuccess } = require('../utils/apiResponse');
 const civicIntelligenceService = require('../services/civicIntelligenceService');
 const { ComplaintCluster, Hotspot, RiskAssessment, EmergencyZone, RecurringIssue, CivicImpactScore } = require('../models');
 

@@ -11,6 +11,7 @@ export interface CivicHealthScore {
   status: string;
   metrics: any;
   calculationDate: Date;
+  trendPercentage?: number;
 }
 
 export interface DepartmentPerformance {

@@ -58,6 +58,16 @@ const register = asyncHandler(async (req, res) => {
     }
   }
 
+  if (normalizedRole === 'citizen') {
+    const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
+    if (!gmailRegex.test(normalizedEmail)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Citizen registration requires a valid Gmail address (@gmail.com).',
+      });
+    }
+  }
+
   const orConditions = [{ email: normalizedEmail }];
   if (normalizedAadhaarLast4) {
     orConditions.push({ 'aadhaar.last4Digits': normalizedAadhaarLast4 });

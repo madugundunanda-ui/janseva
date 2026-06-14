@@ -1,6 +1,6 @@
-import { Component, AfterViewInit, ElementRef, ViewChild, PLATFORM_ID, Inject, OnDestroy, NgZone } from '@angular/core';
+import { Component, OnInit, AfterViewInit, ElementRef, ViewChild, PLATFORM_ID, Inject, OnDestroy, NgZone } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { TheProblemComponent } from './the-problem/the-problem.component';
 import { HowItWorksComponent } from './how-it-works/how-it-works.component';
 import { DepartmentsShowcaseComponent } from './departments-showcase/departments-showcase.component';
@@ -291,7 +291,7 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
     }
   `]
 })
-export class LandingComponent implements AfterViewInit, OnDestroy {
+export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('heroTitle') heroTitle!: ElementRef<HTMLHeadingElement>;
   @ViewChild('heroDesc') heroDesc!: ElementRef<HTMLParagraphElement>;
   @ViewChild('driftCanvas') canvasRef!: ElementRef<HTMLCanvasElement>;
@@ -308,8 +308,23 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     public authService: AuthService,
     public translationService: TranslationService,
     private ngZone: NgZone,
-    private elRef: ElementRef
+    private elRef: ElementRef,
+    private router: Router
   ) {}
+
+  ngOnInit(): void {
+    if (this.authService.isAuthenticated()) {
+      const role = this.authService.userRole();
+      if (role === 'admin') {
+        this.router.navigate(['/dashboard/admin']);
+      } else if (role === 'officer') {
+        this.router.navigate(['/dashboard/officer']);
+      } else if (role === 'supervisor') {
+        this.router.navigate(['/dashboard/supervisor']);
+      }
+      // Citizens stay on the home page
+    }
+  }
 
   onLanguageChange(event: Event) {
     const select = event.target as HTMLSelectElement;

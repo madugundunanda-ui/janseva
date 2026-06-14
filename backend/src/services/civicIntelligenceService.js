@@ -459,6 +459,8 @@ class CivicIntelligenceService {
       logger.error(`[CivicIntelligence] Civic Impact Calculation failed: ${err.message}`);
       return null;
     }
+  }
+
   /**
    * Generate Heatmap Data
    */

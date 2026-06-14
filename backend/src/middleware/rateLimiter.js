@@ -3,24 +3,6 @@ const RedisStore = require('rate-limit-redis');
 const redisConfig = require('../config/redis');
 const logger = require('../utils/logger');
 
-// Global rate limiter (Before Authentication)
-// 200 requests per minute
-const globalLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 200,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, message: 'Too many requests. Please try again later.' },
-  skip: () => process.env.NODE_ENV === 'test',
-  store: {
-    // Dynamic store getter to support fallback
-    get client() { return redisConfig.getClient() },
-    prefix: 'rl:global:',
-    // We implement a custom wrapper because the rate-limit-redis module requires a redis client.
-    // However, if we want a memory fallback, rateLimit has an internal MemoryStore we could use.
-    // Instead of completely customizing, we'll initialize rate-limit-redis if redis is available.
-  }
-});
 
 // To properly support the fallback requirement, we define stores dynamically
 const getStore = (prefix) => {

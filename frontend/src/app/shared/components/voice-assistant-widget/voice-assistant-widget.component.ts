@@ -1,6 +1,6 @@
 import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { VoiceAssistantService, VoiceState } from '../../core/services/voice-assistant.service';
+import { VoiceAssistantService, VoiceState } from '../../../core/services/voice-assistant.service';
 
 @Component({
   selector: 'app-voice-assistant-widget',
