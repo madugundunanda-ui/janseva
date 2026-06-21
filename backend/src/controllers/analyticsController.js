@@ -12,7 +12,8 @@ const {
   Prediction,
   HeatmapData,
   ExecutiveDashboardMetric,
-  ExecutiveGovernanceReport
+  ExecutiveGovernanceReport,
+  Announcement
 } = require('../models');
 
 // Generic helper to get the latest precomputed data
@@ -113,5 +114,43 @@ exports.getDashboard = asyncHandler(async (req, res) => {
 
   sendSuccess(res, 200, 'Dashboard analytics retrieved successfully', { 
     stats: snapshot ? snapshot.data : {} 
+  });
+});
+
+// X.5 Analytics
+exports.getUpdatesAnalytics = asyncHandler(async (req, res) => {
+  const now = new Date();
+  const oneWeekAgo = new Date(now.setDate(now.getDate() - 7));
+  const oneMonthAgo = new Date(new Date().setDate(new Date().getDate() - 30));
+
+  const [weeklyCount, monthlyCount, emergencyCount, stateDistribution, deptDistribution, trendingTopics] = await Promise.all([
+    Announcement.countDocuments({ publishedDate: { $gte: oneWeekAgo } }),
+    Announcement.countDocuments({ publishedDate: { $gte: oneMonthAgo } }),
+    Announcement.countDocuments({ publishedDate: { $gte: oneWeekAgo }, severity: { $in: ['Critical', 'Emergency'] } }),
+    Announcement.aggregate([
+      { $match: { publishedDate: { $gte: oneMonthAgo } } },
+      { $group: { _id: '$state', count: { $sum: 1 } } }
+    ]),
+    Announcement.aggregate([
+      { $match: { publishedDate: { $gte: oneMonthAgo } } },
+      { $group: { _id: '$department', count: { $sum: 1 } } }
+    ]),
+    Announcement.aggregate([
+      { $match: { publishedDate: { $gte: oneWeekAgo } } },
+      { $group: { _id: '$category', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 3 }
+    ])
+  ]);
+
+  sendSuccess(res, 200, 'Updates analytics retrieved successfully', {
+    metrics: {
+      updatesThisWeek: weeklyCount,
+      updatesThisMonth: monthlyCount,
+      emergencyAlerts: emergencyCount
+    },
+    stateDistribution: stateDistribution.map(s => ({ state: s._id, count: s.count })),
+    departmentDistribution: deptDistribution.map(d => ({ department: d._id, count: d.count })),
+    trendingTopics: trendingTopics.map(t => ({ topic: t._id, count: t.count, trend: '↑' }))
   });
 });

@@ -41,9 +41,19 @@ class GovernanceCommandCenterEngine {
       const emergencyHotspots = sortedRisks.filter(r => r.riskCategory === 'Critical').slice(0, 10).map(r => ({ name: r.areaName, score: r.riskScore }));
 
       // Global Metrics
-      const stateCivicHealthScore = stateScoreDoc ? stateScoreDoc.score : 0;
-      const slaComplianceIndex = sla && sla.metrics && sla.metrics.totalResolved ? Math.round((sla.metrics.withinSla / sla.metrics.totalResolved) * 100) : 0;
-      const citizenSatisfactionIndex = stateScoreDoc && stateScoreDoc.metrics ? stateScoreDoc.metrics.citizenSatisfactionScore : 0;
+      let stateCivicHealthScore = stateScoreDoc && stateScoreDoc.score ? Number(stateScoreDoc.score) : 0;
+      if (isNaN(stateCivicHealthScore)) stateCivicHealthScore = 0;
+
+      let slaComplianceIndex = 0;
+      if (sla && sla.metrics && sla.metrics.totalResolved) {
+        const withinSla = Number(sla.metrics.withinSla) || 0;
+        const totalResolved = Number(sla.metrics.totalResolved) || 1;
+        slaComplianceIndex = Math.round((withinSla / totalResolved) * 100);
+      }
+      if (isNaN(slaComplianceIndex)) slaComplianceIndex = 0;
+
+      let citizenSatisfactionIndex = stateScoreDoc && stateScoreDoc.metrics && stateScoreDoc.metrics.citizenSatisfactionScore ? Number(stateScoreDoc.metrics.citizenSatisfactionScore) : 0;
+      if (isNaN(citizenSatisfactionIndex)) citizenSatisfactionIndex = 0;
 
       // Governance Effectiveness Formula
       let governanceEffectivenessScore = Math.round(

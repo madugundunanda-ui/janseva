@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
@@ -7,7 +8,7 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, CommonModule],
   template: `
     <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden tech-dots-bg">
       <!-- Glow backdrop -->

@@ -1,4 +1,4 @@
-export type NotificationChannel = 'websocket' | 'polling' | 'system';
+export type NotificationChannel = 'websocket' | 'polling' | 'system' | 'api';
 export type NotificationKind = 'citizen_alert' | 'officer_update' | 'admin_alert' | 'sla_warning' | 'complaint_update';
 
 export interface NotificationItem {

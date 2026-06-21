@@ -41,4 +41,7 @@ module.exports = {
   CivicImpactScore: require('./CivicImpactScore'),
   RecurringIssue: require('./RecurringIssue'),
   IntelligenceAlert: require('./IntelligenceAlert'),
+  UpdateSource: require('./UpdateSource'),
+  IntelligenceJob: require('./IntelligenceJob'),
+  IntelligenceAuditLog: require('./IntelligenceAuditLog'),
 };

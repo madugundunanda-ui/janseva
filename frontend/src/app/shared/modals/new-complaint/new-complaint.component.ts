@@ -330,8 +330,14 @@ export class NewComplaintModalComponent implements OnInit, OnDestroy {
       this.aiTimeoutTimer = setTimeout(() => {
         if (!this.aiStepDuplicateDone) {
           this.aiTimeoutMessage = this.translationService.t('AI_TIMEOUT_WARN');
+          this.aiStepDetecting = false;
+          this.aiStepSeverity = false;
+          this.aiStepETA = false;
+          this.aiStepDuplicate = false;
+          if (this.aiStreamSub) this.aiStreamSub.unsubscribe();
+          this.cdr.detectChanges();
         }
-      }, 8000);
+      }, 15000);
 
       let fileToUpload = file;
       try {
@@ -460,7 +466,8 @@ export class NewComplaintModalComponent implements OnInit, OnDestroy {
                     } else {
                       this.newComplaintData.title = event.title || this.newComplaintData.title;
                       this.newComplaintData.description = event.description || this.newComplaintData.description;
-                      const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === (event.department || '').toLowerCase());
+                      const normalizedDept = normalizeDepartment(event.department || '');
+                      const matchedDept = this.departmentsList.find(d => d.name.toLowerCase() === normalizedDept.toLowerCase());
                       if (matchedDept) {
                         this.newComplaintData.department = matchedDept.id;
                       }
@@ -519,7 +526,7 @@ export class NewComplaintModalComponent implements OnInit, OnDestroy {
     const selectedDeptName = selectedDeptObj ? selectedDeptObj.name : '';
 
     if (this.aiPredictedCategory && this.aiPredictedDepartment && selectedDeptName &&
-        selectedDeptName.toLowerCase() !== this.aiPredictedDepartment.toLowerCase()) {
+        selectedDeptName.toLowerCase() !== normalizeDepartment(this.aiPredictedDepartment).toLowerCase()) {
       const feedbackPayload = {
         originalPrediction: this.aiPredictedCategory,
         correctedCategory: selectedDeptName,

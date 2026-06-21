@@ -23,8 +23,16 @@ const dedupeByName = (items = []) => {
 
 const getDepartments = asyncHandler(async (req, res) => {
   const tenantId = req.user?.tenantId || 'default-municipality';
-  const savedDepartments = await Department.find({ tenantId }).populate('officers', 'name email role');
+  const savedDepartments = await Department.find({ 
+    $or: [{ tenantId }, { tenantId: { $exists: false } }, { tenantId: null }] 
+  }).populate('officers', 'name email role');
+  console.log('DEBUG /departments: tenantId=', tenantId);
+  console.log('DEBUG /departments: DB count=', savedDepartments.length);
+  if (savedDepartments.length > 0) {
+    console.log('DEBUG /departments: First item=', savedDepartments[0]);
+  }
   const data = dedupeByName(savedDepartments);
+  console.log('DEBUG /departments: After dedupe count=', data.length);
 
   sendSuccess(res, 200, 'Departments fetched successfully', {
     count: data.length,

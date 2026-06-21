@@ -19,6 +19,8 @@ const transparencyRoutes = require('./transparencyRoutes');
 const eventMonitorRoutes = require('./eventMonitorRoutes');
 const infrastructureRoutes = require('./infrastructureRoutes');
 const voiceRoutes = require('./voiceRoutes');
+const notificationRoutes = require('./notificationRoutes');
+const updateSourceRoutes = require('./updateSourceRoutes');
 
 const router = express.Router();
 
@@ -42,5 +44,7 @@ router.use('/transparency', transparencyRoutes);
 router.use('/events/monitor', eventMonitorRoutes);
 router.use('/infrastructure', infrastructureRoutes);
 router.use('/voice', voiceRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/update-sources', updateSourceRoutes);
 
 module.exports = router;

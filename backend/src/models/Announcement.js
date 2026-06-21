@@ -27,6 +27,14 @@ const announcementSchema = new mongoose.Schema(
       enum: ['Normal', 'Important', 'Critical', 'Emergency'],
       default: 'Normal',
     },
+    shortSummary: {
+      type: String,
+      default: ''
+    },
+    mediumSummary: {
+      type: String,
+      default: ''
+    },
     thumbnailUrl: {
       type: String,
       trim: true,
@@ -36,6 +44,14 @@ const announcementSchema = new mongoose.Schema(
       type: String,
       trim: true,
       default: '',
+    },
+    sourceUrl: {
+      type: String,
+      default: ''
+    },
+    sourceName: {
+      type: String,
+      default: ''
     },
     isPublished: {
       type: Boolean,
@@ -51,11 +67,54 @@ const announcementSchema = new mongoose.Schema(
       default: 'ALL',
       index: true,
     },
+    district: {
+      type: String,
+      default: ''
+    },
+    city: {
+      type: String,
+      default: ''
+    },
     tenantId: {
       type: String,
       default: 'default-municipality',
       index: true,
     },
+    trustScore: {
+      type: Number,
+      default: 0
+    },
+    confidence: {
+      type: Number,
+      default: 0
+    },
+    sourceCount: {
+      type: Number,
+      default: 1
+    },
+    verified: {
+      type: Boolean,
+      default: false
+    },
+    severity: {
+      type: String,
+      enum: ['Low', 'Medium', 'High', 'Critical', 'Emergency'],
+      default: 'Medium'
+    },
+    translations: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {}
+    },
+    lastSynced: {
+      type: Date,
+      default: Date.now
+    },
+    fingerprint: {
+      type: String,
+      index: true,
+      unique: true,
+      sparse: true
+    }
   },
   {
     timestamps: true,

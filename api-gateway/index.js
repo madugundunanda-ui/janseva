@@ -6,7 +6,7 @@ const cors = require('cors');
 const morgan = require('morgan');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 // Security & Middlewares
 app.use(helmet());
@@ -41,8 +41,8 @@ const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 app.use('/api', createProxyMiddleware({
   target: BACKEND_URL,
   changeOrigin: true,
-  pathRewrite: {
-    '^/api': '/api', // keep /api prefix
+  pathRewrite: (path, req) => {
+    return '/api' + path;
   },
   onProxyReq: (proxyReq, req, res) => {
     // Add custom gateway headers if needed

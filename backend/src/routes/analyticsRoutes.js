@@ -18,5 +18,6 @@ router.get('/executive-reports', analyticsController.getExecutiveReports);
 router.get('/ai-metrics', analyticsController.getAiMetrics);
 router.get('/dashboard', analyticsController.getDashboard);
 router.get('/maps', analyticsController.getMaps);
+router.get('/updates-analytics', analyticsController.getUpdatesAnalytics);
 
 module.exports = router;

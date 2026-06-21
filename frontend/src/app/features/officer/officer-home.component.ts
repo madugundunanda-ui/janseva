@@ -16,10 +16,10 @@ import { Complaint } from '../../core/services/api.service';
       <div class="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-blue-950/20 via-transparent to-transparent">
         <div class="space-y-2">
           <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-blue-500/20 bg-blue-950/10 font-mono text-[9px] text-[#6AA9FF] uppercase tracking-widest">
-            <span>🛡️ SECURE OPERATIONS NODE ACTIVE // AUTHORIZED GOVERNMENT PERSONNEL ONLY</span>
+            <span>🛡️ {{ translationService.t('NODE_LIVE') }} // AUTHORIZED GOVERNMENT PERSONNEL ONLY</span>
           </div>
           <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono text-white">
-            OPERATIONS CONSOLE // <span class="text-glow-cyan">{{ authService.currentUser()?.name }}</span>
+            {{ translationService.t('CONSOLE') }} // <span class="text-glow-cyan">{{ authService.currentUser()?.name }}</span>
           </h2>
           <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl text-gray-400">
             You are logged into the government service node. This interface is configured for active grievance dispatch, visual proof audit validation, and SLA resolution tracking.
@@ -27,7 +27,7 @@ import { Complaint } from '../../core/services/api.service';
         </div>
 
         <button [routerLink]="['/dashboard/officer/complaints']" class="px-5 py-3 rounded-lg bg-[#3b82f6] hover:bg-[#2563eb] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.2)] cursor-pointer">
-          Resolve Tickets Queue
+          {{ translationService.t('RESOLVE_GRIEVANCE') }}
         </button>
       </div>
 
@@ -35,28 +35,28 @@ import { Complaint } from '../../core/services/api.service';
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Metric: Assigned/Active -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">My Active Queue</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_PENDING') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ pendingCount }}</div>
-          <div class="font-mono text-[8px] text-amber-500 mt-1 uppercase tracking-wide">PENDING SLA RESOLUTION</div>
+          <div class="font-mono text-[8px] text-amber-500 mt-1 uppercase tracking-wide">{{ translationService.t('SLA_RISK') }}</div>
         </div>
 
         <!-- Metric: Resolved -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Resolved By Me</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_RESOLVED') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ resolvedCount }}</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">VERIFIED CLOSED</div>
+          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">{{ translationService.t('VERIFIED_BY_AI') }}</div>
         </div>
 
         <!-- Metric: Priority Count -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Critical Priority</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('PRIORITY') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-red-400">{{ criticalCount }}</div>
-          <div class="font-mono text-[8px] text-red-400 mt-1 uppercase tracking-wide">IMMEDIATE ACTION REQUIRED</div>
+          <div class="font-mono text-[8px] text-red-400 mt-1 uppercase tracking-wide">{{ translationService.t('EMERGENCY_REPORTING') }}</div>
         </div>
 
         <!-- Metric: Department info -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Assigned Department</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TARGET_DEPARTMENT') }}</div>
           <div class="text-base font-bold font-mono tracking-tight text-primary-var truncate mt-1 text-white">
             {{ getDepartmentName() }}
           </div>
@@ -67,8 +67,8 @@ import { Complaint } from '../../core/services/api.service';
       <!-- Grievance Stack Assigned -->
       <div class="glass-panel rounded-2xl border border-white/10 overflow-hidden bg-black/30">
         <div class="p-5 border-b border-white/10 flex items-center justify-between">
-          <h3 class="font-mono text-[10px] tracking-widest text-[#6AA9FF] uppercase font-bold">Assigned Grievance Queue</h3>
-          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">Operational Tasks</span>
+          <h3 class="font-mono text-[10px] tracking-widest text-[#6AA9FF] uppercase font-bold">{{ translationService.t('GRIEVANCE_STACK') }}</h3>
+          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">{{ translationService.t('CORE_REPORTS') }}</span>
         </div>
 
         <div class="divide-y divide-white/5">
@@ -77,7 +77,7 @@ import { Complaint } from '../../core/services/api.service';
               <div class="space-y-1">
                 <div class="flex items-center gap-3 font-mono text-[9px] uppercase text-gray-400">
                   <span class="text-[#6AA9FF]">{{ complaint.id }}</span>
-                  <span>• WARD {{ complaint.location.ward }}</span>
+                  <span>• {{ translationService.t('WARD') }} {{ complaint.location.ward }}</span>
                   <span class="px-1.5 py-0.5 rounded text-[8px] border" [ngClass]="{
                     'border-red-500/30 text-red-400 bg-red-950/15': complaint.priority === 'critical',
                     'border-amber-500/30 text-amber-400 bg-amber-950/15': complaint.priority === 'high',
@@ -99,13 +99,13 @@ import { Complaint } from '../../core/services/api.service';
                 }">{{ translationService.t(complaint.status.toUpperCase()) }}</span>
                 
                 <button [routerLink]="['/dashboard/officer/complaints']" class="px-3 py-1.5 rounded border border-white/10 hover:border-[#6AA9FF]/40 text-[9px] font-mono uppercase text-white cursor-pointer">
-                  Action Console
+                  {{ translationService.t('CONSOLE') }}
                 </button>
               </div>
             </div>
           } @empty {
             <div class="p-12 text-center">
-              <p class="font-mono text-xs text-gray-400 uppercase">No pending grievances in your assigned queue node.</p>
+              <p class="font-mono text-xs text-gray-400 uppercase">{{ translationService.t('NO_TICKETS_ALIGN') }}</p>
             </div>
           }
         </div>

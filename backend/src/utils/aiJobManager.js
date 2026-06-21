@@ -77,10 +77,15 @@ class AIJobManager extends EventEmitter {
       // Defer execution slightly to allow EventSource subscription
       setTimeout(async () => {
         this.emit(jobId, { status: 'upload_complete', progress: 10, ...job.results });
+        await new Promise(r => setTimeout(r, 300));
         this.emit(jobId, { status: 'detecting_issue', progress: 40, ...job.results });
+        await new Promise(r => setTimeout(r, 300));
         this.emit(jobId, { status: 'estimating_severity', progress: 70, ...job.results });
+        await new Promise(r => setTimeout(r, 300));
         this.emit(jobId, { status: 'generating_recommendations', progress: 90, ...job.results });
+        await new Promise(r => setTimeout(r, 300));
         this.emit(jobId, { status: 'duplicate_checked', progress: 100, ...job.results });
+        await new Promise(r => setTimeout(r, 300));
         this.emit(jobId, { status: 'completed', progress: 100, ...job.results });
 
         // Save to database

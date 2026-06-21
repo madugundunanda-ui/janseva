@@ -1,0 +1,55 @@
+{
+  "passed": [
+    {
+      "scenario": "Login admin",
+      "success": true,
+      "details": "Login successful"
+    },
+    {
+      "scenario": "Login citizen",
+      "success": true,
+      "details": "Login successful"
+    },
+    {
+      "scenario": "Login officer",
+      "success": true,
+      "details": "Login successful"
+    },
+    {
+      "scenario": "Login supervisor",
+      "success": true,
+      "details": "Login successful"
+    },
+    {
+      "scenario": "Fetch Departments",
+      "success": true,
+      "details": "Found 25 departments"
+    },
+    {
+      "scenario": "Citizen Submit Complaint",
+      "success": true,
+      "details": "Complaint ID: 6a30346115bcd13bb49a9c5c"
+    },
+    {
+      "scenario": "Admin View Users",
+      "success": true,
+      "details": "Fetched 11 users"
+    },
+    {
+      "scenario": "Admin Assign Officer",
+      "success": true,
+      "details": "Assigned to 6a302156efb19855371139e7"
+    },
+    {
+      "scenario": "Officer Update Status",
+      "success": true,
+      "details": "Status set to In Progress"
+    },
+    {
+      "scenario": "Security - Citizen accessing Admin route",
+      "success": true,
+      "details": "Access correctly denied (403/401)"
+    }
+  ],
+  "failed": []
+}

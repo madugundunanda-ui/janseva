@@ -2,6 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { Subscription, interval, map, switchMap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { UpdatesService } from './updates.service';
+import { ApiService } from './api.service';
 import { NotificationItem } from '../models/notification.model';
 import { GovernanceUpdate } from '../models/update.model';
 import { io, Socket } from 'socket.io-client';
@@ -16,10 +17,14 @@ export class NotificationsService {
   private pollingSub: Subscription | null = null;
   private reconnectTimeout: any = null;
 
-  constructor(private updatesService: UpdatesService) {}
+  constructor(
+    private updatesService: UpdatesService,
+    private apiService: ApiService
+  ) {}
 
   connect(): void {
     this.disconnect();
+    this.fetchInitial();
 
     if (typeof window === 'undefined' || !environment.websocketUrl) {
       this.startPolling();
@@ -83,13 +88,43 @@ export class NotificationsService {
   }
 
   markRead(notificationId: string): void {
+    // Optimistic update
     this.notifications.update((items) =>
       items.map((item) => (item.id === notificationId ? { ...item, read: true } : item))
     );
+    this.apiService.patch(`/notifications/${notificationId}/read`, {}).subscribe({
+      error: (err) => console.error('Failed to mark notification as read:', err)
+    });
   }
 
   clearAll(): void {
-    this.notifications.set([]);
+    // Optimistic update
+    this.notifications.update((items) =>
+      items.map((item) => ({ ...item, read: true }))
+    );
+    this.apiService.patch('/notifications/read-all', {}).subscribe({
+      error: (err) => console.error('Failed to mark all notifications as read:', err)
+    });
+  }
+
+  private fetchInitial(): void {
+    this.apiService.get<any>('/notifications').subscribe({
+      next: (response) => {
+        const data = response?.data || response;
+        if (Array.isArray(data)) {
+          this.mergeNotifications(data.map((n: any) => ({
+            id: n._id,
+            title: n.title,
+            message: n.message,
+            kind: this.mapKind(n.priority?.toLowerCase() || 'medium'),
+            timestamp: n.createdAt,
+            read: n.isRead,
+            channel: 'api'
+          })));
+        }
+      },
+      error: (err) => console.error('Failed to fetch initial notifications:', err)
+    });
   }
 
   private stopPolling(): void {

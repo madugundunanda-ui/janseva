@@ -31,6 +31,9 @@ app.get('/api/health', (req, res) => {
 app.use('/api', createProxyMiddleware({
   target: BACKEND_URL,
   changeOrigin: true,
+  pathRewrite: {
+    '^/': '/api/'
+  },
   logLevel: 'debug',
   onProxyReq: (proxyReq, req, res) => {
     // Can attach additional headers or logic here if needed

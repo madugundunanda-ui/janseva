@@ -296,6 +296,8 @@ export class TranslationService {
       PH_PHONE_EXAMPLE: '9876543210',
       PH_ADDRESS_MUMBAI: 'Ward 12, Mumbai',
       PH_PASSWORD: '••••••••',
+      LEVEL: 'Level',
+      WARD: 'Ward',
     },
     te: {
       MISSION: 'లక్ష్యం',
@@ -559,6 +561,8 @@ export class TranslationService {
       AI_STEP_5_RUNNING: 'నకిలీ ఫిర్యాదులను తనిఖీ చేస్తోంది...',
       AI_STEP_5_DONE: 'నకిలీల తనిఖీ పూర్తయింది',
       AI_STEP_5_PENDING: 'నకిలీ ఫిర్యాదులను తనిಖీ చేయడం',
+      LEVEL: 'స్థాయి',
+      WARD: 'వార్డ్',
     },
     ta: {
       MISSION: 'நோக்கம்',
@@ -822,6 +826,8 @@ export class TranslationService {
       AI_STEP_5_RUNNING: 'போலி புகார்களை சரிபார்க்கிறது...',
       AI_STEP_5_DONE: 'போலி சரிபார்ப்பு முடிந்தது',
       AI_STEP_5_PENDING: 'போலி புகார்களை சரிபார்த்தல்',
+      LEVEL: 'நிலை',
+      WARD: 'வார்டு',
     },
     kn: {
       MISSION: 'ಧ್ಯೇಯ',

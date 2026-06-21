@@ -20,7 +20,7 @@ export interface VoiceState {
 export class VoiceAssistantService {
   private apiUrl = `${environment.apiUrl}/voice/interact`;
   private recognition: any;
-  private synth = window.speechSynthesis;
+  private synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
   private listeningTimeout: any = null;
   
   private initialState: VoiceState = {
@@ -44,6 +44,7 @@ export class VoiceAssistantService {
   }
 
   private initSpeechRecognition() {
+    if (typeof window === 'undefined') return;
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       this.recognition = new SpeechRecognition();
@@ -99,7 +100,7 @@ export class VoiceAssistantService {
 
   public deactivate() {
     this.recognition?.stop();
-    this.synth.cancel();
+    this.synth?.cancel();
     this.updateState(this.initialState);
   }
 
@@ -159,9 +160,9 @@ export class VoiceAssistantService {
   }
 
   private speak(text: string, lang: string, onEnd?: () => void) {
-    this.synth.cancel(); // Stop any ongoing speech
+    this.synth?.cancel(); // Stop any ongoing speech
     
-    if (!text) {
+    if (!text || !this.synth || typeof SpeechSynthesisUtterance === 'undefined') {
       if (onEnd) onEnd();
       return;
     }

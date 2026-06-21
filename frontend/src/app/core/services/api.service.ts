@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { catchError, map, Observable, of, throwError, finalize, retry, timer } from 'rxjs';
+import { catchError, map, Observable, of, throwError, finalize, retry, timer, timeout, TimeoutError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { AiResult, ResolutionPredictionResult, SeverityAnalysisResult } from '../models/ai-result.model';
 import { Complaint, ComplaintAssignmentOptions, ComplaintUploadResponse } from '../models/complaint.model';
@@ -51,6 +51,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       retry({
         count: 2,
@@ -74,6 +75,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -86,6 +88,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -98,6 +101,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -110,6 +114,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -122,6 +127,7 @@ export class ApiService {
       params: this.toParams(options.params),
       withCredentials: true
     }).pipe(
+      timeout(10000),
       map((response) => this.unwrap<T>(response)),
       catchError(this.handleError(path)),
       finalize(() => this.isLoading.set(false))
@@ -256,13 +262,22 @@ export class ApiService {
   }
 
   private handleError(path: string) {
-    return (error: HttpErrorResponse) => {
+    return (error: any) => {
+      if (error instanceof TimeoutError) {
+        (error as any).friendlyMessage = 'Connection to the server timed out. Please try again.';
+        return throwError(() => error);
+      }
+
       // Preserve the original HttpErrorResponse so callers can inspect status/code
       // but ensure there's a readable message available.
       if (error && typeof error === 'object') {
         try {
-          const message = error.error?.message || error.message || `Request failed for ${path}`;
-          (error as any).friendlyMessage = message;
+          if (error.status === 0) {
+            error.friendlyMessage = 'Server is unreachable. Please check your connection or try again later.';
+          } else {
+            const message = error.error?.message || error.message || `Request failed for ${path}`;
+            error.friendlyMessage = message;
+          }
         } catch {
           // ignore
         }

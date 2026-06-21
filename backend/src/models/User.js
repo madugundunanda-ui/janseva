@@ -184,11 +184,9 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ role: 1, department: 1 });
-userSchema.index({ email: 1 });
 userSchema.index({ phone: 1 });
 userSchema.index({ ward: 1 });
 userSchema.index({ district: 1 });
-userSchema.index({ employeeId: 1 });
 userSchema.index({ 'preferences.uiLanguage': 1 });
 userSchema.index({ geoPoint: '2dsphere' });
 

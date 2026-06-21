@@ -17,10 +17,10 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
       <div class="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-purple-950/20 via-transparent to-transparent">
         <div class="space-y-2">
           <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-purple-500/20 bg-purple-950/10 font-mono text-[9px] text-purple-400 uppercase tracking-widest">
-            <span>● CITIZEN GATEWAY NODE ACTIVE</span>
+            <span>● {{ translationService.t('NODE_LIVE') }}</span>
           </div>
           <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono text-white">
-            Welcome back, <span class="text-glow">{{ authService.currentUser()?.name }}</span>
+            {{ translationService.t('HOME') }}, <span class="text-glow">{{ authService.currentUser()?.name }}</span>
           </h2>
           <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl text-gray-400">
             You are logged into the JanSeva AI Civic resolution network. Use this console to track status of complaints in your municipal ward and submit local proofs.
@@ -28,7 +28,7 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
         </div>
 
         <button [routerLink]="['/dashboard/citizen/complaints']" class="px-5 py-3 rounded-lg bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(163,63,147,0.2)] cursor-pointer">
-          File New Grievance
+          {{ translationService.t('FILE_GRIEVANCE') }}
         </button>
       </div>
 
@@ -36,28 +36,28 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Metric: Total Filed -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">My Total Grievances</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_TOTAL') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ myComplaints.length }}</div>
-          <div class="font-mono text-[8px] text-purple-400 mt-1 uppercase tracking-wide">FILED TO ARCHIVE</div>
+          <div class="font-mono text-[8px] text-purple-400 mt-1 uppercase tracking-wide">{{ translationService.t('FILED') }}</div>
         </div>
 
         <!-- Metric: Resolved -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Resolved Grievances</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_RESOLVED') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ resolvedCount }}</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">VERIFIED CLEARED</div>
+          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">{{ translationService.t('VERIFIED_BY_AI') }}</div>
         </div>
 
         <!-- Metric: Trust Score -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Civic Trust Score</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('CIVIC_HEALTH') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-cyan-400">{{ authService.currentUser()?.trustScore ?? 100 }}/100</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">LEVEL: {{ authService.currentUser()?.trustLevel ?? 'Trusted' }}</div>
+          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">{{ translationService.t('LEVEL') }}: {{ authService.currentUser()?.trustLevel ?? 'Trusted' }}</div>
         </div>
 
         <!-- Metric: Ward/District -->
         <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Municipal Region</div>
+          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('ADDRESS') }}</div>
           <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">Ward {{ authService.currentUser()?.ward ?? '12' }}</div>
           <div class="font-mono text-[8px] text-muted-var mt-1 uppercase tracking-wide text-gray-400">{{ authService.currentUser()?.district ?? 'Zone 3 / Dadar' }}</div>
         </div>
@@ -66,8 +66,8 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
       <!-- Grievance Stack Overview -->
       <div class="glass-panel rounded-2xl border border-white/10 overflow-hidden bg-black/30">
         <div class="p-5 border-b border-white/10 flex items-center justify-between">
-          <h3 class="font-mono text-[10px] tracking-widest text-purple-400 uppercase font-bold">My Filed Grievances</h3>
-          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">Recent Activity</span>
+          <h3 class="font-mono text-[10px] tracking-widest text-purple-400 uppercase font-bold">{{ translationService.t('GRIEVANCE_STACK') }}</h3>
+          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">{{ translationService.t('CORE_REPORTS') }}</span>
         </div>
 
         <div class="divide-y divide-white/5">
@@ -76,8 +76,8 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
               <div class="space-y-1">
                 <div class="flex items-center gap-3 font-mono text-[9px] uppercase text-gray-400">
                   <span class="text-purple-400">{{ complaint.id }}</span>
-                  <span>• WARD {{ complaint.location.ward }}</span>
-                  <span>• Priority: {{ complaint.priority }}</span>
+                  <span>• {{ translationService.t('WARD') }} {{ complaint.location.ward }}</span>
+                  <span>• {{ translationService.t('PRIORITY') }}: {{ complaint.priority }}</span>
                 </div>
                 <h4 class="text-sm font-semibold text-primary-var uppercase text-white">{{ complaint.title }}</h4>
                 <p class="text-xs text-muted-var line-clamp-1 font-mono uppercase text-gray-400">{{ complaint.description }}</p>
@@ -93,15 +93,15 @@ import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.compo
                 }">{{ translationService.t(complaint.status.toUpperCase()) }}</span>
                 
                 <button [routerLink]="['/dashboard/citizen/complaints']" class="px-3 py-1.5 rounded border border-white/10 hover:border-purple-500/40 text-[9px] font-mono uppercase text-white cursor-pointer">
-                  View Detail
+                  {{ translationService.t('READ_MORE') }}
                 </button>
               </div>
             </div>
           } @empty {
             <div class="p-12 text-center space-y-4">
-              <p class="font-mono text-xs text-gray-400 uppercase">No grievances registered on your account node.</p>
+              <p class="font-mono text-xs text-gray-400 uppercase">{{ translationService.t('NO_TICKETS_ALIGN') }}</p>
               <button [routerLink]="['/dashboard/citizen/complaints']" class="px-4 py-2 rounded bg-[#A33F93] text-white font-mono text-[9px] uppercase font-bold hover:bg-[#8c357f] cursor-pointer">
-                Initialize First Ticket
+                {{ translationService.t('REGISTER_TICKET') }}
               </button>
             </div>
           }
