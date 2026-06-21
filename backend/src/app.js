@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
+const xssClean = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 const slowDown = require('express-slow-down');
 const cookieParser = require('cookie-parser');
@@ -81,6 +82,9 @@ app.use(cookieParser());
 
 // ─── NoSQL Injection Sanitization ───────────────────────────────
 app.use(mongoSanitize());
+
+// ─── XSS Sanitization ───────────────────────────────────────────
+app.use(xssClean());
 
 // ─── Rate Limiting ──────────────────────────────────────────────
 const { createGlobalLimiter, createAuthLimiter } = require('./middleware/rateLimiter');

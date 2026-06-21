@@ -17,10 +17,18 @@ const { setupWebSocketHandlers } = require('./src/websocket/aiAssistantWebSocket
 const notificationService = require('./src/services/notificationService');
 const AnalyticsCronManager = require('./src/services/analyticsCronManager');
 
+const isProduction = process.env.NODE_ENV === 'production';
+const allowedOrigins = [
+  'http://localhost:4200',
+  'http://localhost:4000',
+  process.env.FRONTEND_URL
+].filter(Boolean);
+
 const io = new Server(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: isProduction ? allowedOrigins : true,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 io.use((socket, next) => {
