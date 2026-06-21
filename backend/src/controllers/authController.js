@@ -115,6 +115,7 @@ const register = asyncHandler(async (req, res) => {
 });
 
 const login = asyncHandler(async (req, res) => {
+  console.time('LOGIN_TOTAL');
   const result = await authService.loginUser(req.body);
   const role = result?.user?.role || 'unknown';
   const email = result?.user?.email || 'unknown';
@@ -130,6 +131,7 @@ const login = asyncHandler(async (req, res) => {
   }
 
   sendSuccess(res, 200, 'Login successful', { user: result.user });
+  console.timeEnd('LOGIN_TOTAL');
 });
 
 const logout = asyncHandler(async (req, res) => {

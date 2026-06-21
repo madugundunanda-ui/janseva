@@ -1,5 +1,5 @@
 import { computed, Injectable, signal } from '@angular/core';
-import { Observable, tap } from 'rxjs';
+import { Observable, tap, timeout, finalize } from 'rxjs';
 import { ApiService } from './api.service';
 import { User, UserRole } from '../models/user.model';
 
@@ -22,8 +22,11 @@ export class AuthService {
   }
 
   login(credentials: { email: string; password: string; role?: string }): Observable<AuthResponse> {
+    console.time('AUTH_API');
     return this.apiService.post<AuthResponse>('/auth/login', credentials).pipe(
-      tap((response) => this.persistSession(response.token, response.user))
+      timeout(5000),
+      tap((response) => this.persistSession(response.token, response.user)),
+      finalize(() => console.timeEnd('AUTH_API'))
     );
   }
 

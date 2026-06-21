@@ -98,7 +98,9 @@ const loginUser = async ({ email, password, role }) => {
   const normalizedEmail = email.toLowerCase().trim();
   const normalizedRole = typeof role === 'string' ? role.toLowerCase().trim() : undefined;
 
+  console.time('AUTH_DB_LOOKUP');
   const user = await userRepository.findOne({ email: normalizedEmail }, { select: '+password' });
+  console.timeEnd('AUTH_DB_LOOKUP');
 
   if (!user) {
     registerFailedAttempt(normalizedEmail);
@@ -135,7 +137,9 @@ const loginUser = async ({ email, password, role }) => {
     throw new AppError('Invalid role', 401);
   }
 
+  console.time('JWT_GENERATION');
   const token = generateToken(user);
+  console.timeEnd('JWT_GENERATION');
   await createSession(user._id.toString(), token);
   
   clearFailedAttempts(normalizedEmail);

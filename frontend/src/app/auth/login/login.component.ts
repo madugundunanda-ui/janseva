@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService, LanguageCode } from '../../core/services/translation.service';
+import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -205,8 +206,12 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit() {
+    if (this.loading) return;
+
     this.loading = true;
     this.errorMessage = '';
+
+    console.time('LOGIN_FLOW');
 
     const payload = {
       email: this.credentials.email,
@@ -214,9 +219,13 @@ export class LoginComponent implements OnInit {
       role: this.selectedRole
     };
 
-    this.authService.login(payload).subscribe({
-      next: (res) => {
+    this.authService.login(payload).pipe(
+      finalize(() => {
         this.loading = false;
+        console.timeEnd('LOGIN_FLOW');
+      })
+    ).subscribe({
+      next: (res) => {
         this.redirectToDashboard(res?.user?.role);
       },
       error: (err) => {
@@ -231,7 +240,6 @@ export class LoginComponent implements OnInit {
         } else {
           this.errorMessage = friendly || 'Authentication Gateway Rejected Credentials';
         }
-        this.loading = false;
       },
     });
   }

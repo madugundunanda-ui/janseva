@@ -24,15 +24,20 @@ export class NotificationsService {
 
   connect(): void {
     this.disconnect();
-    this.fetchInitial();
 
-    if (typeof window === 'undefined' || !environment.websocketUrl) {
-      this.startPolling();
+    if (typeof window === 'undefined') {
       return;
     }
 
     const token = window.localStorage.getItem('token');
     if (!token) {
+      // Do not fetch private notifications or connect to authenticated socket if not logged in
+      return;
+    }
+
+    this.fetchInitial();
+
+    if (!environment.websocketUrl) {
       this.startPolling();
       return;
     }
