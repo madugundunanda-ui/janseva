@@ -128,7 +128,7 @@ export class GovernanceAlertsComponent implements OnInit, OnDestroy {
   private timerId: Subscription | null = null;
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private updatesService: UpdatesService,
     private dashboardService: DashboardService,
     private cdr: ChangeDetectorRef

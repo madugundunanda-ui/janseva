@@ -20,14 +20,14 @@ export class UpdatesService {
 
   constructor(private apiService: ApiService) {}
 
-  getLiveUpdates(state: string = 'ALL'): Observable<GovernanceUpdate[]> {
+  getLiveUpdates(state = 'ALL'): Observable<GovernanceUpdate[]> {
     return this.apiService.get<LiveUpdatesResponse | GovernanceUpdate[]>(`/updates/live?state=${state}`).pipe(
       map((response) => this.normalizeUpdates(response)),
       catchError(() => this.loadAnnouncementFallback(state))
     );
   }
 
-  watchLiveUpdates(state: string = 'ALL', intervalMs = 15000): Observable<GovernanceUpdate[]> {
+  watchLiveUpdates(state = 'ALL', intervalMs = 15000): Observable<GovernanceUpdate[]> {
     return timer(0, intervalMs).pipe(
       switchMap(() => this.getLiveUpdates(state)),
       map((items) => {

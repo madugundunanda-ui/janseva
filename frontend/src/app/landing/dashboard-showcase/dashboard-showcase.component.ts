@@ -123,7 +123,7 @@ export class DashboardShowcaseComponent implements OnInit, AfterViewInit {
   stats: DashboardStats | null = null;
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private dashboardService: DashboardService,
     private cdr: ChangeDetectorRef
   ) {}

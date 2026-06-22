@@ -104,7 +104,7 @@ export class AiShowcaseComponent implements OnInit, AfterViewInit {
   @ViewChild('card2') card2Ref!: ElementRef<HTMLElement>;
   @ViewChild('card3') card3Ref!: ElementRef<HTMLElement>;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
   ngOnInit(): void {}
 

@@ -304,7 +304,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
   private scrollTriggers: any[] = [];
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     public authService: AuthService,
     public translationService: TranslationService,
     private ngZone: NgZone,
@@ -391,7 +391,7 @@ export class LandingComponent implements OnInit, AfterViewInit, OnDestroy {
         const h = canvas.height;
         ctx.clearRect(0, 0, w, h);
 
-        for (let p of this.driftParticles) {
+        for (const p of this.driftParticles) {
           ctx.beginPath();
           ctx.fillStyle = `rgba(106, 169, 255, ${p.alpha})`;
           ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);

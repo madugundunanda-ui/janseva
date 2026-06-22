@@ -145,7 +145,7 @@ export class MapViewComponent implements OnInit, AfterViewInit, OnDestroy {
   public translationService = inject(TranslationService);
   private apiService = inject(ApiService);
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
   ngOnInit(): void {
     if (this.complaintsList && this.complaintsList.length > 0) {

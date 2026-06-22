@@ -8,7 +8,7 @@ export class SmoothScrollService {
   private lenis: any = null;
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private ngZone: NgZone
   ) {}
 

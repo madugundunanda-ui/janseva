@@ -94,7 +94,7 @@ export class TheProblemComponent implements OnInit, AfterViewInit {
   @ViewChild('alert2') alert2Ref!: ElementRef<HTMLElement>;
   @ViewChild('alert3') alert3Ref!: ElementRef<HTMLElement>;
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
+  constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
   ngOnInit(): void {}
 

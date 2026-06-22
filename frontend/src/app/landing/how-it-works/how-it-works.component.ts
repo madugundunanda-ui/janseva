@@ -428,7 +428,7 @@ export class HowItWorksComponent implements OnInit, AfterViewInit, OnDestroy {
   ];
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private cdr: ChangeDetectorRef,
     private ngZone: NgZone
   ) {}

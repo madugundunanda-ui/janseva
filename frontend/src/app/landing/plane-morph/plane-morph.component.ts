@@ -73,7 +73,7 @@ export class PlaneMorphComponent implements OnInit, AfterViewInit, OnDestroy {
 
   constructor(
     public preloader: ImagePreloaderService,
-    @Inject(PLATFORM_ID) private platformId: Object,
+    @Inject(PLATFORM_ID) private platformId: object,
     private ngZone: NgZone
   ) {}
 

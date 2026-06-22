@@ -23,8 +23,8 @@ export class TransparencyPortalComponent implements OnInit {
   civicScores: any[] = [];
   successStories: any[] = [];
   
-  activeTab: string = 'overview';
-  loading: boolean = true;
+  activeTab = 'overview';
+  loading = true;
   Math = Math;
 
   ngOnInit() {

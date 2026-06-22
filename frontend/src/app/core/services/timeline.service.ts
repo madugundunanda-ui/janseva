@@ -23,10 +23,21 @@ export class TimelineService {
   }
 
   private buildFallbackTimeline(): Observable<TimelineResponse> {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const complaints$ = token
+      ? this.apiService.getComplaints().pipe(
+          map((complaints) => complaints ?? [] as Complaint[]),
+          catchError(() => of([] as Complaint[]))
+        )
+      : of([] as Complaint[]);
+
     return forkJoin({
-      complaints: this.apiService.getComplaints().pipe(map((complaints) => complaints ?? [] as Complaint[])),
-      departments: this.apiService.getDepartments().pipe(map((departments) => departments ?? [] as Department[])),
-      stats: this.apiService.getDashboardStats().pipe(map((response) => this.normalizeStats(response))),
+      complaints: complaints$,
+      departments: this.apiService.getDepartments().pipe(catchError(() => of([] as Department[]))),
+      stats: this.apiService.getDashboardStats().pipe(
+        map((response) => this.normalizeStats(response)),
+        catchError(() => of(this.normalizeStats(null)))
+      ),
     }).pipe(
       map(({ complaints, departments, stats }) => {
         const points = this.buildPoints(complaints, stats);

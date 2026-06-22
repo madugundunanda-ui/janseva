@@ -11,7 +11,7 @@ import { VoiceAssistantService, VoiceState } from '../../../core/services/voice-
 })
 export class VoiceAssistantWidgetComponent implements OnInit {
   state!: VoiceState;
-  accessibilityMode: boolean = false;
+  accessibilityMode = false;
 
   @ViewChild('fileInput') fileInput!: ElementRef;
 

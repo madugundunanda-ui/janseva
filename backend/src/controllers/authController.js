@@ -111,7 +111,7 @@ const register = asyncHandler(async (req, res) => {
     email: result.user.email
   });
 
-  sendSuccess(res, 201, 'Registration successful', { user: result.user });
+  sendSuccess(res, 201, 'Registration successful', { user: result.user, token: result.token });
 });
 
 const login = asyncHandler(async (req, res) => {
@@ -130,7 +130,7 @@ const login = asyncHandler(async (req, res) => {
     setAuthCookie(res, result.token);
   }
 
-  sendSuccess(res, 200, 'Login successful', { user: result.user });
+  sendSuccess(res, 200, 'Login successful', { user: result.user, token: result.token });
   console.timeEnd('LOGIN_TOTAL');
 });
 

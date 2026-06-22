@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { forkJoin, map, Observable, of, tap, shareReplay } from 'rxjs';
+import { forkJoin, map, Observable, of, tap, shareReplay, catchError } from 'rxjs';
 import { ApiService } from './api.service';
 import { Complaint } from '../models/complaint.model';
 import { Department } from '../models/department.model';
@@ -19,10 +19,21 @@ export class DepartmentsService {
       return this.departmentsRequest$;
     }
 
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const complaints$ = token
+      ? this.apiService.getComplaints().pipe(
+          map((complaints) => complaints ?? [] as Complaint[]),
+          catchError(() => of([] as Complaint[]))
+        )
+      : of([] as Complaint[]);
+
     this.departmentsRequest$ = forkJoin({
-      departments: this.apiService.getDepartments(),
-      complaints: this.apiService.getComplaints().pipe(map((complaints) => complaints ?? [] as Complaint[])),
-      stats: this.apiService.getDashboardStats().pipe(map((value) => this.normalizeStats(value))),
+      departments: this.apiService.getDepartments().pipe(catchError(() => of([] as Department[]))),
+      complaints: complaints$,
+      stats: this.apiService.getDashboardStats().pipe(
+        map((value) => this.normalizeStats(value)),
+        catchError(() => of(this.normalizeStats(null)))
+      ),
     }).pipe(
       map(({ departments, complaints, stats }) => this.enrichDepartments(departments, complaints, stats)),
       tap({

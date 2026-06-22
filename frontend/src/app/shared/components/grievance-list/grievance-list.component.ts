@@ -100,7 +100,7 @@ import { DepartmentsService } from '../../../core/services/departments.service';
 })
 export class GrievanceListComponent implements OnInit, OnChanges {
   @Input() complaints: Complaint[] = [];
-  @Input() showRegisterButton: boolean = false;
+  @Input() showRegisterButton = false;
   @Output() selected = new EventEmitter<Complaint>();
   @Output() registerClick = new EventEmitter<void>();
 
