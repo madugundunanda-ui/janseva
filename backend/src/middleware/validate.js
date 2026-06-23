@@ -29,6 +29,8 @@ const validate = (schema, source = 'body') => (req, res, next) => {
       message: d.message.replace(/"/g, ''),
     }));
 
+    console.error('Joi validation failed for source:', source, 'Payload:', JSON.stringify(data), 'Errors:', JSON.stringify(errors));
+
     return res.status(400).json({
       success: false,
       message: 'Validation failed',

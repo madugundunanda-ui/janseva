@@ -41,7 +41,7 @@ const createComplaintSchema = Joi.object({
   title: Joi.string().trim().min(3).max(120).required(),
   description: Joi.string().trim().min(5).required(),
   department: Joi.string().trim().required(),
-  priority: Joi.string().valid('low', 'medium', 'high', 'urgent', 'critical').default('medium'),
+  priority: Joi.string().lowercase().valid('low', 'medium', 'high', 'urgent', 'critical').default('medium'),
   voiceTranscription: Joi.string().allow('', null).optional(),
   aiIssue: Joi.string().allow('', null).optional(),
   severityScore: Joi.number().min(0).max(100).allow(null).optional(),
@@ -60,7 +60,7 @@ const updateComplaintSchema = Joi.object({
     'submitted', 'under_review', 'assigned', 'in_progress',
     'escalated', 'resolved', 'rejected', 'closed'
   ).optional(),
-  priority: Joi.string().valid('low', 'medium', 'high', 'urgent', 'critical').optional(),
+  priority: Joi.string().lowercase().valid('low', 'medium', 'high', 'urgent', 'critical').optional(),
   resolutionNote: Joi.string().trim().allow('').optional(),
   slaDeadline: Joi.date().iso().allow(null).optional(),
 });

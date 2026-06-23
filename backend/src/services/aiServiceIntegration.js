@@ -135,7 +135,7 @@ const analyzeComplaintImage = async (imageBuffer, language = 'en-IN', progressCa
 
     results.department = result.department || 'Roads & Highways';
     results.category = result.category || 'Road Damage';
-    results.severity = result.severity || 'medium';
+    results.severity = (result.severity || 'medium').toLowerCase();
     results.analysisMetadata.departmentConfidence = result.confidence || 85;
     results.analysisMetadata.categoryConfidence = result.confidence || 85;
     results.analysisMetadata.severityConfidence = result.confidence || 85;

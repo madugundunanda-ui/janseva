@@ -71,6 +71,8 @@ class EventBus extends EventEmitter {
       let lastError = null;
       const startTime = Date.now();
 
+      logger.info(`[${consumerName}] [EVENT_RECEIVED] received event ${eventType} [${eventData.eventId}]`);
+
       while (attempts < this.MAX_RETRIES && !success) {
         attempts++;
         try {
@@ -86,10 +88,10 @@ class EventBus extends EventEmitter {
             processingTimeMs: Date.now() - startTime
           });
 
-          logger.info(`[EventBus] Consumer [${consumerName}] successfully processed ${eventType} [${eventData.eventId}]`);
+          logger.info(`[${consumerName}] [EVENT_PROCESSED] successfully processed event ${eventType} [${eventData.eventId}]`);
         } catch (err) {
           lastError = err;
-          logger.warn(`[EventBus] Consumer [${consumerName}] failed to process ${eventType} [${eventData.eventId}]. Attempt ${attempts}/${this.MAX_RETRIES}. Error: ${err.message}`);
+          logger.warn(`[${consumerName}] [EVENT_FAILED] failed attempt ${attempts}/${this.MAX_RETRIES} to process ${eventType} [${eventData.eventId}]. Error: ${err.message}`);
           
           if (attempts < this.MAX_RETRIES) {
             // Exponential backoff
@@ -99,7 +101,7 @@ class EventBus extends EventEmitter {
       }
 
       if (!success) {
-        logger.error(`[EventBus] Consumer [${consumerName}] exhausted retries for ${eventType} [${eventData.eventId}]. Sending to DLQ.`);
+        logger.error(`[${consumerName}] [EVENT_FAILED] exhausted retries for ${eventType} [${eventData.eventId}]. Sending to DLQ.`);
         
         // 1. DLQ
         await DeadLetterQueue.create({
@@ -107,7 +109,7 @@ class EventBus extends EventEmitter {
           eventType: eventData.eventType,
           consumer: consumerName,
           payload: eventData,
-          errorReason: lastError ? lastError.stack : 'Unknown failure',
+          errorReason: lastError ? (lastError.stack || lastError.message || String(lastError)) : 'Unknown failure',
           retryCount: attempts
         });
 

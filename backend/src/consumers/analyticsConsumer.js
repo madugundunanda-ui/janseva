@@ -15,8 +15,11 @@ const initAnalyticsConsumer = () => {
     switch (eventType) {
       case 'ComplaintCreated':
       case 'ComplaintResolved':
-        if (payload.departmentId) {
-          await departmentPerformanceEngine.recalculateDepartmentPerformance(payload.departmentId);
+        {
+          const deptId = payload.departmentId || payload.department;
+          if (deptId) {
+            await departmentPerformanceEngine.recalculateDepartmentPerformance(deptId);
+          }
         }
         break;
       case 'ComplaintAssigned':

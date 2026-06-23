@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 const DEPARTMENTS = ['Roads & Highways', 'Water Supply', 'Electricity', 'Sanitation', 'Public Health', 'Revenue', 'Transport', 'Smart City Operations', 'Rural Development', 'Emergency Response'];
-const PRIORITIES = ['low', 'medium', 'high'];
+const PRIORITIES = ['low', 'medium', 'high', 'urgent', 'critical'];
 
 // Helper to calculate SHA256 of file
 const getFileHash = (filePath) => {
@@ -99,7 +99,7 @@ const validateComplaintImageAnalysis = (payload) => {
     title: String(payload.title || '').trim(),
     description: String(payload.description || '').trim(),
     department: payload.department,
-    priority: payload.priority,
+    priority: String(payload.priority || '').toLowerCase(),
     confidence: Number(payload.confidence),
   };
 
@@ -256,7 +256,7 @@ const calculateSeverity = async (payload) => {
 
   return {
     severityScore: isEmergency ? 95 : 45,
-    priority: isEmergency ? 'Critical' : 'Medium',
+    priority: isEmergency ? 'critical' : 'medium',
     reason: isEmergency 
       ? ['High-risk safety hazard detected', 'Immediate threat to public safety', 'Requires emergency dispatch bypass'] 
       : ['Standard grievance maintenance queue'],

@@ -551,6 +551,42 @@ class CivicIntelligenceService {
       logger.error(`Intelligence Sync failed: ${err.message}`);
     }
   }
+
+  /**
+   * Detect duplicates and update clusters/hotspots after a complaint is created
+   */
+  static async detectDuplicateOrCluster(complaintId) {
+    try {
+      logger.info(`[CivicIntelligence] Running detectDuplicateOrCluster for complaint ${complaintId}`);
+      const complaint = await Complaint.findById(complaintId);
+      if (!complaint) {
+        logger.warn(`[CivicIntelligence] Complaint ${complaintId} not found`);
+        return;
+      }
+
+      // 1. Run duplicate check
+      const dupResults = await this.detectDuplicates(complaint);
+      if (dupResults.duplicatesFound && dupResults.similarComplaints.length > 0) {
+        logger.info(`[CivicIntelligence] Duplicate(s) detected for complaint ${complaintId}`);
+        await DuplicateComplaintCheck.create({
+          newComplaintId: complaintId,
+          similarComplaintIds: dupResults.similarComplaints.map(sc => sc.complaintId),
+          descriptionSimilarityScores: dupResults.similarComplaints.map(sc => sc.descScore),
+          locationProximityScores: dupResults.similarComplaints.map(sc => sc.distance),
+          duplicateDetected: true,
+          userAction: 'pending'
+        });
+      }
+
+      // 2. Generate clusters & hotspots
+      const tenantId = complaint.tenantId || 'default-municipality';
+      await this.generateClusters(tenantId);
+      await this.generateHotspots(tenantId);
+      
+    } catch (err) {
+      logger.error(`[CivicIntelligence] detectDuplicateOrCluster failed: ${err.message}`);
+    }
+  }
 }
 
 module.exports = CivicIntelligenceService;

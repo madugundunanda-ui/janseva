@@ -185,7 +185,7 @@ describe('Actual AI Service Unit Tests', () => {
 
       for (const payload of payloads) {
         const result = await actualAiService.calculateSeverity(payload);
-        expect(result.priority).toBe('Critical');
+        expect(result.priority).toBe('critical');
         expect(result.severityScore).toBe(95);
       }
     });
@@ -193,7 +193,7 @@ describe('Actual AI Service Unit Tests', () => {
     it('should assign Medium priority and severity score 45 for standard grievances', async () => {
       const payload = { title: 'Pothole on main road', description: 'Needs resurfacing' };
       const result = await actualAiService.calculateSeverity(payload);
-      expect(result.priority).toBe('Medium');
+      expect(result.priority).toBe('medium');
       expect(result.severityScore).toBe(45);
     });
   });
