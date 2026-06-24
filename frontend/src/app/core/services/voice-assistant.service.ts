@@ -98,6 +98,14 @@ export class VoiceAssistantService {
       return;
     }
 
+    // Preserve and resume if conversation context is already active
+    if (this.state.value.language) {
+      if (['MAIN_MENU', 'TRACK_COMPLAINT', 'RAISE_COMPLAINT_CONFIRMATION', 'RAISE_COMPLAINT_DESCRIPTION'].includes(this.state.value.workflowName)) {
+        this.startListening();
+      }
+      return;
+    }
+
     this.updateState({ workflowName: 'LANGUAGE_SELECTION' });
     this.askForLanguage();
   }
@@ -105,7 +113,12 @@ export class VoiceAssistantService {
   public deactivate() {
     this.recognition?.stop();
     this.synth?.cancel();
-    this.updateState(this.initialState);
+    this.updateState({
+      isActive: false,
+      isListening: false,
+      isSpeaking: false,
+      isThinking: false
+    });
   }
 
   private askForLanguage() {

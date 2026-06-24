@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, OnInit, OnDestroy, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { VoiceAssistantService, VoiceState } from '../../../core/services/voice-assistant.service';
 
@@ -47,11 +47,45 @@ export class VoiceAssistantWidgetComponent implements OnInit, OnDestroy {
     this.stopHintRotation();
   }
 
+  // Configurable behavior for clicking outside
+  clickOutsideBehavior: 'close' | 'minimize' = 'minimize';
+
   toggleAssistant() {
     if (this.state.isActive) {
-      this.voiceService.deactivate();
+      this.minimize();
     } else {
       this.voiceService.activate();
+    }
+  }
+
+  minimize() {
+    this.voiceService.deactivate();
+  }
+
+  close() {
+    this.voiceService.deactivate();
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    if (!this.state?.isActive) return;
+
+    const card = this.widgetCard?.nativeElement;
+    const isClickedOutside = card && !card.contains(event.target);
+
+    if (isClickedOutside) {
+      if (this.clickOutsideBehavior === 'close') {
+        this.close();
+      } else {
+        this.minimize();
+      }
+    }
+  }
+
+  @HostListener('document:keydown.escape', ['$event'])
+  onEscapeKey(event: KeyboardEvent) {
+    if (this.state?.isActive) {
+      this.minimize();
     }
   }
 

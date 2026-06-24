@@ -56,11 +56,14 @@
         
         <div class="header-actions">
           <span class="lang-badge" *ngIf="state.language">{{ getLanguageLabel(state.language) }}</span>
-          <button class="a11y-toggle" (click)="toggleAccessibilityMode()" title="High Contrast Mode">
+          <button class="a11y-toggle" (click)="toggleAccessibilityMode()" aria-label="Toggle Accessibility Mode" title="High Contrast Mode">
             <i class="fas" [class.fa-universal-access]="!accessibilityMode" [class.fa-eye]="accessibilityMode"></i>
           </button>
-          <button class="close-btn" (click)="toggleAssistant()" title="Minimize">
-            <i class="fas fa-times"></i>
+          <button class="minimize-btn" (click)="minimize()" aria-label="Minimize AI Assistant" title="Minimize">
+            <i class="fas fa-minus"></i> <span class="btn-text">Minimize</span>
+          </button>
+          <button class="close-btn" (click)="close()" aria-label="Close AI Assistant" title="Close">
+            <i class="fas fa-times"></i> <span class="btn-text">Close</span>
           </button>
         </div>
       </div>
