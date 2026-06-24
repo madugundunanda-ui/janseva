@@ -4,18 +4,21 @@ import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService, LanguageCode } from '../../core/services/translation.service';
+import { FooterComponent } from '../../shared/components/footer/footer.component';
 
 @Component({
   selector: 'app-register',
   standalone: true,
-  imports: [RouterLink, FormsModule, CommonModule],
+  imports: [RouterLink, FormsModule, CommonModule, FooterComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden tech-dots-bg">
-      <!-- Glow backdrop -->
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#A33F93]/15 rounded-full blur-[120px] pointer-events-none"></div>
+    <div class="min-h-screen flex flex-col justify-between relative overflow-hidden tech-dots-bg">
+      
+      <div class="flex-1 flex items-center justify-center p-6 w-full relative">
+        <!-- Glow backdrop -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[#A33F93]/15 rounded-full blur-[120px] pointer-events-none"></div>
 
-      <!-- Register Card -->
-      <div class="w-full max-w-lg glass-panel glow-card rounded-2xl p-8 relative z-10">
+        <!-- Register Card -->
+        <div class="w-full max-w-lg glass-panel glow-card rounded-2xl p-8 relative z-10">
         
         <!-- Header with Language Switcher -->
         <div class="flex justify-between items-center mb-6">
@@ -104,6 +107,9 @@ import { TranslationService, LanguageCode } from '../../core/services/translatio
           <a [routerLink]="['/auth/citizen/login']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1 font-bold">{{ translationService.t('CONSOLE_LOGIN') }}</a>
         </div>
       </div>
+      
+      </div>
+      <app-footer class="w-full mt-auto relative z-10"></app-footer>
     </div>
   `,
   styles: [`

@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { environment } from '../../environments/environment';
+import { FooterComponent } from '../shared/components/footer/footer.component';
 
 @Component({
   selector: 'app-transparency-portal',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FooterComponent],
   templateUrl: './transparency-portal.component.html',
   styleUrls: ['./transparency-portal.component.css']
 })

@@ -5,11 +5,12 @@ import { NotificationsService } from '../../../core/services/notifications.servi
 import { TranslationService, LanguageCode } from '../../../core/services/translation.service';
 import { NotificationCenterComponent } from '../../components/notification-center/notification-center.component';
 import { VoiceAssistantWidgetComponent } from '../../components/voice-assistant-widget/voice-assistant-widget.component';
+import { FooterComponent } from '../../components/footer/footer.component';
 
 @Component({
   selector: 'app-citizen-layout',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationCenterComponent, VoiceAssistantWidgetComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, NotificationCenterComponent, VoiceAssistantWidgetComponent, FooterComponent],
   template: `
     <div class="min-h-screen bg-transparent text-primary-var flex relative overflow-hidden tech-dots-bg w-screen h-screen">
       
@@ -106,9 +107,11 @@ import { VoiceAssistantWidgetComponent } from '../../components/voice-assistant-
         </header>
 
         <!-- Viewport outlet wrapper -->
-        <div class="flex-1 overflow-y-auto">
+        <div class="flex-1">
           <router-outlet></router-outlet>
         </div>
+
+        <app-footer class="mt-auto"></app-footer>
       </main>
     </div>
     

@@ -4,21 +4,24 @@ import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/services/auth.service';
 import { TranslationService, LanguageCode } from '../../core/services/translation.service';
+import { FooterComponent } from '../../shared/components/footer/footer.component';
 import { finalize } from 'rxjs';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [RouterLink, FormsModule, CommonModule],
+  imports: [RouterLink, FormsModule, CommonModule, FooterComponent],
   template: `
-    <div class="min-h-screen flex items-center justify-center p-6 relative overflow-hidden tech-dots-bg">
-      <!-- Glow ambient background (Dynamic based on selected role) -->
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none transition-all duration-500"
-           [ngClass]="selectedRole === 'citizen' ? 'bg-[#A33F93]/15' : 'bg-[#06b6d4]/15'"></div>
+    <div class="min-h-screen flex flex-col justify-between relative overflow-hidden tech-dots-bg">
+      
+      <div class="flex-1 flex items-center justify-center p-6 w-full relative">
+        <!-- Glow ambient background (Dynamic based on selected role) -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none transition-all duration-500"
+             [ngClass]="selectedRole === 'citizen' ? 'bg-[#A33F93]/15' : 'bg-[#06b6d4]/15'"></div>
 
-      <!-- Login Card -->
-      <div class="w-full max-w-md glass-panel glow-card rounded-2xl p-8 relative z-10 border transition-colors duration-500"
-           [ngClass]="selectedRole === 'citizen' ? 'hover:border-[#A33F93]/35' : 'hover:border-[#06b6d4]/35'">
+        <!-- Login Card -->
+        <div class="w-full max-w-md glass-panel glow-card rounded-2xl p-8 relative z-10 border transition-colors duration-500"
+             [ngClass]="selectedRole === 'citizen' ? 'hover:border-[#A33F93]/35' : 'hover:border-[#06b6d4]/35'">
         
         <!-- Header with Language Switcher -->
         <div class="flex justify-between items-center mb-6">
@@ -128,6 +131,9 @@ import { finalize } from 'rxjs';
           <a [routerLink]="['/auth/register']" class="text-[#A33F93] hover:opacity-80 uppercase ml-1 font-bold">{{ translationService.t('REGISTER_CORE') }}</a>
         </div>
       </div>
+      
+      </div>
+      <app-footer class="w-full mt-auto relative z-10"></app-footer>
     </div>
   `,
   styles: [`

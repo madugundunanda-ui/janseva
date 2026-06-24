@@ -13,6 +13,7 @@ import { GlobeFooterComponent } from './globe-footer/globe-footer.component';
 import { CtaComponent } from './cta/cta.component';
 import { AuthService } from '../core/services/auth.service';
 import { TranslationService, LanguageCode } from '../core/services/translation.service';
+import { FooterComponent } from '../shared/components/footer/footer.component';
 
 @Component({
   selector: 'app-landing',
@@ -28,7 +29,8 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
     GovernanceTransparencyComponent,
     DashboardShowcaseComponent,
     GlobeFooterComponent,
-    CtaComponent
+    CtaComponent,
+    FooterComponent
   ],
   template: `
     <div class="landing-container min-h-screen relative overflow-hidden tech-dots-bg">
@@ -258,6 +260,7 @@ import { TranslationService, LanguageCode } from '../core/services/translation.s
 
       <!-- Section 11: CTA Footer -->
       <app-cta></app-cta>
+      <app-footer></app-footer>
     </div>
   `,
   styles: [`
