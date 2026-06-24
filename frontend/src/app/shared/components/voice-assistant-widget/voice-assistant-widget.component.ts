@@ -120,36 +120,7 @@ export class VoiceAssistantWidgetComponent implements OnInit, OnDestroy {
     }
   }
 
-  // Magnetic Attraction Micro-Interaction
-  onMouseMove(event: MouseEvent) {
-    if (this.state?.isActive) return;
-    const card = this.widgetCard?.nativeElement;
-    if (!card) return;
 
-    const rect = card.getBoundingClientRect();
-    const cardX = rect.left + rect.width / 2;
-    const cardY = rect.top + rect.height / 2;
-
-    const distX = event.clientX - cardX;
-    const distY = event.clientY - cardY;
-    const distance = Math.sqrt(distX * distX + distY * distY);
-
-    // Magnetic pull activation within 120px range
-    if (distance < 120) {
-      const pullX = (distX / distance) * 15; // pull up to 15px
-      const pullY = (distY / distance) * 15;
-      card.style.transform = `translate(${pullX}px, ${pullY}px) scale(1.05)`;
-    } else {
-      card.style.transform = '';
-    }
-  }
-
-  onMouseLeave() {
-    const card = this.widgetCard?.nativeElement;
-    if (card) {
-      card.style.transform = '';
-    }
-  }
 
   // Utility labels for UI
   getLanguageLabel(code: string | null): string {

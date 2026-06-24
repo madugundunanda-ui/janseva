@@ -1,8 +1,6 @@
 <div class="voice-widget-container" 
      [class.active]="state.isActive" 
-     [class.a11y-mode]="accessibilityMode"
-     (mousemove)="onMouseMove($event)"
-     (mouseleave)="onMouseLeave()">
+     [class.a11y-mode]="accessibilityMode">
 
   <!-- AI Contextual Hint (fades in/out when idle) -->
   <div class="hint-bubble" [class.show]="showHint && !state.isActive">

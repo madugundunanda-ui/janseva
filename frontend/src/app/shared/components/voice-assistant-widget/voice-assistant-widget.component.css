@@ -114,7 +114,8 @@
   align-items: center;
   justify-content: center;
   z-index: 2;
-  transition: transform 0.3s ease;
+  transition: transform 250ms ease;
+  transition-delay: 0.12s;
 }
 
 .hexagon-glow {
@@ -127,6 +128,8 @@
   opacity: 0.55;
   z-index: 1;
   animation: breathing 4s ease-in-out infinite;
+  transition: transform 250ms ease, opacity 250ms ease, filter 250ms ease;
+  transition-delay: 0.12s;
 }
 
 .core-gradient {
@@ -145,12 +148,12 @@
 }
 
 .civic-core:hover .hexagon-orb {
-  transform: scale(1.08);
+  transform: scale(1.04);
 }
 
 .civic-core:hover .hexagon-glow {
-  opacity: 0.9;
-  filter: blur(12px);
+  opacity: 0.8;
+  filter: blur(10px);
 }
 
 /* Rotating Orbiting Nodes */
@@ -197,7 +200,8 @@
   position: absolute;
   bottom: -40px;
   opacity: 0;
-  transition: bottom 0.3s ease, opacity 0.3s ease;
+  transition: bottom 250ms ease, opacity 250ms ease;
+  transition-delay: 0.12s;
   pointer-events: none;
 }
 
