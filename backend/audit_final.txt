@@ -1,0 +1,1866 @@
+﻿ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ   JANSEVA COMPLETE API FUNCTIONAL AUDIT      Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+Started: 2026-06-24T14:21:54.217Z
+
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 0: CONNECTIVITY CHECK
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P0] GET /health (gateway:3000) ΓåÆ 200 (36ms)  
+Γ£à [P0] GET /health/ping (backend:5000) ΓåÆ 404 (6ms)  
+Γ£à [P0] GET / (backend:5000) ΓåÆ 200 (2ms)  
+Γ£à [P0] GET /api/auth/me (gateway) ΓåÆ 401 (9ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 1: ROUTE DISCOVERY
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P1] GET /departments ΓåÆ 200 (14ms)  
+Γ£à [P1] GET /announcements ΓåÆ 200 (4ms)  
+Γ£à [P1] GET /transparency/stats ΓåÆ 200 (3ms)  
+Γ£à [P1] GET /transparency/departments ΓåÆ 200 (3ms)  
+Γ£à [P1] GET /transparency/civic-scores ΓåÆ 200 (4ms)  
+Γ£à [P1] GET /transparency/resolved-complaints ΓåÆ 200 (4ms)  
+Γ£à [P1] GET /transparency/actions ΓåÆ 200 (3ms)  
+Γ£à [P1] GET /transparency/impact ΓåÆ 200 (3ms)  
+Γ£à [P1] GET /transparency/map ΓåÆ 200 (3ms)  
+Γ£à [P1] GET /transparency/success-stories ΓåÆ 200 (4ms)  
+Γ£à [P1] GET /governance/timeline ΓåÆ 200 (17ms)  
+Γ£à [P1] GET /feedback/public ΓåÆ 200 (5ms)  
+Γ£à [P1] GET /complaints ΓåÆ 401 (3ms)  Must return 401
+Γ£à [P1] GET /users ΓåÆ 401 (3ms)  Must return 401
+Γ£à [P1] GET /notifications ΓåÆ 401 (5ms)  Must return 401
+Γ£à [P1] GET /analytics/dashboard ΓåÆ 401 (5ms)  Must return 401
+Γ£à [P1] GET /ai/health ΓåÆ 401 (5ms)  Must return 401
+Γ£à [P1] GET /intelligence/clusters ΓåÆ 401 (4ms)  Must return 401
+Γ£à [P1] GET /admin/logs ΓåÆ 401 (5ms)  Must return 401
+Γ£à [P1] GET /feedback/my ΓåÆ 401 (6ms)  Must return 401
+Γ£à [P1] GET /geo/hotspots ΓåÆ 401 (4ms)  Must return 401
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 2: AUTHENTICATION TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P2] POST /api/auth/register ΓåÆ 201 (176ms)  
+Γ£à [P2] POST /api/auth/register ΓåÆ 201 (206ms)  officer@water.janseva.gov.in dept=Water Supply
+Γ£à [P2] POST /api/auth/register ΓåÆ 201 (194ms)  supervisor@works.janseva.gov.in dept=Roads
+Γ£à [P2] POST /api/auth/login ΓåÆ 200 (2149ms)  
+Γ£à [P2] GET /api/auth/me ΓåÆ 200 (9ms)  
+Γ£à [P2] POST /api/auth/login ΓåÆ 401 (2519ms)  Must reject
+Γ£à [P2] GET /api/auth/me ΓåÆ 401 (5ms)  JWT tampering must fail
+Γ£à [P2] GET /api/auth/me ΓåÆ 401 (4ms)  No auth header must fail
+Γ£à [P2] POST /api/auth/logout ΓåÆ 200 (5ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 3: USER MANAGEMENT TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P3] GET /api/users ΓåÆ 200 (18ms)  
+Γ£à [P3] GET /api/users/profile ΓåÆ 200 (13ms)  
+Γ£à [P3] GET /api/users ΓåÆ 403 (7ms)  Citizen must not access user list
+Γ£à [P3] PUT /api/users/profile ΓåÆ 200 (22ms)  
+Γ£à [P3] POST /api/users ΓåÆ 403 (8ms)  Must deny citizen
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 4 & 5: COMPLAINT LIFECYCLE & CRUD
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P5] GET /api/departments ΓåÆ 200 (13ms)  
+Γ£à [P5] POST /api/departments ΓåÆ 201 (15ms)  
+Γ£à [P4] POST /api/complaints ΓåÆ 202 (44ms)  
+Γ£à [P4] GET /api/complaints ΓåÆ 200 (88ms)  
+Γ£à [P4] GET /api/complaints/6a3be80c44f06ea1d47adbe3 ΓåÆ 200 (51ms)  
+Γ£à [P4] GET /api/complaints/nearby ΓåÆ 200 (22ms)  
+Γ£à [P4] PATCH /api/complaints/6a3be80c44f06ea1d47adbe3 ΓåÆ 403 (10ms)  Citizen must not patch status
+Γ£à [P4] PATCH /api/complaints/6a3be80c44f06ea1d47adbe3 ΓåÆ 200 (24ms)  
+Γ£à [P4] PATCH /api/complaints/6a3be80c44f06ea1d47adbe3 ΓåÆ 200 (30ms)  
+Γ£à [P4] POST /api/complaints/6a3be80c44f06ea1d47adbe3/validate ΓåÆ 200 (16ms)  
+Γ£à [P4] POST /api/complaints/6a3be80c44f06ea1d47adbe3/join ΓåÆ 200 (12ms)  
+Γ£à [P4] GET /api/complaints/6a3be80c44f06ea1d47adbe3/assignment-options ΓåÆ 200 (20ms)  
+Γ£à [P4] POST /api/complaints/check-duplicate ΓåÆ 400 (8ms)  
+Γ£à [P5] POST /api/complaints ΓåÆ 400 (9ms)  Missing required fields must return 400
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 5: EXTENDED CRUD AUDIT
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P5] POST /api/departments ΓåÆ 201 (10ms)  
+Γ£à [P5] POST /api/departments ΓåÆ 403 (8ms)  Must deny citizen
+Γ£à [P5] POST /api/announcements ΓåÆ 201 (12ms)  
+Γ£à [P5] POST /api/feedback ΓåÆ 201 (30ms)  
+Γ£à [P5] GET /api/feedback/my ΓåÆ 200 (20ms)  
+Γ£à [P5] GET /api/feedback/public ΓåÆ 200 (6ms)  
+Γ£à [P5] GET /api/feedback/admin ΓåÆ 200 (21ms)  
+Γ£à [P5] GET /api/feedback/stats ΓåÆ 200 (11ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 6: AI SERVICES TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P6] GET /api/ai/health ΓåÆ 200 (14ms)  
+Γ£à [P6] POST /api/ai/predict-resolution ΓåÆ 200 (12ms)  
+Γ£à [P6] POST /api/ai/severity ΓåÆ 200 (17ms)  
+Γ£à [P6] POST /api/ai/recommend-officer ΓåÆ 200 (50ms)  
+Γ£à [P6] GET /api/ai/settings ΓåÆ 200 (9ms)  
+Γ£à [P6] POST /api/ai/settings ΓåÆ 200 (10ms)  
+Γ£à [P6] POST /api/ai/feedback ΓåÆ 200 (8ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 7: NOTIFICATION TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P7] GET /api/notifications ΓåÆ 200 (15ms)  
+Γ£à [P7] PATCH /api/notifications/read-all ΓåÆ 200 (16ms)  
+Γ£à [P7] GET /api/notifications/preferences ΓåÆ 200 (31ms)  
+Γ£à [P7] PATCH /api/notifications/preferences ΓåÆ 200 (21ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 8: GOVERNMENT INTELLIGENCE
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P8] GET /api/governance/timeline ΓåÆ 200 (29ms)  
+Γ£à [P8] GET /transparency/stats ΓåÆ 200 (4ms)  
+Γ£à [P8] GET /transparency/civic-scores ΓåÆ 200 (8ms)  
+Γ£à [P8] GET /transparency/departments ΓåÆ 200 (5ms)  
+Γ£à [P8] GET /transparency/resolved-complaints ΓåÆ 200 (4ms)  
+Γ£à [P8] GET /transparency/actions ΓåÆ 200 (4ms)  
+Γ£à [P8] GET /transparency/impact ΓåÆ 200 (4ms)  
+Γ£à [P8] GET /transparency/map ΓåÆ 200 (7ms)  
+Γ£à [P8] GET /transparency/success-stories ΓåÆ 200 (4ms)  
+Γ£à [P8] GET /intelligence/clusters ΓåÆ 200 (13ms)  
+Γ£à [P8] GET /intelligence/hotspots ΓåÆ 200 (29ms)  
+Γ£à [P8] GET /intelligence/risks ΓåÆ 200 (25ms)  
+Γ£à [P8] GET /intelligence/emergency-zones ΓåÆ 200 (15ms)  
+Γ£à [P8] GET /intelligence/recurring ΓåÆ 200 (16ms)  
+Γ£à [P8] GET /intelligence/impact ΓåÆ 200 (13ms)  
+Γ£à [P8] GET /intelligence/heatmap ΓåÆ 200 (17ms)  
+Γ£à [P8] POST /api/intelligence/sync ΓåÆ 200 (53ms)  
+Γ£à [P8] GET /api/announcements ΓåÆ 200 (7ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 9: SECURITY TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P9] GET /complaints ΓåÆ 401 (6ms)  Must return 401 without auth
+Γ£à [P9] GET /users ΓåÆ 401 (5ms)  Must return 401 without auth
+Γ£à [P9] GET /analytics/dashboard ΓåÆ 401 (6ms)  Must return 401 without auth
+Γ£à [P9] GET /notifications ΓåÆ 401 (5ms)  Must return 401 without auth
+Γ£à [P9] GET /admin/logs ΓåÆ 401 (7ms)  Must return 401 without auth
+Γ£à [P9] GET /admin/logs ΓåÆ 403 (12ms)  Must return 403
+Γ£à [P9] GET /users ΓåÆ 403 (10ms)  Must return 403
+Γ£à [P9] GET /feedback/admin ΓåÆ 403 (9ms)  Must return 403
+Γ£à [P9] POST /api/complaints ΓåÆ 400 (9ms)  Invalid enum must fail validation
+Γ£à [P9] POST /api/auth/login ΓåÆ 400 (3517ms)  Must reject injection
+Γ£à [P9] POST /api/complaints ΓåÆ 400 (11ms)  XSS must be sanitized or rejected
+Γ£à [P9] POST /api/complaints ΓåÆ 400 (7ms)  Empty body must return 400
+Γ£à [P9] POST /api/admin/onboard-municipality ΓåÆ 403 (8ms)  Must deny citizen admin access
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 10: PERFORMANCE TESTING
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+≡ƒôè 5 concurrent requests completed in 86ms
+Γ£à [P10] GET /api/analytics/dashboard ΓåÆ 200 (12ms)  
+Γ£à [P10] GET /analytics/civic-health ΓåÆ 200 (20ms)  
+Γ£à [P10] GET /analytics/departments ΓåÆ 200 (12ms)  
+Γ£à [P10] GET /analytics/officers ΓåÆ 200 (8ms)  
+Γ£à [P10] GET /analytics/sla ΓåÆ 200 (13ms)  
+Γ£à [P10] GET /analytics/risks ΓåÆ 200 (9ms)  
+Γ£à [P10] GET /analytics/governance-insights ΓåÆ 200 (8ms)  
+Γ£à [P10] GET /analytics/predictions ΓåÆ 200 (12ms)  
+Γ£à [P10] GET /analytics/heatmaps ΓåÆ 200 (34ms)  
+Γ£à [P10] GET /analytics/executive-dashboard ΓåÆ 200 (8ms)  
+Γ£à [P10] GET /analytics/ai-metrics ΓåÆ 200 (6ms)  
+Γ£à [P10] GET /analytics/maps ΓåÆ 200 (14ms)  
+Γ£à [P10] GET /analytics/updates-analytics ΓåÆ 200 (11ms)  
+
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+ PHASE 11: EVENT BUS & BACKGROUND CONSUMERS
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+Γ£à [P11] GET /api/events/monitor ΓåÆ 200 (21ms)  
+Γ£à [P11] POST /api/complaints ΓåÆ 202 (30ms)  
+Γ£à [P11] GET /api/infrastructure/status ΓåÆ 404 (3ms)  
+Γ£à [P11] GET /api/geo/hotspots ΓåÆ 200 (30ms)  
+Γ£à [P11] POST /api/geo/reverse ΓåÆ 200 (216ms)  
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ         AUDIT COMPLETE - SUMMARY             Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+Total Tests:        121
+Passed:             121
+Failed:             0
+Pass Rate:          100.0%
+Avg Response:       87ms
+Production Score:   100/100
+
+Phase Breakdown:
+  P0: Γ£à4 Γ¥î0
+  P1: Γ£à21 Γ¥î0
+  P2: Γ£à9 Γ¥î0
+  P3: Γ£à5 Γ¥î0
+  P5: Γ£à11 Γ¥î0
+  P4: Γ£à11 Γ¥î0
+  P6: Γ£à7 Γ¥î0
+  P7: Γ£à4 Γ¥î0
+  P8: Γ£à18 Γ¥î0
+  P9: Γ£à13 Γ¥î0
+  P10: Γ£à13 Γ¥î0
+  P11: Γ£à5 Γ¥î0
+
+≡ƒö┤ CRITICAL BUGS:
+  - Officer registration failed
+  - Supervisor registration failed
+
+Key Timings:
+  gateway_health: 36ms
+  backend_health: 6ms
+  citizen_register: 177ms
+  admin_login: 2149ms
+  auth_me: 9ms
+  admin_get_users: 19ms
+  complaint_create: 45ms
+  admin_get_complaints: 89ms
+  get_complaint_by_id: 51ms
+  ai_health: 14ms
+  ai_predict_resolution: 13ms
+  notification_load: 15ms
+  concurrent_5_requests: 86ms
+  dashboard_load: 13ms
+  analytics_civic-health: 20ms
+  analytics_departments: 13ms
+  analytics_officers: 8ms
+  analytics_sla: 14ms
+  analytics_risks: 10ms
+  analytics_governance-insights: 8ms
+  analytics_predictions: 12ms
+  analytics_heatmaps: 35ms
+  analytics_executive-dashboard: 8ms
+  analytics_ai-metrics: 7ms
+  analytics_maps: 14ms
+  analytics_updates-analytics: 12ms
+
+__AUDIT_REPORT_JSON_START__
+{
+  "summary": {
+    "timestamp": "2026-06-24T14:22:13.280Z",
+    "totalTests": 121,
+    "passed": 121,
+    "failed": 0,
+    "passRate": "100.0%",
+    "avgResponseMs": 87,
+    "productionReadinessScore": "100/100"
+  },
+  "phaseBreakdown": {
+    "P0": {
+      "pass": 4,
+      "fail": 0
+    },
+    "P1": {
+      "pass": 21,
+      "fail": 0
+    },
+    "P2": {
+      "pass": 9,
+      "fail": 0
+    },
+    "P3": {
+      "pass": 5,
+      "fail": 0
+    },
+    "P5": {
+      "pass": 11,
+      "fail": 0
+    },
+    "P4": {
+      "pass": 11,
+      "fail": 0
+    },
+    "P6": {
+      "pass": 7,
+      "fail": 0
+    },
+    "P7": {
+      "pass": 4,
+      "fail": 0
+    },
+    "P8": {
+      "pass": 18,
+      "fail": 0
+    },
+    "P9": {
+      "pass": 13,
+      "fail": 0
+    },
+    "P10": {
+      "pass": 13,
+      "fail": 0
+    },
+    "P11": {
+      "pass": 5,
+      "fail": 0
+    }
+  },
+  "timings": {
+    "gateway_health": 36,
+    "backend_health": 6,
+    "citizen_register": 177,
+    "admin_login": 2149,
+    "auth_me": 9,
+    "admin_get_users": 19,
+    "complaint_create": 45,
+    "admin_get_complaints": 89,
+    "get_complaint_by_id": 51,
+    "ai_health": 14,
+    "ai_predict_resolution": 13,
+    "notification_load": 15,
+    "concurrent_5_requests": 86,
+    "dashboard_load": 13,
+    "analytics_civic-health": 20,
+    "analytics_departments": 13,
+    "analytics_officers": 8,
+    "analytics_sla": 14,
+    "analytics_risks": 10,
+    "analytics_governance-insights": 8,
+    "analytics_predictions": 12,
+    "analytics_heatmaps": 35,
+    "analytics_executive-dashboard": 8,
+    "analytics_ai-metrics": 7,
+    "analytics_maps": 14,
+    "analytics_updates-analytics": 12
+  },
+  "failedEndpoints": [],
+  "criticalBugs": [
+    {
+      "issue": "Officer registration failed",
+      "error": "Registration successful"
+    },
+    {
+      "issue": "Supervisor registration failed",
+      "error": "Registration successful"
+    }
+  ],
+  "allResults": [
+    {
+      "phase": "P0",
+      "name": "API Gateway Health",
+      "method": "GET",
+      "path": "/health (gateway:3000)",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 36,
+      "notes": ""
+    },
+    {
+      "phase": "P0",
+      "name": "Backend Health Ping",
+      "method": "GET",
+      "path": "/health/ping (backend:5000)",
+      "status": 404,
+      "expected": [
+        200,
+        404
+      ],
+      "pass": true,
+      "elapsed": 6,
+      "notes": ""
+    },
+    {
+      "phase": "P0",
+      "name": "Backend Root",
+      "method": "GET",
+      "path": "/ (backend:5000)",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 2,
+      "notes": ""
+    },
+    {
+      "phase": "P0",
+      "name": "GatewayΓåÆBackend Proxy (unauth)",
+      "method": "GET",
+      "path": "/api/auth/me (gateway)",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 9,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /departments",
+      "method": "GET",
+      "path": "/departments",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 14,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /announcements",
+      "method": "GET",
+      "path": "/announcements",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/stats",
+      "method": "GET",
+      "path": "/transparency/stats",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/departments",
+      "method": "GET",
+      "path": "/transparency/departments",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/civic-scores",
+      "method": "GET",
+      "path": "/transparency/civic-scores",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/resolved-complaints",
+      "method": "GET",
+      "path": "/transparency/resolved-complaints",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/actions",
+      "method": "GET",
+      "path": "/transparency/actions",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/impact",
+      "method": "GET",
+      "path": "/transparency/impact",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/map",
+      "method": "GET",
+      "path": "/transparency/map",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /transparency/success-stories",
+      "method": "GET",
+      "path": "/transparency/success-stories",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /governance/timeline",
+      "method": "GET",
+      "path": "/governance/timeline",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 17,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Public Route: /feedback/public",
+      "method": "GET",
+      "path": "/feedback/public",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 5,
+      "notes": ""
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /complaints",
+      "method": "GET",
+      "path": "/complaints",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 3,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /users",
+      "method": "GET",
+      "path": "/users",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 3,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /notifications",
+      "method": "GET",
+      "path": "/notifications",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /analytics/dashboard",
+      "method": "GET",
+      "path": "/analytics/dashboard",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /ai/health",
+      "method": "GET",
+      "path": "/ai/health",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /intelligence/clusters",
+      "method": "GET",
+      "path": "/intelligence/clusters",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 4,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /admin/logs",
+      "method": "GET",
+      "path": "/admin/logs",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /feedback/my",
+      "method": "GET",
+      "path": "/feedback/my",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 6,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P1",
+      "name": "Protected (no-auth): /geo/hotspots",
+      "method": "GET",
+      "path": "/geo/hotspots",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 4,
+      "notes": "Must return 401"
+    },
+    {
+      "phase": "P2",
+      "name": "Citizen Register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 176,
+      "notes": ""
+    },
+    {
+      "phase": "P2",
+      "name": "Officer Register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 206,
+      "notes": "officer@water.janseva.gov.in dept=Water Supply"
+    },
+    {
+      "phase": "P2",
+      "name": "Supervisor Register",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 194,
+      "notes": "supervisor@works.janseva.gov.in dept=Roads"
+    },
+    {
+      "phase": "P2",
+      "name": "Admin Login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 2149,
+      "notes": ""
+    },
+    {
+      "phase": "P2",
+      "name": "GET /auth/me (admin)",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 9,
+      "notes": ""
+    },
+    {
+      "phase": "P2",
+      "name": "Login with invalid creds",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 401,
+      "expected": [
+        400,
+        401
+      ],
+      "pass": true,
+      "elapsed": 2519,
+      "notes": "Must reject"
+    },
+    {
+      "phase": "P2",
+      "name": "Tampered JWT",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "JWT tampering must fail"
+    },
+    {
+      "phase": "P2",
+      "name": "Missing JWT",
+      "method": "GET",
+      "path": "/api/auth/me",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 4,
+      "notes": "No auth header must fail"
+    },
+    {
+      "phase": "P2",
+      "name": "Logout",
+      "method": "POST",
+      "path": "/api/auth/logout",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 5,
+      "notes": ""
+    },
+    {
+      "phase": "P3",
+      "name": "Admin: GET /users",
+      "method": "GET",
+      "path": "/api/users",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 18,
+      "notes": ""
+    },
+    {
+      "phase": "P3",
+      "name": "Admin: GET /users/profile",
+      "method": "GET",
+      "path": "/api/users/profile",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 13,
+      "notes": ""
+    },
+    {
+      "phase": "P3",
+      "name": "Citizen: GET /users (RBAC)",
+      "method": "GET",
+      "path": "/api/users",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 7,
+      "notes": "Citizen must not access user list"
+    },
+    {
+      "phase": "P3",
+      "name": "Citizen: PUT /users/profile",
+      "method": "PUT",
+      "path": "/api/users/profile",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 22,
+      "notes": ""
+    },
+    {
+      "phase": "P3",
+      "name": "Citizen: POST /users (RBAC)",
+      "method": "POST",
+      "path": "/api/users",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 8,
+      "notes": "Must deny citizen"
+    },
+    {
+      "phase": "P5",
+      "name": "GET /departments",
+      "method": "GET",
+      "path": "/api/departments",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 13,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Admin: POST /departments",
+      "method": "POST",
+      "path": "/api/departments",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 15,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Citizen: POST /complaints",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 202,
+      "expected": [
+        200,
+        201,
+        202
+      ],
+      "pass": true,
+      "elapsed": 44,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Admin: GET /complaints",
+      "method": "GET",
+      "path": "/api/complaints",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 88,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "GET /complaints/:id",
+      "method": "GET",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 51,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "GET /complaints/nearby",
+      "method": "GET",
+      "path": "/api/complaints/nearby",
+      "status": 200,
+      "expected": [
+        200,
+        400
+      ],
+      "pass": true,
+      "elapsed": 22,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Citizen: PATCH complaint (RBAC)",
+      "method": "PATCH",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 10,
+      "notes": "Citizen must not patch status"
+    },
+    {
+      "phase": "P4",
+      "name": "Officer: Update to in_progress",
+      "method": "PATCH",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 24,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Officer: Resolve Complaint",
+      "method": "PATCH",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 30,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Citizen: Validate Complaint",
+      "method": "POST",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3/validate",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 16,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Citizen: Join Complaint",
+      "method": "POST",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3/join",
+      "status": 200,
+      "expected": [
+        200,
+        400
+      ],
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Admin: Assignment Options",
+      "method": "GET",
+      "path": "/api/complaints/6a3be80c44f06ea1d47adbe3/assignment-options",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 20,
+      "notes": ""
+    },
+    {
+      "phase": "P4",
+      "name": "Check Duplicate",
+      "method": "POST",
+      "path": "/api/complaints/check-duplicate",
+      "status": 400,
+      "expected": [
+        200,
+        400
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Complaint Validation Error",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 400,
+      "expected": 400,
+      "pass": true,
+      "elapsed": 9,
+      "notes": "Missing required fields must return 400"
+    },
+    {
+      "phase": "P5",
+      "name": "Admin: POST /departments",
+      "method": "POST",
+      "path": "/api/departments",
+      "status": 201,
+      "expected": [
+        200,
+        201
+      ],
+      "pass": true,
+      "elapsed": 10,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Citizen: POST /departments (RBAC)",
+      "method": "POST",
+      "path": "/api/departments",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 8,
+      "notes": "Must deny citizen"
+    },
+    {
+      "phase": "P5",
+      "name": "Admin: POST /announcements",
+      "method": "POST",
+      "path": "/api/announcements",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Citizen: POST /feedback",
+      "method": "POST",
+      "path": "/api/feedback",
+      "status": 201,
+      "expected": 201,
+      "pass": true,
+      "elapsed": 30,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Citizen: GET /feedback/my",
+      "method": "GET",
+      "path": "/api/feedback/my",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 20,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "GET /feedback/public",
+      "method": "GET",
+      "path": "/api/feedback/public",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 6,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Admin: GET /feedback/admin",
+      "method": "GET",
+      "path": "/api/feedback/admin",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 21,
+      "notes": ""
+    },
+    {
+      "phase": "P5",
+      "name": "Admin: GET /feedback/stats",
+      "method": "GET",
+      "path": "/api/feedback/stats",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 11,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Health",
+      "method": "GET",
+      "path": "/api/ai/health",
+      "status": 200,
+      "expected": [
+        200,
+        503
+      ],
+      "pass": true,
+      "elapsed": 14,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Predict Resolution",
+      "method": "POST",
+      "path": "/api/ai/predict-resolution",
+      "status": 200,
+      "expected": [
+        200,
+        503
+      ],
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Severity Analysis",
+      "method": "POST",
+      "path": "/api/ai/severity",
+      "status": 200,
+      "expected": [
+        200,
+        503
+      ],
+      "pass": true,
+      "elapsed": 17,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Recommend Officer",
+      "method": "POST",
+      "path": "/api/ai/recommend-officer",
+      "status": 200,
+      "expected": [
+        200,
+        503
+      ],
+      "pass": true,
+      "elapsed": 50,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Settings GET",
+      "method": "GET",
+      "path": "/api/ai/settings",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 9,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Settings POST",
+      "method": "POST",
+      "path": "/api/ai/settings",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 10,
+      "notes": ""
+    },
+    {
+      "phase": "P6",
+      "name": "AI Feedback",
+      "method": "POST",
+      "path": "/api/ai/feedback",
+      "status": 200,
+      "expected": [
+        200,
+        201
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P7",
+      "name": "GET /notifications",
+      "method": "GET",
+      "path": "/api/notifications",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 15,
+      "notes": ""
+    },
+    {
+      "phase": "P7",
+      "name": "Mark All Read",
+      "method": "PATCH",
+      "path": "/api/notifications/read-all",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 16,
+      "notes": ""
+    },
+    {
+      "phase": "P7",
+      "name": "GET /notifications/preferences",
+      "method": "GET",
+      "path": "/api/notifications/preferences",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 31,
+      "notes": ""
+    },
+    {
+      "phase": "P7",
+      "name": "PATCH /notifications/preferences",
+      "method": "PATCH",
+      "path": "/api/notifications/preferences",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 21,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Governance Timeline",
+      "method": "GET",
+      "path": "/api/governance/timeline",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 29,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/stats",
+      "method": "GET",
+      "path": "/transparency/stats",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/civic-scores",
+      "method": "GET",
+      "path": "/transparency/civic-scores",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/departments",
+      "method": "GET",
+      "path": "/transparency/departments",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 5,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/resolved-complaints",
+      "method": "GET",
+      "path": "/transparency/resolved-complaints",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/actions",
+      "method": "GET",
+      "path": "/transparency/actions",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/impact",
+      "method": "GET",
+      "path": "/transparency/impact",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/map",
+      "method": "GET",
+      "path": "/transparency/map",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 7,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Transparency: /transparency/success-stories",
+      "method": "GET",
+      "path": "/transparency/success-stories",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 4,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/clusters",
+      "method": "GET",
+      "path": "/intelligence/clusters",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 13,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/hotspots",
+      "method": "GET",
+      "path": "/intelligence/hotspots",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 29,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/risks",
+      "method": "GET",
+      "path": "/intelligence/risks",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 25,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/emergency-zones",
+      "method": "GET",
+      "path": "/intelligence/emergency-zones",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 15,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/recurring",
+      "method": "GET",
+      "path": "/intelligence/recurring",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 16,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/impact",
+      "method": "GET",
+      "path": "/intelligence/impact",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 13,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence: /intelligence/heatmap",
+      "method": "GET",
+      "path": "/intelligence/heatmap",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 17,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Intelligence Sync",
+      "method": "POST",
+      "path": "/api/intelligence/sync",
+      "status": 200,
+      "expected": [
+        200,
+        403,
+        500
+      ],
+      "pass": true,
+      "elapsed": 53,
+      "notes": ""
+    },
+    {
+      "phase": "P8",
+      "name": "Announcements Public",
+      "method": "GET",
+      "path": "/api/announcements",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 7,
+      "notes": ""
+    },
+    {
+      "phase": "P9",
+      "name": "No-auth: /complaints",
+      "method": "GET",
+      "path": "/complaints",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 6,
+      "notes": "Must return 401 without auth"
+    },
+    {
+      "phase": "P9",
+      "name": "No-auth: /users",
+      "method": "GET",
+      "path": "/users",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401 without auth"
+    },
+    {
+      "phase": "P9",
+      "name": "No-auth: /analytics/dashboard",
+      "method": "GET",
+      "path": "/analytics/dashboard",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 6,
+      "notes": "Must return 401 without auth"
+    },
+    {
+      "phase": "P9",
+      "name": "No-auth: /notifications",
+      "method": "GET",
+      "path": "/notifications",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 5,
+      "notes": "Must return 401 without auth"
+    },
+    {
+      "phase": "P9",
+      "name": "No-auth: /admin/logs",
+      "method": "GET",
+      "path": "/admin/logs",
+      "status": 401,
+      "expected": 401,
+      "pass": true,
+      "elapsed": 7,
+      "notes": "Must return 401 without auth"
+    },
+    {
+      "phase": "P9",
+      "name": "CitizenΓåÆAdmin: /admin/logs",
+      "method": "GET",
+      "path": "/admin/logs",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 12,
+      "notes": "Must return 403"
+    },
+    {
+      "phase": "P9",
+      "name": "CitizenΓåÆAdmin: /users",
+      "method": "GET",
+      "path": "/users",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 10,
+      "notes": "Must return 403"
+    },
+    {
+      "phase": "P9",
+      "name": "CitizenΓåÆAdmin: /feedback/admin",
+      "method": "GET",
+      "path": "/feedback/admin",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 9,
+      "notes": "Must return 403"
+    },
+    {
+      "phase": "P9",
+      "name": "Invalid Priority Enum",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 400,
+      "expected": 400,
+      "pass": true,
+      "elapsed": 9,
+      "notes": "Invalid enum must fail validation"
+    },
+    {
+      "phase": "P9",
+      "name": "NoSQL Injection Attempt",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "status": 400,
+      "expected": [
+        400,
+        401
+      ],
+      "pass": true,
+      "elapsed": 3517,
+      "notes": "Must reject injection"
+    },
+    {
+      "phase": "P9",
+      "name": "XSS in Payload",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 400,
+      "expected": [
+        200,
+        201,
+        202,
+        400
+      ],
+      "pass": true,
+      "elapsed": 11,
+      "notes": "XSS must be sanitized or rejected"
+    },
+    {
+      "phase": "P9",
+      "name": "Missing Required Fields",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 400,
+      "expected": 400,
+      "pass": true,
+      "elapsed": 7,
+      "notes": "Empty body must return 400"
+    },
+    {
+      "phase": "P9",
+      "name": "Role Escalation Attempt",
+      "method": "POST",
+      "path": "/api/admin/onboard-municipality",
+      "status": 403,
+      "expected": 403,
+      "pass": true,
+      "elapsed": 8,
+      "notes": "Must deny citizen admin access"
+    },
+    {
+      "phase": "P10",
+      "name": "Dashboard Load",
+      "method": "GET",
+      "path": "/api/analytics/dashboard",
+      "status": 200,
+      "expected": 200,
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/civic-health",
+      "method": "GET",
+      "path": "/analytics/civic-health",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 20,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/departments",
+      "method": "GET",
+      "path": "/analytics/departments",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/officers",
+      "method": "GET",
+      "path": "/analytics/officers",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/sla",
+      "method": "GET",
+      "path": "/analytics/sla",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 13,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/risks",
+      "method": "GET",
+      "path": "/analytics/risks",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 9,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/governance-insights",
+      "method": "GET",
+      "path": "/analytics/governance-insights",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/predictions",
+      "method": "GET",
+      "path": "/analytics/predictions",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 12,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/heatmaps",
+      "method": "GET",
+      "path": "/analytics/heatmaps",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 34,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/executive-dashboard",
+      "method": "GET",
+      "path": "/analytics/executive-dashboard",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 8,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/ai-metrics",
+      "method": "GET",
+      "path": "/analytics/ai-metrics",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 6,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/maps",
+      "method": "GET",
+      "path": "/analytics/maps",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 14,
+      "notes": ""
+    },
+    {
+      "phase": "P10",
+      "name": "Analytics: /analytics/updates-analytics",
+      "method": "GET",
+      "path": "/analytics/updates-analytics",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 11,
+      "notes": ""
+    },
+    {
+      "phase": "P11",
+      "name": "Event Monitor",
+      "method": "GET",
+      "path": "/api/events/monitor",
+      "status": 200,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 21,
+      "notes": ""
+    },
+    {
+      "phase": "P11",
+      "name": "Trigger ComplaintCreated Event",
+      "method": "POST",
+      "path": "/api/complaints",
+      "status": 202,
+      "expected": [
+        200,
+        201,
+        202
+      ],
+      "pass": true,
+      "elapsed": 30,
+      "notes": ""
+    },
+    {
+      "phase": "P11",
+      "name": "Infrastructure Status",
+      "method": "GET",
+      "path": "/api/infrastructure/status",
+      "status": 404,
+      "expected": [
+        200,
+        404,
+        500
+      ],
+      "pass": true,
+      "elapsed": 3,
+      "notes": ""
+    },
+    {
+      "phase": "P11",
+      "name": "Geo Hotspots",
+      "method": "GET",
+      "path": "/api/geo/hotspots",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 30,
+      "notes": ""
+    },
+    {
+      "phase": "P11",
+      "name": "Geo Reverse Geocode",
+      "method": "POST",
+      "path": "/api/geo/reverse",
+      "status": 200,
+      "expected": [
+        200,
+        500
+      ],
+      "pass": true,
+      "elapsed": 216,
+      "notes": ""
+    }
+  ]
+}
+__AUDIT_REPORT_JSON_END__
