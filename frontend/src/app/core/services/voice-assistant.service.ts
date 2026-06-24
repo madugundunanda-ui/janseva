@@ -12,6 +12,8 @@ export interface VoiceState {
   systemMessage: string;
   workflowName: string;
   awaitingImageUpload: boolean;
+  isThinking: boolean;
+  hasError: boolean;
 }
 
 @Injectable({
@@ -31,7 +33,9 @@ export class VoiceAssistantService {
     transcript: '',
     systemMessage: '',
     workflowName: 'IDLE',
-    awaitingImageUpload: false
+    awaitingImageUpload: false,
+    isThinking: false,
+    hasError: false
   };
 
   private state = new BehaviorSubject<VoiceState>(this.initialState);
@@ -211,6 +215,7 @@ export class VoiceAssistantService {
     }
 
     try {
+      this.updateState({ isThinking: true, hasError: false });
       // Send to backend intent router
       const response = await firstValueFrom(this.http.post<any>(this.apiUrl, {
         text,
@@ -222,7 +227,7 @@ export class VoiceAssistantService {
       }));
 
       const data = response.data;
-      this.updateState({ systemMessage: data.systemResponse });
+      this.updateState({ systemMessage: data.systemResponse, isThinking: false });
 
       this.speak(data.systemResponse, state.language, () => {
         this.handleBackendAction(data.nextAction, data.intent);
@@ -230,7 +235,11 @@ export class VoiceAssistantService {
 
     } catch (error) {
       console.error('Voice interaction failed', error);
-      this.speak("A network error occurred.", state.language, () => this.startListening());
+      this.updateState({ isThinking: false, hasError: true });
+      this.speak("A network error occurred.", state.language, () => {
+        this.updateState({ hasError: false });
+        this.startListening();
+      });
     }
   }
 

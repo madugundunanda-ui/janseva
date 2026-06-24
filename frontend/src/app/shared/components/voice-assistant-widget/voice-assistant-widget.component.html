@@ -1,49 +1,153 @@
-<div class="voice-widget-container" [class.active]="state.isActive" [class.a11y-mode]="accessibilityMode">
-  <!-- Floating Button -->
-  <button class="voice-fab" (click)="toggleAssistant()" [class.listening]="state.isListening">
-    <i class="fas fa-microphone" *ngIf="!state.isActive"></i>
-    <i class="fas fa-times" *ngIf="state.isActive"></i>
-  </button>
+<div class="voice-widget-container" 
+     [class.active]="state.isActive" 
+     [class.a11y-mode]="accessibilityMode"
+     (mousemove)="onMouseMove($event)"
+     (mouseleave)="onMouseLeave()">
 
-  <!-- Assistant Panel -->
-  <div class="voice-panel" *ngIf="state.isActive">
-    <div class="panel-header">
-      <h3>Governance Voice Assistant</h3>
-      <div class="header-actions">
-        <span class="lang-badge" *ngIf="state.language">{{ state.language }}</span>
-        <button class="a11y-toggle" (click)="toggleAccessibilityMode()" title="Elderly / High Contrast Mode">
-          <i class="fas" [class.fa-universal-access]="!accessibilityMode" [class.fa-eye]="accessibilityMode"></i>
-        </button>
-      </div>
+  <!-- AI Contextual Hint (fades in/out when idle) -->
+  <div class="hint-bubble" [class.show]="showHint && !state.isActive">
+    <div class="hint-content">
+      <span class="hint-icon">✨</span>
+      <p class="hint-text">{{ currentHint }}</p>
     </div>
+  </div>
 
-    <div class="panel-body">
-      <div class="system-message" *ngIf="state.systemMessage">
-        <i class="fas fa-robot"></i>
-        <p>{{ state.systemMessage }}</p>
-      </div>
-
-      <div class="user-transcript" *ngIf="state.transcript">
-        <i class="fas fa-user"></i>
-        <p>"{{ state.transcript }}"</p>
-      </div>
-
-      <div class="status-indicator">
-        <div class="pulsing-mic" *ngIf="state.isListening">
-          <span>Listening...</span>
-          <div class="waves">
-            <div class="wave"></div>
-            <div class="wave"></div>
-            <div class="wave"></div>
-          </div>
-        </div>
-        <div class="speaking-indicator" *ngIf="state.isSpeaking">
-          <span>Speaking...</span>
+  <!-- Redesigned Orb Card (Morphs between Orb and Panel) -->
+  <div #widgetCard class="widget-card" [class.active-panel]="state.isActive">
+    
+    <!-- Civic Intelligence Core (Visible when closed) -->
+    <div class="civic-core" (click)="toggleAssistant()" *ngIf="!state.isActive">
+      <!-- Outer Hexagonal Glowing Orb -->
+      <div class="hexagon-glow"></div>
+      <div class="hexagon-orb">
+        <!-- Inner Core Gradient & Pulsing Waves -->
+        <div class="core-gradient"></div>
+        <div class="core-mic-icon">
+          <i class="fas fa-microphone"></i>
         </div>
       </div>
       
-      <!-- Hidden file input for workflows that require an image -->
-      <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+      <!-- Tiny Orbiting Nodes (Floating node network) -->
+      <div class="orbiting-nodes">
+        <div class="node node-1"></div>
+        <div class="node node-2"></div>
+        <div class="node node-3"></div>
+      </div>
+
+      <!-- Hover Label -->
+      <div class="hover-label">
+        <span>JANSEVA AI</span>
+      </div>
+    </div>
+
+    <!-- Active Assistant Panel Content (Fades in when opened) -->
+    <div class="panel-content" *ngIf="state.isActive">
+      <div class="panel-header">
+        <div class="header-title">
+          <!-- Small Mini-Core status icon in header -->
+          <div class="mini-core" [class.listening]="state.isListening" [class.thinking]="state.isThinking" [class.speaking]="state.isSpeaking" [class.error]="state.hasError">
+            <div class="mini-hexagon"></div>
+          </div>
+          <div class="header-text">
+            <h3>JANSEVA AI Co-Pilot</h3>
+            <span class="status-text">{{ getStatusText() }}</span>
+          </div>
+        </div>
+        
+        <div class="header-actions">
+          <span class="lang-badge" *ngIf="state.language">{{ getLanguageLabel(state.language) }}</span>
+          <button class="a11y-toggle" (click)="toggleAccessibilityMode()" title="High Contrast Mode">
+            <i class="fas" [class.fa-universal-access]="!accessibilityMode" [class.fa-eye]="accessibilityMode"></i>
+          </button>
+          <button class="close-btn" (click)="toggleAssistant()" title="Minimize">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="panel-body">
+        <div class="messages-container">
+          <!-- AI Response -->
+          <div class="message-bubble system" *ngIf="state.systemMessage">
+            <div class="bubble-icon">🤖</div>
+            <div class="bubble-text">
+              <p>{{ state.systemMessage }}</p>
+            </div>
+          </div>
+
+          <!-- User Transcript -->
+          <div class="message-bubble user" *ngIf="state.transcript">
+            <div class="bubble-text">
+              <p>"{{ state.transcript }}"</p>
+            </div>
+            <div class="bubble-icon">👤</div>
+          </div>
+        </div>
+
+        <!-- Dynamic Visualization Area -->
+        <div class="visualization-area">
+          
+          <!-- STATE: LISTENING (Audio spectrum / reactive rings) -->
+          <div class="state-listening" *ngIf="state.isListening">
+            <div class="voice-waves">
+              <div class="voice-wave wave-1"></div>
+              <div class="voice-wave wave-2"></div>
+              <div class="voice-wave wave-3"></div>
+              <div class="voice-wave wave-4"></div>
+              <div class="voice-wave wave-5"></div>
+            </div>
+            <span class="vis-label">Listening for voice...</span>
+          </div>
+
+          <!-- STATE: THINKING (Network / nodes / rotating core) -->
+          <div class="state-thinking" *ngIf="state.isThinking">
+            <div class="network-animation">
+              <div class="net-node center"></div>
+              <div class="net-node node-a"></div>
+              <div class="net-node node-b"></div>
+              <div class="net-node node-c"></div>
+              <!-- SVG Connection lines -->
+              <svg class="net-lines" viewBox="0 0 100 100">
+                <line x1="50" y1="50" x2="15" y2="25" class="net-line line-1" />
+                <line x1="50" y1="50" x2="85" y2="35" class="net-line line-2" />
+                <line x1="50" y1="50" x2="50" y2="85" class="net-line line-3" />
+              </svg>
+            </div>
+            <span class="vis-label">Thinking...</span>
+          </div>
+
+          <!-- STATE: RESPONDING / SPEAKING (Rotating halo / typing indicator) -->
+          <div class="state-speaking" *ngIf="state.isSpeaking && !state.isThinking">
+            <div class="speaking-halo">
+              <div class="halo-ring ring-1"></div>
+              <div class="halo-ring ring-2"></div>
+              <div class="halo-ring ring-3"></div>
+            </div>
+            <span class="vis-label">Speaking...</span>
+          </div>
+
+          <!-- STATE: ERROR (Orange pulse) -->
+          <div class="state-error" *ngIf="state.hasError">
+            <div class="error-indicator">
+              <div class="pulse-orange"></div>
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <span class="vis-label error-text">Connection issue. Try speaking again.</span>
+          </div>
+
+          <!-- STATE: IDLE ACTIVE (Waiting) -->
+          <div class="state-idle" *ngIf="!state.isListening && !state.isSpeaking && !state.isThinking && !state.hasError">
+            <div class="idle-ring"></div>
+            <button class="mic-trigger" (click)="voiceService.startListening()" title="Start Speaking">
+              <i class="fas fa-microphone"></i>
+            </button>
+            <span class="vis-label">Tap mic to speak</span>
+          </div>
+        </div>
+
+        <!-- Hidden file input for workflows that require an image -->
+        <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+      </div>
     </div>
   </div>
 </div>
