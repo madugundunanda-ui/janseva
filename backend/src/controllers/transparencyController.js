@@ -1,6 +1,6 @@
 const asyncHandler = require('../utils/asyncHandler');
 const { sendSuccess } = require('../utils/apiResponse');
-const { Complaint, DepartmentPerformance, CivicScore, CivicImpactScore, IntelligenceAlert } = require('../models');
+const { Complaint, DepartmentPerformance, CivicHealthScore, CivicImpactScore, IntelligenceAlert } = require('../models');
 const transparencyPrivacyService = require('../services/transparencyPrivacyService');
 const logger = require('../utils/logger');
 
@@ -75,7 +75,7 @@ exports.getStats = asyncHandler(async (req, res) => {
  */
 exports.getCivicScores = asyncHandler(async (req, res) => {
   const data = await withCache('civic-scores', async () => {
-    const scores = await CivicScore.find({ tenantId: 'default-municipality' })
+    const scores = await CivicHealthScore.find({ tenantId: 'default-municipality' })
       .sort('-score')
       .limit(100)
       .lean();

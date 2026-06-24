@@ -14,7 +14,7 @@ const announcementSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      required: [true, 'Department is required'],
+      default: 'General',
       trim: true,
     },
     category: {
@@ -24,8 +24,8 @@ const announcementSchema = new mongoose.Schema(
     },
     priority: {
       type: String,
-      enum: ['Normal', 'Important', 'Critical', 'Emergency'],
-      default: 'Normal',
+      enum: ['normal', 'important', 'critical', 'emergency'],
+      default: 'normal',
     },
     shortSummary: {
       type: String,

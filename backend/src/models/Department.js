@@ -38,7 +38,7 @@ const departmentSchema = new mongoose.Schema(
 );
 
 departmentSchema.index({ name: 1, tenantId: 1 }, { unique: true });
-departmentSchema.index({ code: 1, tenantId: 1 }, { unique: true });
+departmentSchema.index({ code: 1, tenantId: 1 }, { unique: true, partialFilterExpression: { code: { $type: 'string' } } });
 
 departmentSchema.set('toJSON', {
   virtuals: true,

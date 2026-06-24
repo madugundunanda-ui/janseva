@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const userRepository = require('../repositories/userRepository');
 const logger = require('../utils/logger');
 const cacheService = require('./cacheService');
+const { resolveDepartmentId } = require('./dashboardService');
 
 const failedLoginAttempts = new Map();
 
@@ -82,7 +83,21 @@ const registerUser = async (payload) => {
   const existingUser = await userRepository.findOne({ email: email.toLowerCase() });
   if (existingUser) throw new AppError('User with this email already exists', 409);
 
-  const user = await userRepository.create({ ...payload, role: normalizedRole });
+  // Resolve department name → ObjectId for officer/supervisor roles
+  let resolvedDepartment = payload.department || null;
+  if (['officer', 'supervisor'].includes(normalizedRole) && resolvedDepartment) {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(resolvedDepartment)) {
+      // It's a string name – resolve it to an ObjectId via resolveDepartmentId
+      const deptId = await resolveDepartmentId(resolvedDepartment);
+      if (!deptId) {
+        throw new AppError(`Department '${resolvedDepartment}' not found. Please provide a valid department name or ID.`, 400);
+      }
+      resolvedDepartment = deptId;
+    }
+  }
+
+  const user = await userRepository.create({ ...payload, role: normalizedRole, department: resolvedDepartment });
   const token = generateToken(user);
   
   await createSession(user._id.toString(), token);
