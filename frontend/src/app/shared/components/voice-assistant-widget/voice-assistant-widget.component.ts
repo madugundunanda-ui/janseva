@@ -82,9 +82,9 @@ export class VoiceAssistantWidgetComponent implements OnInit, OnDestroy {
     }
   }
 
-  @HostListener('document:keydown.escape', ['$event'])
+  @HostListener('document:keydown', ['$event'])
   onEscapeKey(event: KeyboardEvent) {
-    if (this.state?.isActive) {
+    if (event.key === 'Escape' && this.state?.isActive) {
       this.minimize();
     }
   }
