@@ -1,154 +1,200 @@
 <div class="voice-widget-container" 
-     [class.active]="state.isActive" 
-     [class.a11y-mode]="accessibilityMode">
+     [class.active]="aiPlatform.conversation.state().isActive" 
+     [class.a11y-mode]="accessibilityMode()">
 
   <!-- AI Contextual Hint (fades in/out when idle) -->
-  <div class="hint-bubble" [class.show]="showHint && !state.isActive">
+  <div class="hint-bubble" [class.show]="showHint() && !aiPlatform.conversation.state().isActive">
     <div class="hint-content">
       <span class="hint-icon">✨</span>
-      <p class="hint-text">{{ currentHint }}</p>
+      <p class="hint-text">{{ currentHint() }}</p>
     </div>
   </div>
 
   <!-- Redesigned Orb Card (Morphs between Orb and Panel) -->
-  <div #widgetCard class="widget-card" [class.active-panel]="state.isActive">
+  <div #widgetCard 
+       class="widget-card" 
+       [class.active-panel]="aiPlatform.conversation.state().isActive"
+       [cdkTrapFocus]="aiPlatform.conversation.state().isActive"
+       [cdkTrapFocusAutoCapture]="true">
     
     <!-- Civic Intelligence Core (Visible when closed) -->
-    <div class="civic-core" (click)="toggleAssistant()" *ngIf="!state.isActive">
-      <!-- Outer Hexagonal Glowing Orb -->
-      <div class="hexagon-glow"></div>
-      <div class="hexagon-orb">
-        <!-- Inner Core Gradient & Pulsing Waves -->
-        <div class="core-gradient"></div>
-        <div class="core-mic-icon">
-          <i class="fas fa-microphone"></i>
-        </div>
-      </div>
-      
-      <!-- Tiny Orbiting Nodes (Floating node network) -->
-      <div class="orbiting-nodes">
-        <div class="node node-1"></div>
-        <div class="node node-2"></div>
-        <div class="node node-3"></div>
-      </div>
-
-      <!-- Hover Label -->
-      <div class="hover-label">
-        <span>JANSEVA AI</span>
-      </div>
-    </div>
-
-    <!-- Active Assistant Panel Content (Fades in when opened) -->
-    <div class="panel-content" *ngIf="state.isActive">
-      <div class="panel-header">
-        <div class="header-title">
-          <!-- Small Mini-Core status icon in header -->
-          <div class="mini-core" [class.listening]="state.isListening" [class.thinking]="state.isThinking" [class.speaking]="state.isSpeaking" [class.error]="state.hasError">
-            <div class="mini-hexagon"></div>
-          </div>
-          <div class="header-text">
-            <h3>JANSEVA AI Co-Pilot</h3>
-            <span class="status-text">{{ getStatusText() }}</span>
+    @if (!aiPlatform.conversation.state().isActive) {
+      <div class="civic-core" (click)="toggleAssistant()">
+        <!-- Outer Hexagonal Glowing Orb -->
+        <div class="hexagon-glow"></div>
+        <div class="hexagon-orb">
+          <!-- Inner Core Gradient & Pulsing Waves -->
+          <div class="core-gradient"></div>
+          <div class="core-mic-icon">
+            <i class="fas fa-microphone"></i>
           </div>
         </div>
         
-        <div class="header-actions">
-          <span class="lang-badge" *ngIf="state.language">{{ getLanguageLabel(state.language) }}</span>
-          <button class="a11y-toggle" (click)="toggleAccessibilityMode()" aria-label="Toggle Accessibility Mode" title="High Contrast Mode">
-            <i class="fas" [class.fa-universal-access]="!accessibilityMode" [class.fa-eye]="accessibilityMode"></i>
-          </button>
-          <button class="minimize-btn" (click)="minimize()" aria-label="Minimize AI Assistant" title="Minimize">
-            <i class="fas fa-minus"></i> <span class="btn-text">Minimize</span>
-          </button>
-          <button class="close-btn" (click)="close()" aria-label="Close AI Assistant" title="Close">
-            <i class="fas fa-times"></i> <span class="btn-text">Close</span>
-          </button>
+        <!-- Tiny Orbiting Nodes (Floating node network) -->
+        <div class="orbiting-nodes">
+          <div class="node node-1"></div>
+          <div class="node node-2"></div>
+          <div class="node node-3"></div>
+        </div>
+
+        <!-- Hover Label -->
+        <div class="hover-label">
+          <span>JANSEVA AI</span>
         </div>
       </div>
+    }
 
-      <div class="panel-body">
-        <div class="messages-container">
-          <!-- AI Response -->
-          <div class="message-bubble system" *ngIf="state.systemMessage">
-            <div class="bubble-icon">🤖</div>
-            <div class="bubble-text">
-              <p>{{ state.systemMessage }}</p>
+    <!-- Active Assistant Panel Content (Fades in when opened) -->
+    @if (aiPlatform.conversation.state().isActive) {
+      <div class="panel-content">
+        <div class="panel-header">
+          <div class="header-title">
+            <!-- Small Mini-Core status icon in header -->
+            <div class="mini-core" 
+                 [class.listening]="aiPlatform.speech.isListening()" 
+                 [class.thinking]="aiPlatform.conversation.state().isThinking" 
+                 [class.speaking]="aiPlatform.speech.isSpeaking()" 
+                 [class.error]="aiPlatform.conversation.state().hasError">
+              <div class="mini-hexagon"></div>
+            </div>
+            <div class="header-text">
+              <h3>JANSEVA AI Co-Pilot</h3>
+              <span class="status-text">{{ statusText() }}</span>
             </div>
           </div>
-
-          <!-- User Transcript -->
-          <div class="message-bubble user" *ngIf="state.transcript">
-            <div class="bubble-text">
-              <p>"{{ state.transcript }}"</p>
-            </div>
-            <div class="bubble-icon">👤</div>
-          </div>
-        </div>
-
-        <!-- Dynamic Visualization Area -->
-        <div class="visualization-area">
           
-          <!-- STATE: LISTENING (Audio spectrum / reactive rings) -->
-          <div class="state-listening" *ngIf="state.isListening">
-            <div class="voice-waves">
-              <div class="voice-wave wave-1"></div>
-              <div class="voice-wave wave-2"></div>
-              <div class="voice-wave wave-3"></div>
-              <div class="voice-wave wave-4"></div>
-              <div class="voice-wave wave-5"></div>
-            </div>
-            <span class="vis-label">Listening for voice...</span>
-          </div>
-
-          <!-- STATE: THINKING (Network / nodes / rotating core) -->
-          <div class="state-thinking" *ngIf="state.isThinking">
-            <div class="network-animation">
-              <div class="net-node center"></div>
-              <div class="net-node node-a"></div>
-              <div class="net-node node-b"></div>
-              <div class="net-node node-c"></div>
-              <!-- SVG Connection lines -->
-              <svg class="net-lines" viewBox="0 0 100 100">
-                <line x1="50" y1="50" x2="15" y2="25" class="net-line line-1" />
-                <line x1="50" y1="50" x2="85" y2="35" class="net-line line-2" />
-                <line x1="50" y1="50" x2="50" y2="85" class="net-line line-3" />
-              </svg>
-            </div>
-            <span class="vis-label">Thinking...</span>
-          </div>
-
-          <!-- STATE: RESPONDING / SPEAKING (Rotating halo / typing indicator) -->
-          <div class="state-speaking" *ngIf="state.isSpeaking && !state.isThinking">
-            <div class="speaking-halo">
-              <div class="halo-ring ring-1"></div>
-              <div class="halo-ring ring-2"></div>
-              <div class="halo-ring ring-3"></div>
-            </div>
-            <span class="vis-label">Speaking...</span>
-          </div>
-
-          <!-- STATE: ERROR (Orange pulse) -->
-          <div class="state-error" *ngIf="state.hasError">
-            <div class="error-indicator">
-              <div class="pulse-orange"></div>
-              <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <span class="vis-label error-text">Connection issue. Try speaking again.</span>
-          </div>
-
-          <!-- STATE: IDLE ACTIVE (Waiting) -->
-          <div class="state-idle" *ngIf="!state.isListening && !state.isSpeaking && !state.isThinking && !state.hasError">
-            <div class="idle-ring"></div>
-            <button class="mic-trigger" (click)="voiceService.startListening()" title="Start Speaking">
-              <i class="fas fa-microphone"></i>
+          <div class="header-actions">
+            @if (aiPlatform.conversation.state().language) {
+              <span class="lang-badge">{{ languageLabel() }}</span>
+            }
+            <button class="a11y-toggle" (click)="toggleAccessibilityMode()" aria-label="Toggle Accessibility Mode" title="High Contrast Mode">
+              <i class="fas" [class.fa-universal-access]="!accessibilityMode()" [class.fa-eye]="accessibilityMode()"></i>
             </button>
-            <span class="vis-label">Tap mic to speak</span>
+            <button class="minimize-btn" (click)="minimize()" aria-label="Minimize AI Assistant" title="Minimize">
+              <i class="fas fa-minus"></i> <span class="btn-text">Minimize</span>
+            </button>
+            <button class="close-btn" (click)="close()" aria-label="Close AI Assistant" title="Close">
+              <i class="fas fa-times"></i> <span class="btn-text">Close</span>
+            </button>
           </div>
         </div>
 
-        <!-- Hidden file input for workflows that require an image -->
-        <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+        <div class="panel-body">
+          <div #messagesContainer class="messages-container" role="log" aria-live="polite">
+            @for (msg of aiPlatform.conversation.messages(); track msg.id) {
+              <div class="message-bubble" [class.user]="msg.sender === 'user'" [class.system]="msg.sender === 'assistant'">
+                <div class="bubble-icon" aria-hidden="true">
+                  @if (msg.sender === 'user') { 👤 } @else { 🤖 }
+                </div>
+                <div class="bubble-text">
+                  <p>{{ msg.content }}</p>
+                </div>
+              </div>
+            }
+
+            @if (aiPlatform.conversation.state().isThinking) {
+              <div class="message-bubble system">
+                <div class="bubble-icon" aria-hidden="true">🤖</div>
+                <div class="bubble-text">
+                  <div class="typing-indicator" aria-label="AI is thinking">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Dynamic Visualization Area (only shows listening, speaking, or error states) -->
+          @if (aiPlatform.speech.isListening() || aiPlatform.speech.isSpeaking() || aiPlatform.conversation.state().hasError) {
+            <div class="visualization-area">
+              
+              <!-- STATE: LISTENING (Audio spectrum / reactive rings) -->
+              @if (aiPlatform.speech.isListening()) {
+                <div class="state-listening">
+                  <div class="voice-waves">
+                    <div class="voice-wave wave-1"></div>
+                    <div class="voice-wave wave-2"></div>
+                    <div class="voice-wave wave-3"></div>
+                    <div class="voice-wave wave-4"></div>
+                    <div class="voice-wave wave-5"></div>
+                  </div>
+                  <span class="vis-label">Listening for voice...</span>
+                </div>
+              }
+
+              <!-- STATE: RESPONDING / SPEAKING (Rotating halo / typing indicator) -->
+              @if (aiPlatform.speech.isSpeaking() && !aiPlatform.conversation.state().isThinking) {
+                <div class="state-speaking">
+                  <div class="speaking-halo">
+                    <div class="halo-ring ring-1"></div>
+                    <div class="halo-ring ring-2"></div>
+                    <div class="halo-ring ring-3"></div>
+                  </div>
+                  <span class="vis-label">Speaking...</span>
+                </div>
+              }
+
+              <!-- STATE: ERROR (Orange pulse) -->
+              @if (aiPlatform.conversation.state().hasError) {
+                <div class="state-error">
+                  <div class="error-indicator">
+                    <div class="pulse-orange"></div>
+                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+                  </div>
+                  <span class="vis-label error-text">Connection issue. Try speaking again.</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Chat Input Area -->
+          <div class="chat-input-area">
+            <textarea #chatTextarea
+                      class="chat-textarea"
+                      placeholder="Type your message here or speak..."
+                      aria-label="Chat input message"
+                      [disabled]="aiPlatform.conversation.state().isThinking"
+                      [value]="typedText()"
+                      (input)="onTextInput($event)"
+                      (keydown)="onKeyDown($event)">
+            </textarea>
+            
+            <div class="input-actions">
+              <button class="action-btn record"
+                      [disabled]="aiPlatform.conversation.state().isThinking || aiPlatform.speech.isListening()"
+                      (click)="recordAgain()"
+                      aria-label="Record voice input"
+                      title="Record Again">
+                <i class="fas fa-microphone" aria-hidden="true"></i>
+                <span>Record</span>
+              </button>
+              
+              <button class="action-btn clear"
+                      [disabled]="aiPlatform.conversation.state().isThinking"
+                      (click)="clearTranscript()"
+                      aria-label="Clear input message"
+                      title="Clear">
+                <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                <span>Clear</span>
+              </button>
+              
+              <button class="action-btn send"
+                      [disabled]="aiPlatform.conversation.state().isThinking || !typedText().trim()"
+                      (click)="sendMessage()"
+                      aria-label="Send message"
+                      title="Send">
+                <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                <span>Send</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Hidden file input for workflows that require an image -->
+          <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+        </div>
       </div>
-    </div>
+    }
   </div>
 </div>
