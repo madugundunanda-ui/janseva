@@ -13,38 +13,37 @@ interface OfficerWorkload extends User {
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="glass-panel p-6 rounded-xl border border-white/10 space-y-6 pb-12 bg-black/40 text-white">
-      <!-- Header -->
-      <div class="flex items-center gap-3">
-        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-        <h2 class="font-mono text-xs tracking-widest text-cyan-400 uppercase">OFFICER OPERATIONS REGISTRY</h2>
+    <div class="card-surface p-6 space-y-4 font-sans">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Officer Roster & SLA Workload</h2>
+          <p class="text-xs text-slate-500">Live active ticket distribution and performance efficacy scores.</p>
+        </div>
+        <span class="badge-status badge-progress">Field Operations</span>
       </div>
 
-      <!-- Table View -->
       <div class="overflow-x-auto">
-        <table class="w-full font-mono text-[10px] uppercase border-collapse text-left">
+        <table class="w-full text-xs text-left border-collapse">
           <thead>
-            <tr class="border-b border-white/10 text-muted-var text-gray-400">
-              <th class="pb-3 pr-4">Officer Name</th>
-              <th class="pb-3 px-4">Department Node</th>
-              <th class="pb-3 px-4 text-center">Active Load</th>
-              <th class="pb-3 px-4 text-center">Resolved Stack</th>
-              <th class="pb-3 px-4 text-center">SLA Efficacy</th>
-              <th class="pb-3 px-4 text-right">Duty Status</th>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+              <th class="py-3 px-3">Officer Name</th>
+              <th class="py-3 px-3">Department</th>
+              <th class="py-3 px-3 text-center">Active Queue</th>
+              <th class="py-3 px-3 text-center">Resolved</th>
+              <th class="py-3 px-3 text-center">SLA Efficacy</th>
+              <th class="py-3 px-3 text-right">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/5 text-primary-var">
+          <tbody class="divide-y divide-slate-100 font-medium text-slate-800">
             @for (off of officerWorkloads; track off.id) {
-              <tr>
-                <td class="py-4 pr-4 font-semibold text-primary-var text-white">{{ off.name }}</td>
-                <td class="py-4 px-4 text-muted-var text-gray-300">{{ departmentName(off.department) }}</td>
-                <td class="py-4 px-4 text-center text-cyan-400">{{ off.activeCount }} Tickets</td>
-                <td class="py-4 px-4 text-center text-emerald-400">{{ off.resolvedCount }} Fixed</td>
-                <td class="py-4 px-4 text-center font-bold text-primary-var text-white">{{ off.performanceScore }}%</td>
-                <td class="py-4 px-4 text-right">
-                  <span class="px-2.5 py-0.5 rounded text-[8px] bg-emerald-950/20 border border-emerald-500/30 text-emerald-400">
-                    DISPATCH_READY
-                  </span>
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-3 font-semibold text-slate-900">{{ off.name }}</td>
+                <td class="py-3 px-3 text-slate-600">{{ departmentName(off.department) }}</td>
+                <td class="py-3 px-3 text-center font-mono font-bold text-indigo-600">{{ off.activeCount }}</td>
+                <td class="py-3 px-3 text-center font-mono text-emerald-600 font-bold">{{ off.resolvedCount }}</td>
+                <td class="py-3 px-3 text-center font-mono font-bold text-slate-900">{{ off.performanceScore }}%</td>
+                <td class="py-3 px-3 text-right">
+                  <span class="badge-status badge-resolved">Dispatch Ready</span>
                 </td>
               </tr>
             }
@@ -52,16 +51,10 @@ interface OfficerWorkload extends User {
         </table>
       </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class OfficersTableComponent implements OnInit {
   officerWorkloads: OfficerWorkload[] = [];
-
   private apiService = inject(ApiService);
 
   ngOnInit(): void {
@@ -76,12 +69,8 @@ export class OfficersTableComponent implements OnInit {
   }
 
   departmentName(department: User['department']): string {
-    if (!department) {
-      return 'General Operations';
-    }
-    if (typeof department === 'string') {
-      return department;
-    }
+    if (!department) return 'General Operations';
+    if (typeof department === 'string') return department;
     return department.name ?? 'General Operations';
   }
 }

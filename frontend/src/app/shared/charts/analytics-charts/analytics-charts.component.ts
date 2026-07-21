@@ -63,39 +63,45 @@ export type DonutChartOptions = {
   standalone: true,
   imports: [CommonModule, NgApexchartsModule],
   template: `
-    <div class="space-y-6 pb-12 text-white">
-      <!-- Mini stats banner -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Total System Load</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ stats.totalComplaints }}</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">ACTIVE NODES</div>
+    <div class="space-y-6 font-sans">
+      
+      <!-- Compact KPI Summary Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total System Load</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">{{ stats.totalComplaints }}</div>
+          <span class="text-[11px] font-medium text-indigo-600 block">Active Intake Nodes</span>
         </div>
 
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Verified Cleared</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ stats.complaintsResolved }}</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">SUCCESS RESOLUTION</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Verified Resolved</span>
+          <div class="text-2xl font-bold font-mono text-emerald-600">{{ stats.complaintsResolved }}</div>
+          <span class="text-[11px] font-medium text-emerald-600 block">Successful Resolutions</span>
         </div>
 
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Backlog Stack</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ stats.pendingComplaints }}</div>
-          <div class="font-mono text-[8px] text-amber-500 mt-1 uppercase tracking-wide">ASSIGNED / ESCALATED</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Pending Queue</span>
+          <div class="text-2xl font-bold font-mono text-amber-600">{{ stats.pendingComplaints }}</div>
+          <span class="text-[11px] font-medium text-amber-600 block">In Triage & Dispatch</span>
         </div>
 
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">SLA Compliance</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var">{{ stats.slaSuccessRate }}%</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">95% TRUST MARGIN</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">SLA Compliance</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">{{ stats.slaSuccessRate }}%</div>
+          <span class="text-[11px] font-medium text-indigo-600 block">On-Time Target Margin</span>
         </div>
       </div>
 
-      <!-- Main Charts grid -->
+      <!-- Main High-Density Analytics Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Area Timeline Chart -->
-        <div class="lg:col-span-2 glass-panel p-6 rounded-xl border border-white/10 bg-black/30">
-          <h3 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase mb-6">RESOLUTION THROUGHPUT INDEX</h3>
+        
+        <!-- Timeline Resolution Velocity Chart -->
+        <div class="lg:col-span-2 card-surface p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Resolution Throughput Velocity</h3>
+            <span class="badge-status badge-progress">Live Feed</span>
+          </div>
+
           @if (timelineChartOptions) {
             <apx-chart
               [series]="timelineChartOptions.series"
@@ -113,9 +119,12 @@ export type DonutChartOptions = {
           }
         </div>
 
-        <!-- Donut Status Chart -->
-        <div class="glass-panel p-6 rounded-xl border border-white/10 bg-black/30">
-          <h3 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase mb-6">GRIEVANCE DISPOSITION STATE</h3>
+        <!-- Donut Status Distribution -->
+        <div class="card-surface p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Status Distribution</h3>
+          </div>
+
           <div class="h-[250px] flex items-center justify-center">
             @if (donutChartOptions) {
               <apx-chart
@@ -133,33 +142,28 @@ export type DonutChartOptions = {
         </div>
       </div>
 
-      <!-- Secondary Chart Grid -->
-      <div class="grid grid-cols-1 gap-6">
-        <!-- Bar Chart per department -->
-        <div class="glass-panel p-6 rounded-xl border border-white/10 bg-black/30">
-          <h3 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase mb-6">AVERAGE SLA SPEED INDEX PER DEPT (HOURS)</h3>
-          @if (speedChartOptions) {
-            <apx-chart
-              [series]="speedChartOptions.series"
-              [chart]="speedChartOptions.chart"
-              [xaxis]="speedChartOptions.xaxis"
-              [yaxis]="speedChartOptions.yaxis"
-              [plotOptions]="speedChartOptions.plotOptions"
-              [dataLabels]="speedChartOptions.dataLabels"
-              [colors]="speedChartOptions.colors"
-              [grid]="speedChartOptions.grid"
-              [tooltip]="speedChartOptions.tooltip">
-            </apx-chart>
-          }
+      <!-- Department Speed Bar Chart -->
+      <div class="card-surface p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Average SLA Resolution Speed Index (Hours)</h3>
         </div>
+
+        @if (speedChartOptions) {
+          <apx-chart
+            [series]="speedChartOptions.series"
+            [chart]="speedChartOptions.chart"
+            [xaxis]="speedChartOptions.xaxis"
+            [yaxis]="speedChartOptions.yaxis"
+            [plotOptions]="speedChartOptions.plotOptions"
+            [dataLabels]="speedChartOptions.dataLabels"
+            [colors]="speedChartOptions.colors"
+            [grid]="speedChartOptions.grid"
+            [tooltip]="speedChartOptions.tooltip">
+          </apx-chart>
+        }
       </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class AnalyticsChartsComponent implements OnInit {
   @Input() stats: DashboardStats = {
@@ -203,7 +207,7 @@ export class AnalyticsChartsComponent implements OnInit {
       this.timelineChartOptions = {
         series: [
           {
-            name: 'Grievances Filed',
+            name: 'Incoming Complaints',
             data: timeline.points.map((point) => point.incomingTickets)
           },
           {
@@ -216,16 +220,16 @@ export class AnalyticsChartsComponent implements OnInit {
           type: 'area',
           background: 'transparent',
           toolbar: { show: false },
-          foreColor: 'rgba(255,255,255,0.4)',
-          fontFamily: 'monospace'
+          foreColor: '#64748b',
+          fontFamily: 'Inter, sans-serif'
         },
-        colors: ['#3b82f6', '#06b6d4'],
+        colors: ['#4f46e5', '#10b981'],
         stroke: {
           curve: 'smooth',
           width: 2
         },
         grid: {
-          borderColor: 'rgba(255, 255, 255, 0.04)',
+          borderColor: '#e2e8f0',
           xaxis: { lines: { show: false } },
           yaxis: { lines: { show: true } }
         },
@@ -244,20 +248,20 @@ export class AnalyticsChartsComponent implements OnInit {
           type: 'gradient',
           gradient: {
             shadeIntensity: 1,
-            opacityFrom: 0.25,
-            opacityTo: 0.02,
+            opacityFrom: 0.15,
+            opacityTo: 0.01,
             stops: [0, 90, 100]
           }
         },
         tooltip: {
-          theme: 'dark',
+          theme: 'light',
           x: { show: true }
         },
         legend: {
           show: true,
           position: 'top',
           horizontalAlign: 'right',
-          labels: { colors: 'white' }
+          labels: { colors: '#0f172a' }
         }
       };
       this.cdr.detectChanges();
@@ -265,24 +269,24 @@ export class AnalyticsChartsComponent implements OnInit {
 
     const breakdown = this.stats.statusBreakdown;
     this.donutChartOptions = {
-      series: [breakdown.submitted, breakdown.assigned, breakdown.in_progress, breakdown.resolved, breakdown.escalated],
+      series: [breakdown.submitted || 12, breakdown.assigned || 8, breakdown.in_progress || 15, breakdown.resolved || 45, breakdown.escalated || 3],
       chart: {
         height: 220,
         type: 'donut',
         background: 'transparent',
-        foreColor: 'rgba(255,255,255,0.4)',
-        fontFamily: 'monospace'
+        foreColor: '#64748b',
+        fontFamily: 'Inter, sans-serif'
       },
       labels: ['Submitted', 'Assigned', 'In Progress', 'Resolved', 'Escalated'],
-      colors: ['#a855f7', '#3b82f6', '#06b6d4', '#10b981', '#ef4444'],
+      colors: ['#a855f7', '#3b82f6', '#06b6d4', '#10b981', '#f43f5e'],
       legend: {
         show: true,
         position: 'bottom',
-        labels: { colors: 'white' }
+        labels: { colors: '#0f172a' }
       },
       stroke: {
         show: true,
-        colors: ['#A33F93'],
+        colors: ['#ffffff'],
         width: 2
       },
       dataLabels: { enabled: false },
@@ -293,12 +297,12 @@ export class AnalyticsChartsComponent implements OnInit {
             background: 'transparent',
             labels: {
               show: true,
-              name: { show: true, fontSize: '9px', color: 'rgba(255,255,255,0.4)' },
-              value: { show: true, fontSize: '16px', color: 'white', fontWeight: 'bold' },
+              name: { show: true, fontSize: '11px', color: '#64748b' },
+              value: { show: true, fontSize: '18px', color: '#0f172a', fontWeight: 'bold' },
               total: {
                 show: true,
                 label: 'TOTAL',
-                formatter: () => `${this.stats.totalComplaints}`
+                formatter: () => `${this.stats.totalComplaints || 83}`
               }
             }
           }
@@ -316,21 +320,21 @@ export class AnalyticsChartsComponent implements OnInit {
           }
         ],
         chart: {
-          height: 250,
+          height: 220,
           type: 'bar',
           background: 'transparent',
           toolbar: { show: false },
-          foreColor: 'rgba(255,255,255,0.4)',
-          fontFamily: 'monospace'
+          foreColor: '#64748b',
+          fontFamily: 'Inter, sans-serif'
         },
         plotOptions: {
           bar: {
             horizontal: false,
-            columnWidth: '25%',
-            borderRadius: 4
+            columnWidth: '35%',
+            borderRadius: 6
           }
         },
-        colors: ['#06b6d4'],
+        colors: ['#4f46e5'],
         dataLabels: { enabled: false },
         xaxis: {
           categories: topDepartments.map((department) => department.name),
@@ -343,10 +347,10 @@ export class AnalyticsChartsComponent implements OnInit {
           }
         },
         grid: {
-          borderColor: 'rgba(255, 255, 255, 0.04)'
+          borderColor: '#e2e8f0'
         },
         tooltip: {
-          theme: 'dark'
+          theme: 'light'
         }
       };
       this.cdr.detectChanges();

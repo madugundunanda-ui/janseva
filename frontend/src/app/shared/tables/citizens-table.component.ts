@@ -7,36 +7,35 @@ import { ApiService, User } from '../../core/services/api.service';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div class="glass-panel p-6 rounded-xl border border-white/10 space-y-6 pb-12 bg-black/40 text-white">
-      <!-- Header -->
-      <div class="flex items-center gap-3">
-        <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-        <h2 class="font-mono text-xs tracking-widest text-cyan-400 uppercase">CITIZEN NODE DIRECTORY</h2>
+    <div class="card-surface p-6 space-y-4 font-sans">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-900">Citizens Directory</h2>
+          <p class="text-xs text-slate-500">Verified citizen nodes registered for civic grievance filing.</p>
+        </div>
+        <span class="badge-status badge-progress">Verified Nodes</span>
       </div>
 
-      <!-- Citizens Table Roster -->
       <div class="overflow-x-auto">
-        <table class="w-full font-mono text-[10px] uppercase border-collapse text-left">
+        <table class="w-full text-xs text-left border-collapse">
           <thead>
-            <tr class="border-b border-white/10 text-muted-var text-gray-400">
-              <th class="pb-3 pr-4">Node Name</th>
-              <th class="pb-3 px-4">Secure Contact Email</th>
-              <th class="pb-3 px-4">Register Phone</th>
-              <th class="pb-3 px-4 text-center">Ward Address</th>
-              <th class="pb-3 px-4 text-right">Verification</th>
+            <tr class="border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
+              <th class="py-3 px-3">Citizen Name</th>
+              <th class="py-3 px-3">Email Address</th>
+              <th class="py-3 px-3">Phone</th>
+              <th class="py-3 px-3 text-center">Ward Address</th>
+              <th class="py-3 px-3 text-right">Status</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-white/5 text-primary-var">
+          <tbody class="divide-y divide-slate-100 font-medium text-slate-800">
             @for (cit of citizensList; track cit.id) {
-              <tr>
-                <td class="py-4 pr-4 font-semibold text-primary-var text-white">{{ cit.name }}</td>
-                <td class="py-4 px-4 text-muted-var lowercase font-sans text-gray-300">{{ cit.email }}</td>
-                <td class="py-4 px-4 text-muted-var text-gray-300">{{ cit.phone || '9999999999' }}</td>
-                <td class="py-4 px-4 text-center text-cyan-400">{{ cit.address || 'Ward 12' }}</td>
-                <td class="py-4 px-4 text-right">
-                  <span class="px-2 py-0.5 rounded text-[8px] bg-cyan-950/20 border border-cyan-500/30 text-cyan-400">
-                    VERIFIED_ID
-                  </span>
+              <tr class="hover:bg-slate-50 transition-colors">
+                <td class="py-3 px-3 font-semibold text-slate-900">{{ cit.name }}</td>
+                <td class="py-3 px-3 text-slate-600 font-mono">{{ cit.email }}</td>
+                <td class="py-3 px-3 text-slate-600 font-mono">{{ cit.phone || '+91 9876543210' }}</td>
+                <td class="py-3 px-3 text-center text-indigo-600 font-semibold">{{ cit.address || 'Ward 12' }}</td>
+                <td class="py-3 px-3 text-right">
+                  <span class="badge-status badge-resolved">Verified Node</span>
                 </td>
               </tr>
             }
@@ -44,16 +43,10 @@ import { ApiService, User } from '../../core/services/api.service';
         </table>
       </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class CitizensTableComponent implements OnInit {
   citizensList: User[] = [];
-
   private apiService = inject(ApiService);
 
   ngOnInit(): void {

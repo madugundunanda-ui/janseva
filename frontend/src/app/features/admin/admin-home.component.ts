@@ -10,117 +10,99 @@ import { TranslationService } from '../../core/services/translation.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="space-y-6 pb-12 text-white">
-      <!-- Admin Hero Banner -->
-      <div class="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-cyan-950/20 via-transparent to-transparent shadow-[0_0_30px_rgba(6,182,212,0.1)]">
+    <div class="space-y-6 font-sans">
+      
+      <div class="card-surface p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white">
         <div class="space-y-2">
-          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-cyan-500/20 bg-cyan-950/20 font-mono text-[9px] text-cyan-400 uppercase tracking-widest animate-pulse text-white">
-            <span>🔴 {{ translationService.t('NODE_LIVE') }} // SYSADMIN MAIN NODE ACTIVE</span>
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-semibold text-indigo-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            State AI Command Node Active
           </div>
-          <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono text-white">
-            {{ translationService.t('CONSOLE') }} // <span class="text-glow-cyan">{{ authService.currentUser()?.name }}</span>
-          </h2>
-          <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl text-gray-400">
-            Statewide governance infrastructure initialized. Direct access enabled to predictive model weighting parameters, full security event logs, geofence mapping clusters, and system configurations.
+          
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            Admin Command Center: {{ authService.currentUser()?.name }}
+          </h1>
+
+          <p class="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
+            Statewide governance infrastructure active. Monitor AI classification accuracy, security audit logs, and ward heatmaps.
           </p>
         </div>
 
-        <div class="flex gap-3">
-          <button [routerLink]="['/dashboard/admin/analytics']" class="px-5 py-3 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-black font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(6,182,212,0.2)] cursor-pointer">
-            {{ translationService.t('CORE_ANALYTICS') }}
+        <div class="flex items-center gap-3 shrink-0">
+          <button [routerLink]="['/dashboard/admin/analytics']" class="btn-primary py-3 px-5 text-sm font-semibold">
+            System Analytics
           </button>
-          <button [routerLink]="['/dashboard/admin/maps']" class="px-5 py-3 rounded-lg border border-cyan-500/30 hover:border-cyan-500 text-cyan-400 font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 cursor-pointer text-white">
-            {{ translationService.t('HOTSPOT_MAP') }}
+          <button [routerLink]="['/dashboard/admin/ai-diagnostics']" class="btn-secondary text-xs py-3 px-5 font-semibold">
+            AI Diagnostics
           </button>
         </div>
       </div>
 
-      <!-- Quick Metrics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Metric: Total Statewide complaints -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_TOTAL') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ totalComplaints }}</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">{{ translationService.t('FILED') }}</div>
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Statewide Load</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">{{ totalComplaints }}</div>
+          <span class="text-[11px] font-medium text-slate-500 block">Total Active Records</span>
         </div>
 
-        <!-- Metric: AI Auto-route -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('AI_PREDICTIONS') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">96.8%</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">9.4% AUTO-OPTIMIZED DELTA</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">AI Triage Accuracy</span>
+          <div class="text-2xl font-bold font-mono text-emerald-600">96.8%</div>
+          <span class="text-[11px] font-medium text-emerald-600 block">Auto-Categorized</span>
         </div>
 
-        <!-- Metric: Active Security Logs -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">Security Audits</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-amber-500">42</div>
-          <div class="font-mono text-[8px] text-amber-500 mt-1 uppercase tracking-wide">NO RECENT VIOLATIONS</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Security Audits</span>
+          <div class="text-2xl font-bold font-mono text-indigo-600">42</div>
+          <span class="text-[11px] font-medium text-indigo-600 block">JWT & RBAC Active</span>
         </div>
 
-        <!-- Metric: SLA Success Rate -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_SLA') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">98.4%</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">95% TRUST MARGIN</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">SLA Compliance</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">98.4%</div>
+          <span class="text-[11px] font-medium text-slate-500 block">Target Threshold</span>
         </div>
       </div>
 
-      <!-- Quick Shortcuts Console Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Shortcut: Administrative Control Panel -->
-        <div class="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 bg-black/30">
-          <h3 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase font-bold">{{ translationService.t('CONSOLE_SETTINGS') }}</h3>
-          <p class="font-mono text-[10px] text-muted-var uppercase text-gray-400">Access specialized modules to manage citizen directories and configure settings.</p>
-          <div class="grid grid-cols-2 gap-3 pt-2 font-mono text-[10px] uppercase">
-            <a [routerLink]="['/dashboard/admin/citizens']" class="p-4 rounded-xl border border-white/10 hover:border-cyan-500/40 hover:bg-white/2 text-center transition-colors text-white">
-              👥 {{ translationService.t('CITIZEN_NODES') }}
+        <div class="card-surface p-6 space-y-4">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Administrative Modules</h3>
+          <div class="grid grid-cols-2 gap-3 text-xs font-semibold">
+            <a [routerLink]="['/dashboard/admin/citizens']" class="p-3.5 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 text-slate-800 transition-all text-center">
+              👥 Citizens Directory
             </a>
-            <a [routerLink]="['/dashboard/admin/officers']" class="p-4 rounded-xl border border-white/10 hover:border-cyan-500/40 hover:bg-white/2 text-center transition-colors text-white">
-              💼 {{ translationService.t('OFFICER_GRID') }}
+            <a [routerLink]="['/dashboard/admin/officers']" class="p-3.5 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 text-slate-800 transition-all text-center">
+              👮 Officers Directory
             </a>
-            <a [routerLink]="['/dashboard/admin/reports']" class="p-4 rounded-xl border border-white/10 hover:border-cyan-500/40 hover:bg-white/2 text-center transition-colors text-white">
-              📋 {{ translationService.t('CORE_REPORTS') }}
+            <a [routerLink]="['/dashboard/admin/reports']" class="p-3.5 rounded-lg border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 text-slate-800 transition-all text-center">
+              📄 Audit Reports
             </a>
-            <a [routerLink]="['/dashboard/admin/settings']" class="p-4 rounded-xl border border-white/10 hover:border-cyan-500/40 hover:bg-white/2 text-center transition-colors text-white">
-              ⚙️ {{ translationService.t('CONSOLE_SETTINGS') }}
-            </a>
-            <a [routerLink]="['/dashboard/admin/ai-diagnostics']" class="p-4 rounded-xl border border-violet-500/20 hover:border-violet-500/40 hover:bg-violet-950/10 text-center transition-colors text-violet-400">
-              🧠 {{ translationService.t('AI_FEATURES') }}
+            <a [routerLink]="['/dashboard/admin/ai-diagnostics']" class="p-3.5 rounded-lg border border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:bg-indigo-100 transition-all text-center">
+              🤖 AI Diagnostics
             </a>
           </div>
         </div>
 
-        <!-- System Activity logs -->
-        <div class="glass-panel p-6 rounded-2xl border border-white/10 space-y-4 bg-black/30">
-          <h3 class="font-mono text-[10px] tracking-widest text-cyan-400 uppercase font-bold">{{ translationService.t('AI_PIPELINE_STATUS') }}</h3>
-          <div class="space-y-2.5 font-mono text-[9px] uppercase tracking-wide">
-            <div class="flex justify-between items-center p-2 rounded bg-white/2 border border-white/10">
-              <span class="text-emerald-400">● MONGODB NODE-01 CONNECTED</span>
-              <span class="text-muted-var text-gray-400">100% Uptime</span>
+        <div class="card-surface p-6 space-y-4">
+          <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Infrastructure Status</h3>
+          <div class="space-y-2 text-xs font-medium text-slate-700">
+            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between">
+              <span>● MongoDB Database Cluster</span>
+              <span class="text-emerald-600 font-bold">100% Operational</span>
             </div>
-            <div class="flex justify-between items-center p-2 rounded bg-white/2 border border-white/10">
-              <span class="text-emerald-400">● AI CLASSIFICATION PIPELINE ACTIVE</span>
-              <span class="text-muted-var text-gray-400">Latency 14ms</span>
+            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between">
+              <span>● Gemini AI Model Service</span>
+              <span class="text-emerald-600 font-bold">Latency 14ms</span>
             </div>
-            <div class="flex justify-between items-center p-2 rounded bg-white/2 border border-white/10">
-              <span class="text-emerald-400">● SOCKET CLIENT BRIDGE ENGAGED</span>
-              <span class="text-muted-var text-gray-400">Port 5000</span>
-            </div>
-            <div class="flex justify-between items-center p-2 rounded bg-white/2 border border-white/10">
-              <span class="text-cyan-400">ℹ️ JWT COMPLIANCE VERIFICATION RUNNING</span>
-              <span class="text-muted-var text-gray-400">Automatic</span>
+            <div class="p-2.5 rounded-lg bg-slate-50 border border-slate-200 flex justify-between">
+              <span>● Socket.IO Real-time Bridge</span>
+              <span class="text-emerald-600 font-bold">Connected</span>
             </div>
           </div>
         </div>
       </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class AdminHomeComponent implements OnInit {
   totalComplaints = 0;

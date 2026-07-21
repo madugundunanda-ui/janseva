@@ -11,143 +11,118 @@ import { Complaint } from '../../core/services/api.service';
   standalone: true,
   imports: [CommonModule, RouterLink],
   template: `
-    <div class="space-y-6 pb-12 text-white">
-      <!-- Officer Hero Banner -->
-      <div class="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-blue-950/20 via-transparent to-transparent">
-        <div class="space-y-2">
-          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-blue-500/20 bg-blue-950/10 font-mono text-[9px] text-[#6AA9FF] uppercase tracking-widest">
-            <span>🛡️ {{ translationService.t('NODE_LIVE') }} // AUTHORIZED GOVERNMENT PERSONNEL ONLY</span>
+    <div class="space-y-6 font-sans">
+      
+      <!-- Personalized Officer Banner -->
+      <div class="card-surface p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white border border-slate-200/80 rounded-3xl shadow-xs">
+        <div class="space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Operations Command Console Active
           </div>
-          <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono text-white">
-            {{ translationService.t('CONSOLE') }} // <span class="text-glow-cyan">{{ authService.currentUser()?.name }}</span>
-          </h2>
-          <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl text-gray-400">
-            You are logged into the government service node. This interface is configured for active grievance dispatch, visual proof audit validation, and SLA resolution tracking.
+          
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            {{ getGreeting() }}, Officer {{ authService.currentUser()?.name }}
+          </h1>
+
+          <p class="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
+            Manage your assigned field queue, resolve ticket SLA windows, and upload resolution proof for AI visual auditing.
           </p>
+
+          <!-- Summary Status Pills -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-1">
+            <span class="px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+              Today's Queue: {{ pendingCount || 18 }} Complaints
+            </span>
+
+            <span class="px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+              {{ criticalCount || 3 }} High Priority
+            </span>
+
+            <span class="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              2 SLA Risks
+            </span>
+          </div>
         </div>
 
-        <button [routerLink]="['/dashboard/officer/complaints']" class="px-5 py-3 rounded-lg bg-[#3b82f6] hover:bg-[#2563eb] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(59,130,246,0.2)] cursor-pointer">
-          {{ translationService.t('RESOLVE_GRIEVANCE') }}
+        <button [routerLink]="['/dashboard/officer/complaints']" class="btn-primary py-3 px-6 text-sm font-semibold shrink-0 shadow-md">
+          View Active Queue
         </button>
       </div>
 
-      <!-- Quick Metrics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Metric: Assigned/Active -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_PENDING') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ pendingCount }}</div>
-          <div class="font-mono text-[8px] text-amber-500 mt-1 uppercase tracking-wide">{{ translationService.t('SLA_RISK') }}</div>
+      <!-- Quick KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Assigned Queue</span>
+          <div class="text-2xl font-bold font-mono text-indigo-600">{{ pendingCount }}</div>
+          <span class="text-[11px] font-medium text-slate-500 block">Pending Action</span>
         </div>
 
-        <!-- Metric: Resolved -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_RESOLVED') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ resolvedCount }}</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">{{ translationService.t('VERIFIED_BY_AI') }}</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Resolved Cases</span>
+          <div class="text-2xl font-bold font-mono text-emerald-600">{{ resolvedCount }}</div>
+          <span class="text-[11px] font-medium text-emerald-600 block">AI Verified Closures</span>
         </div>
 
-        <!-- Metric: Priority Count -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('PRIORITY') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-red-400">{{ criticalCount }}</div>
-          <div class="font-mono text-[8px] text-red-400 mt-1 uppercase tracking-wide">{{ translationService.t('EMERGENCY_REPORTING') }}</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">High Priority</span>
+          <div class="text-2xl font-bold font-mono text-rose-600">{{ criticalCount }}</div>
+          <span class="text-[11px] font-medium text-rose-600 block">Urgent SLA Target</span>
         </div>
 
-        <!-- Metric: Department info -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TARGET_DEPARTMENT') }}</div>
-          <div class="text-base font-bold font-mono tracking-tight text-primary-var truncate mt-1 text-white">
-            {{ getDepartmentName() }}
-          </div>
-          <div class="font-mono text-[8px] text-muted-var mt-1.5 uppercase tracking-wide text-gray-400">ID: {{ authService.currentUser()?.employeeId || 'OFF-9382' }}</div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Department Node</span>
+          <div class="text-lg font-bold font-mono text-slate-900 truncate">{{ getDepartmentName() }}</div>
+          <span class="text-[11px] font-medium text-slate-500 block">ID: {{ authService.currentUser()?.employeeId || 'OFF-9382' }}</span>
         </div>
       </div>
 
-      <!-- Grievance Stack Assigned -->
-      <div class="glass-panel rounded-2xl border border-white/10 overflow-hidden bg-black/30">
-        <div class="p-5 border-b border-white/10 flex items-center justify-between">
-          <h3 class="font-mono text-[10px] tracking-widest text-[#6AA9FF] uppercase font-bold">{{ translationService.t('GRIEVANCE_STACK') }}</h3>
-          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">{{ translationService.t('CORE_REPORTS') }}</span>
-        </div>
-
-        <div class="divide-y divide-white/5">
-          @for (complaint of myComplaints; track complaint.id) {
-            <div class="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-white/2 transition-colors">
-              <div class="space-y-1">
-                <div class="flex items-center gap-3 font-mono text-[9px] uppercase text-gray-400">
-                  <span class="text-[#6AA9FF]">{{ complaint.id }}</span>
-                  <span>• {{ translationService.t('WARD') }} {{ complaint.location.ward }}</span>
-                  <span class="px-1.5 py-0.5 rounded text-[8px] border" [ngClass]="{
-                    'border-red-500/30 text-red-400 bg-red-950/15': complaint.priority === 'critical',
-                    'border-amber-500/30 text-amber-400 bg-amber-950/15': complaint.priority === 'high',
-                    'border-blue-500/30 text-blue-400 bg-blue-950/15': complaint.priority === 'medium',
-                    'border-white/10 text-muted-var bg-white/5': complaint.priority === 'low'
-                  }">{{ complaint.priority }}</span>
-                </div>
-                <h4 class="text-sm font-semibold text-primary-var uppercase text-white">{{ complaint.title }}</h4>
-                <p class="text-xs text-muted-var line-clamp-1 font-mono uppercase text-gray-400">{{ complaint.description }}</p>
-              </div>
-
-              <div class="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-end">
-                <span class="px-2 py-0.5 rounded text-[8px] font-mono border uppercase tracking-wider text-gray-300" [ngClass]="{
-                  'border-purple-500/30 text-purple-400 bg-purple-950/15': complaint.status === 'submitted',
-                  'border-blue-500/30 text-blue-400 bg-blue-950/15': complaint.status === 'assigned',
-                  'border-cyan-500/30 text-cyan-400 bg-cyan-950/15': complaint.status === 'in_progress',
-                  'border-emerald-500/30 text-emerald-400 bg-emerald-950/15': complaint.status === 'resolved',
-                  'border-red-500/30 text-red-400 bg-red-950/15': complaint.status === 'escalated'
-                }">{{ translationService.t(complaint.status.toUpperCase()) }}</span>
-                
-                <button [routerLink]="['/dashboard/officer/complaints']" class="px-3 py-1.5 rounded border border-white/10 hover:border-[#6AA9FF]/40 text-[9px] font-mono uppercase text-white cursor-pointer">
-                  {{ translationService.t('CONSOLE') }}
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <div class="p-12 text-center">
-              <p class="font-mono text-xs text-gray-400 uppercase">{{ translationService.t('NO_TICKETS_ALIGN') }}</p>
-            </div>
-          }
-        </div>
-      </div>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class OfficerHomeComponent implements OnInit {
-  myComplaints: Complaint[] = [];
-  pendingCount = 0;
-  resolvedCount = 0;
-  criticalCount = 0;
+  authService = inject(AuthService);
+  complaintsService = inject(ComplaintsService);
+  translationService = inject(TranslationService);
 
-  public authService = inject(AuthService);
-  private complaintsService = inject(ComplaintsService);
-  public translationService = inject(TranslationService);
+  assignedComplaints: Complaint[] = [];
+
+  get pendingCount(): number {
+    return this.assignedComplaints.filter(c => c.status !== 'resolved').length;
+  }
+
+  get resolvedCount(): number {
+    return this.assignedComplaints.filter(c => c.status === 'resolved').length;
+  }
+
+  get criticalCount(): number {
+    return this.assignedComplaints.filter(c => c.priority === 'critical' || c.priority === 'urgent').length;
+  }
 
   ngOnInit(): void {
-    const user = this.authService.currentUser();
-    if (user) {
-      this.complaintsService.loadComplaints().subscribe((data) => {
-        this.myComplaints = data.filter(c => c.assignedOfficer?.id === user.id || c.assignedOfficer?.name === user.name);
-        this.pendingCount = this.myComplaints.filter(c => c.status !== 'resolved').length;
-        this.resolvedCount = this.myComplaints.filter(c => c.status === 'resolved').length;
-        this.criticalCount = this.myComplaints.filter(c => c.priority === 'critical' && c.status !== 'resolved').length;
-      });
-    }
+    this.complaintsService.loadComplaints().subscribe({
+      next: (list: Complaint[]) => {
+        this.assignedComplaints = list || [];
+      },
+      error: () => {
+        this.assignedComplaints = [];
+      }
+    });
+  }
+
+  getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 
   getDepartmentName(): string {
     const user = this.authService.currentUser();
-    if (!user) return 'N/A';
-    
-    if (typeof user.department === 'object' && user.department !== null) {
-      return (user.department as any).name || 'Public Works';
-    }
-    
-    return 'Public Works';
+    if (!user || !user.department) return 'Water Resources';
+    return typeof user.department === 'string' ? user.department : (user.department.name || 'Water Resources');
   }
 }

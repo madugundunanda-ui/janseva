@@ -1,134 +1,105 @@
 import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { TranslationService } from '../../core/services/translation.service';
 
 @Component({
   selector: 'app-globe-footer',
+  standalone: true,
+  imports: [CommonModule],
   template: `
-    <footer class="relative bg-transparent border-t border-var pt-32 pb-16 overflow-hidden w-full">
-      
-      <!-- Flowing Vector Terrain Backdrop -->
-      <div class="absolute inset-0 z-0 pointer-events-none opacity-20 flex items-end justify-center">
-        <svg class="w-full h-[80%] min-h-[300px]" viewBox="0 0 1440 400" preserveAspectRatio="none" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <linearGradient id="footer-hill-1" x1="720" y1="100" x2="720" y2="400" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#6AA9FF" stop-opacity="0.15"/>
-              <stop offset="100%" stop-color="#6AA9FF" stop-opacity="0.01"/>
-            </linearGradient>
-            <linearGradient id="footer-hill-2" x1="720" y1="150" x2="720" y2="400" gradientUnits="userSpaceOnUse">
-              <stop offset="0%" stop-color="#6AA9FF" stop-opacity="0.25"/>
-              <stop offset="100%" stop-color="#6AA9FF" stop-opacity="0.01"/>
-            </linearGradient>
-          </defs>
-
-          <!-- Topography Wave Layers -->
-          <path d="M0,180 C360,100 720,240 1080,140 C1260,90 1350,150 1440,120 L1440,400 L0,400 Z" fill="url(#footer-hill-1)" />
-          <path d="M0,240 C240,190 480,280 720,210 C960,140 1200,260 1440,190 L1440,400 L0,400 Z" fill="url(#footer-hill-2)" />
-
-          <!-- Network Data Lines & Connections -->
-          <path d="M 100,150 C 300,90 500,220 720,210" stroke="#6AA9FF" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.3" />
-          <path d="M 720,210 C 900,200 1100,120 1340,170" stroke="#6AA9FF" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.3" />
-          <path d="M 300,120 C 500,180 800,90 1080,140" stroke="#6AA9FF" stroke-width="1" stroke-dasharray="3 3" opacity="0.2" />
-
-          <!-- District Node Indicators -->
-          <circle cx="720" cy="210" r="4" fill="#6AA9FF" class="animate-pulse" />
-          <circle cx="720" cy="210" r="10" stroke="#6AA9FF" stroke-width="1" class="animate-ping" style="transform-origin: 720px 210px;" />
-
-          <circle cx="300" cy="120" r="3.5" fill="#6AA9FF" class="animate-pulse" />
-          <circle cx="300" cy="120" r="8" stroke="#6AA9FF" stroke-width="1" class="animate-ping" style="transform-origin: 300px 120px;" />
-
-          <circle cx="1080" cy="140" r="3.5" fill="#6AA9FF" class="animate-pulse" />
-          <circle cx="1080" cy="140" r="8" stroke="#6AA9FF" stroke-width="1" class="animate-ping" style="transform-origin: 1080px 140px;" />
-        </svg>
-      </div>
-
-      <!-- Footer Content Overlays -->
-      <div class="max-w-7xl mx-auto px-6 relative z-10">
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-12 mb-20">
+    <footer class="bg-slate-900 text-slate-300 border-t border-slate-800 pt-16 pb-12 w-full font-sans">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 space-y-12">
+        
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-10">
           
-          <!-- Column 1: Platform identity (Branding & Description & About) -->
-          <div class="md:col-span-5">
-            <span class="font-mono text-xs tracking-[0.2em] text-[#6AA9FF] uppercase mb-6 block animate-pulse">
-              JANSEVA // PLATFORM GATEWAY
-            </span>
-            <h4 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var mb-6 uppercase tracking-wider font-mono">
-              JANSEVA <span class="text-[#6AA9FF]">AI</span>
-            </h4>
-            <p class="text-xs text-muted-var leading-relaxed font-mono uppercase max-w-sm mb-4">
-              {{ translationService.t('FOOTER_PLATFORM_DESC') }}
+          <!-- Column 1: Platform & Development Credits -->
+          <div class="md:col-span-5 space-y-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white font-bold flex items-center justify-center text-sm">J</div>
+              <div>
+                <span class="font-bold text-lg text-white tracking-tight block leading-none">JANSEVA</span>
+                <span class="text-[10px] text-indigo-400 font-semibold tracking-wider uppercase">AI Governance Platform</span>
+              </div>
+            </div>
+
+            <p class="text-xs text-slate-400 leading-relaxed max-w-sm">
+              National AI-powered civic intelligence platform transforming municipal grievance redressal, enforcing SLA compliance, and guaranteeing public governance transparency.
             </p>
-            <div>
-              <a href="#about" class="text-xs text-[#6AA9FF] hover:underline font-mono uppercase tracking-wider">
-                {{ translationService.t('ABOUT_JANSEVA') }} →
-              </a>
-            </div>
-          </div>
 
-          <!-- Column 2: Quick Links -->
-          <div class="md:col-span-4 grid grid-cols-2 gap-4">
-            <div class="col-span-2">
-              <span class="font-mono text-xs tracking-widest text-muted-var uppercase mb-4 block">
-                {{ translationService.t('QUICK_LINKS') }}
-              </span>
+            <!-- System Status Indicator Badge -->
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold text-emerald-400">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>🟢 All Services Operational</span>
             </div>
-            <div>
-              <ul class="space-y-3 font-mono text-[11px] text-muted-var uppercase">
-                <li><a href="#" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('HOME') }}</a></li>
-                <li><a href="#departments" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('DEPARTMENTS') }}</a></li>
-                <li><a href="/dashboard/complaints" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('FILE_GRIEVANCE') }}</a></li>
-                <li><a href="/dashboard/complaints" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('TRACK_COMPLAINT') }}</a></li>
-                <li><a href="#transparency" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('TRANSPARENCY_PORTAL') }}</a></li>
-              </ul>
-            </div>
-            <div>
-              <ul class="space-y-3 font-mono text-[11px] text-muted-var uppercase">
-                <li><a href="#" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('GOV_SERVICES') }}</a></li>
-                <li><a href="/dashboard" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('PUBLIC_DASHBOARD') }}</a></li>
-                <li><a href="/dashboard/complaints" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('EMERGENCY_REPORTING') }}</a></li>
-                <li><a href="#" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('CITIZEN_SUPPORT') }}</a></li>
-                <li><a href="#empowerment" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('GOVERNANCE_ANALYTICS') }}</a></li>
+
+            <!-- Balanced Developer Credits -->
+            <div class="p-4 rounded-xl bg-slate-800/80 border border-slate-700/80 space-y-2 text-xs">
+              <span class="font-bold text-indigo-300 uppercase tracking-wider text-[10px] block">Project Developed By:</span>
+              <ul class="space-y-1 text-slate-200 font-medium">
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✦</span> M. Nanda Kishore</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✦</span> Shaik Mohammad Bilal</li>
+                <li class="flex items-center gap-2"><span class="text-emerald-400">✦</span> V. Jaya Krishna Zinudu</li>
               </ul>
             </div>
           </div>
 
-          <!-- Column 3: Contact Details & Hotline -->
-          <div class="md:col-span-3">
-            <span class="font-mono text-xs tracking-widest text-muted-var uppercase mb-6 block">
-              {{ translationService.t('CONTACT_US') }}
-            </span>
-            <ul class="space-y-3 font-mono text-[11px] text-muted-var uppercase">
-              <li class="text-primary-var font-bold">
-                {{ translationService.t('EMAIL') }}: <a href="mailto:support@janseva.gov.in" class="text-[#6AA9FF] hover:underline">support&#64;janseva.gov.in</a>
-              </li>
-              <li>{{ translationService.t('PHONE') }}: +1800-425-1111</li>
-              <li>{{ translationService.t('HELPDESK') }}: +1800-425-2222</li>
-              <li class="text-red-400 font-bold border border-red-500/35 bg-red-950/20 px-3 py-2 rounded-lg inline-block tracking-wider animate-pulse mt-2">
-                🚨 {{ translationService.t('EMERGENCY_HOTLINE') }}: 112
-              </li>
-            </ul>
+          <!-- Column 2: Platform Links -->
+          <div class="md:col-span-4 grid grid-cols-2 gap-4 text-xs">
+            <div class="space-y-3">
+              <span class="font-bold text-slate-200 uppercase tracking-wider text-[11px] block">Navigation</span>
+              <ul class="space-y-2 text-slate-400">
+                <li><a href="#overview" class="hover:text-indigo-400 transition-colors">Platform Overview</a></li>
+                <li><a href="#why-janseva" class="hover:text-indigo-400 transition-colors">Why JANSEVA</a></li>
+                <li><a href="#updates" class="hover:text-indigo-400 transition-colors">Government Updates</a></li>
+                <li><a href="#how-to-use" class="hover:text-indigo-400 transition-colors">How to Use</a></li>
+              </ul>
+            </div>
+
+            <div class="space-y-3">
+              <span class="font-bold text-slate-200 uppercase tracking-wider text-[11px] block">Legal & Security</span>
+              <ul class="space-y-2 text-slate-400">
+                <li><a href="#" class="hover:text-indigo-400 transition-colors">Privacy Policy</a></li>
+                <li><a href="#" class="hover:text-indigo-400 transition-colors">Terms of Use</a></li>
+                <li><a href="#" class="hover:text-indigo-400 transition-colors">Accessibility Statement (WCAG 2.1 AA)</a></li>
+                <li><a href="#" class="hover:text-indigo-400 transition-colors">Security Audit Certificate</a></li>
+              </ul>
+            </div>
           </div>
+
+          <!-- Column 3: System Information & Emergency -->
+          <div class="md:col-span-3 space-y-4 text-xs">
+            <span class="font-bold text-slate-200 uppercase tracking-wider text-[11px] block">System Metadata</span>
+            
+            <div class="space-y-2 text-slate-400 font-mono text-[11px]">
+              <div>Version: <span class="text-indigo-400 font-bold">v2.4.0 Enterprise</span></div>
+              <div>Build: <span class="text-slate-300">#8492</span></div>
+              <div>Last Deployed: <span class="text-slate-200">July 2026</span></div>
+              <div>Contact: <a href="mailto:support@janseva.gov.in" class="text-indigo-400 hover:underline">support@janseva.gov.in</a></div>
+              <div class="pt-1 text-slate-300 font-sans font-bold">Made in India 🇮🇳</div>
+            </div>
+
+            <div class="p-3 rounded-xl bg-rose-950/40 border border-rose-800/40 text-rose-300 text-[11px] font-bold space-y-1">
+              <span>🚨 Emergency Hotline: 112</span>
+              <p class="text-[10px] font-normal text-rose-400">For immediate life safety or disaster assistance.</p>
+            </div>
+          </div>
+
         </div>
 
         <!-- Footer Bottom Bar -->
-        <div class="pt-8 border-t border-var flex flex-col sm:flex-row items-center justify-between gap-4 font-mono text-[10px] text-muted-var uppercase tracking-widest">
-          <div>© 2026 JANSEVA Civic Intelligence Platform. All rights reserved.</div>
-          <div class="flex flex-wrap items-center gap-6">
-            <a href="#" class="hover:text-primary-var transition-colors duration-200">{{ translationService.t('TERMS_OF_USE') }}</a>
-            <a href="#" class="hover:text-primary-var transition-colors duration-200">{{ translationService.t('PRIVACY_POLICY') }}</a>
-            <span class="text-white/20">|</span>
-            <a href="https://github.com/janseva-platform" target="_blank" rel="noopener noreferrer" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('GITHUB') }}</a>
-            <a href="https://linkedin.com/company/janseva-platform" target="_blank" rel="noopener noreferrer" class="hover:text-[#6AA9FF] transition-colors duration-200">{{ translationService.t('LINKEDIN') }}</a>
+        <div class="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+          <div>© 2026 JANSEVA National AI Governance Platform. All rights reserved.</div>
+          <div class="flex items-center gap-4">
+            <a href="https://github.com/janseva-platform" target="_blank" class="hover:text-indigo-400 transition-colors">GitHub</a>
+            <span>•</span>
+            <a href="mailto:support@janseva.gov.in" class="hover:text-indigo-400 transition-colors">support@janseva.gov.in</a>
           </div>
         </div>
+
       </div>
     </footer>
-  `,
-  styles: [`
-    :host {
-      display: block;
-      width: 100%;
-    }
-  `]
+  `
 })
 export class GlobeFooterComponent {
-  public translationService = inject(TranslationService);
+  translationService = inject(TranslationService);
 }

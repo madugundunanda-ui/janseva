@@ -4,135 +4,159 @@ import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ComplaintsService } from '../../core/services/complaints.service';
 import { TranslationService } from '../../core/services/translation.service';
+import { UserTourComponent } from '../../shared/components/user-tour/user-tour.component';
 import { Complaint } from '../../core/services/api.service';
-import { VoiceAssistantComponent } from './voice-assistant/voice-assistant.component';
 
 @Component({
   selector: 'app-citizen-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, VoiceAssistantComponent],
+  imports: [CommonModule, RouterLink, UserTourComponent],
   template: `
-    <div class="space-y-6 pb-12 text-white">
-      <!-- Welcome Hero Banner -->
-      <div class="glass-panel p-6 rounded-2xl border border-white/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 relative overflow-hidden bg-gradient-to-r from-purple-950/20 via-transparent to-transparent">
-        <div class="space-y-2">
-          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full border border-purple-500/20 bg-purple-950/10 font-mono text-[9px] text-purple-400 uppercase tracking-widest">
-            <span>● {{ translationService.t('NODE_LIVE') }}</span>
+    <!-- Optional First-Time Citizen Guided Tour Modal -->
+    <app-user-tour></app-user-tour>
+
+    <div class="space-y-6 font-sans">
+      
+      <!-- Personalized Welcome Banner -->
+      <div class="card-surface p-6 sm:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white border border-slate-200/80 rounded-3xl shadow-xs">
+        <div class="space-y-3">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-xs font-bold text-indigo-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Citizen Node Active
           </div>
-          <h2 class="text-2xl md:text-3xl font-bold tracking-tight text-primary-var uppercase font-mono text-white">
-            {{ translationService.t('HOME') }}, <span class="text-glow">{{ authService.currentUser()?.name }}</span>
-          </h2>
-          <p class="font-mono text-[10px] text-muted-var uppercase max-w-xl text-gray-400">
-            You are logged into the JanSeva AI Civic resolution network. Use this console to track status of complaints in your municipal ward and submit local proofs.
+          
+          <h1 class="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">
+            {{ getGreeting() }}, {{ authService.currentUser()?.name || 'Citizen' }}
+          </h1>
+
+          <p class="text-xs sm:text-sm text-slate-600 max-w-xl leading-relaxed">
+            Welcome back to JANSEVA AI Governance Platform.
           </p>
+
+          <!-- Summary Status Pills -->
+          <div class="flex flex-wrap items-center gap-2.5 pt-1">
+            <span class="px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              {{ activeCount }} Active Complaints
+            </span>
+
+            <span class="px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              1 Government Update
+            </span>
+
+            <span class="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              No Pending Actions
+            </span>
+          </div>
         </div>
 
-        <button [routerLink]="['/dashboard/citizen/complaints']" class="px-5 py-3 rounded-lg bg-[#A33F93] hover:bg-[#8c357f] text-white font-mono font-bold text-xs tracking-wider uppercase transition-all duration-300 shadow-[0_0_15px_rgba(163,63,147,0.2)] cursor-pointer">
-          {{ translationService.t('FILE_GRIEVANCE') }}
+        <button [routerLink]="['/dashboard/citizen/complaints']" class="btn-primary py-3 px-6 text-sm font-semibold shrink-0 shadow-md">
+          + File New Grievance
         </button>
       </div>
 
-      <!-- Quick Metrics Grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <!-- Metric: Total Filed -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_TOTAL') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ myComplaints.length }}</div>
-          <div class="font-mono text-[8px] text-purple-400 mt-1 uppercase tracking-wide">{{ translationService.t('FILED') }}</div>
-        </div>
+      <!-- Quick Action Panel Grid -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider">Quick Actions</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          
+          <a [routerLink]="['/dashboard/citizen/complaints']" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-indigo-500 hover:shadow-md transition-all space-y-2 group">
+            <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
+              📝
+            </div>
+            <span class="font-bold text-slate-900 text-xs block">Raise Complaint</span>
+            <span class="text-[11px] text-slate-500 block">Voice/Photo intake</span>
+          </a>
 
-        <!-- Metric: Resolved -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('TRANS_RESOLVED') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">{{ resolvedCount }}</div>
-          <div class="font-mono text-[8px] text-emerald-400 mt-1 uppercase tracking-wide">{{ translationService.t('VERIFIED_BY_AI') }}</div>
-        </div>
+          <a [routerLink]="['/dashboard/citizen/complaints']" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-sky-500 hover:shadow-md transition-all space-y-2 group">
+            <div class="w-9 h-9 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
+              ⏱️
+            </div>
+            <span class="font-bold text-slate-900 text-xs block">Track Complaint</span>
+            <span class="text-[11px] text-slate-500 block">SLA & Officer status</span>
+          </a>
 
-        <!-- Metric: Trust Score -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('CIVIC_HEALTH') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-cyan-400">{{ authService.currentUser()?.trustScore ?? 100 }}/100</div>
-          <div class="font-mono text-[8px] text-cyan-400 mt-1 uppercase tracking-wide">{{ translationService.t('LEVEL') }}: {{ authService.currentUser()?.trustLevel ?? 'Trusted' }}</div>
-        </div>
+          <a href="/#updates" class="p-4 bg-white border border-slate-200 rounded-2xl shadow-xs hover:border-emerald-500 hover:shadow-md transition-all space-y-2 group">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
+              📰
+            </div>
+            <span class="font-bold text-slate-900 text-xs block">Government Updates</span>
+            <span class="text-[11px] text-slate-500 block">Verified directives</span>
+          </a>
 
-        <!-- Metric: Ward/District -->
-        <div class="glass-panel p-5 rounded-xl border border-white/10 bg-black/30">
-          <div class="font-mono text-[9px] text-muted-var uppercase tracking-widest mb-2 text-gray-400">{{ translationService.t('ADDRESS') }}</div>
-          <div class="text-2xl font-bold font-mono tracking-tight text-primary-var text-white">Ward {{ authService.currentUser()?.ward ?? '12' }}</div>
-          <div class="font-mono text-[8px] text-muted-var mt-1 uppercase tracking-wide text-gray-400">{{ authService.currentUser()?.district ?? 'Zone 3 / Dadar' }}</div>
+          <a href="tel:112" class="p-4 bg-rose-50/70 border border-rose-200 rounded-2xl shadow-xs hover:border-rose-400 hover:shadow-md transition-all space-y-2 group">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-bold text-lg group-hover:scale-110 transition-transform">
+              🚨
+            </div>
+            <span class="font-bold text-rose-900 text-xs block">Emergency 112</span>
+            <span class="text-[11px] text-rose-700 block">24x7 Hotline</span>
+          </a>
+
         </div>
       </div>
 
-      <!-- Grievance Stack Overview -->
-      <div class="glass-panel rounded-2xl border border-white/10 overflow-hidden bg-black/30">
-        <div class="p-5 border-b border-white/10 flex items-center justify-between">
-          <h3 class="font-mono text-[10px] tracking-widest text-purple-400 uppercase font-bold">{{ translationService.t('GRIEVANCE_STACK') }}</h3>
-          <span class="font-mono text-[9px] text-muted-var uppercase text-gray-400">{{ translationService.t('CORE_REPORTS') }}</span>
+      <!-- Quick KPI Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Total Filed</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">{{ myComplaints.length }}</div>
+          <span class="text-[11px] font-medium text-indigo-600 block">Municipal Tickets</span>
         </div>
 
-        <div class="divide-y divide-white/5">
-          @for (complaint of myComplaints; track complaint.id) {
-            <div class="p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-white/2 transition-colors">
-              <div class="space-y-1">
-                <div class="flex items-center gap-3 font-mono text-[9px] uppercase text-gray-400">
-                  <span class="text-purple-400">{{ complaint.id }}</span>
-                  <span>• {{ translationService.t('WARD') }} {{ complaint.location.ward }}</span>
-                  <span>• {{ translationService.t('PRIORITY') }}: {{ complaint.priority }}</span>
-                </div>
-                <h4 class="text-sm font-semibold text-primary-var uppercase text-white">{{ complaint.title }}</h4>
-                <p class="text-xs text-muted-var line-clamp-1 font-mono uppercase text-gray-400">{{ complaint.description }}</p>
-              </div>
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Resolved</span>
+          <div class="text-2xl font-bold font-mono text-emerald-600">{{ resolvedCount }}</div>
+          <span class="text-[11px] font-medium text-emerald-600 block">AI Visual Audited</span>
+        </div>
 
-              <div class="flex items-center gap-4 self-stretch md:self-auto justify-between md:justify-end">
-                <span class="px-2 py-0.5 rounded text-[8px] font-mono border uppercase tracking-wider" [ngClass]="{
-                  'border-purple-500/30 text-purple-400 bg-purple-950/15': complaint.status === 'submitted',
-                  'border-blue-500/30 text-blue-400 bg-blue-950/15': complaint.status === 'assigned',
-                  'border-cyan-500/30 text-cyan-400 bg-cyan-950/15': complaint.status === 'in_progress',
-                  'border-emerald-500/30 text-emerald-400 bg-emerald-950/15': complaint.status === 'resolved',
-                  'border-red-500/30 text-red-400 bg-red-950/15': complaint.status === 'escalated'
-                }">{{ translationService.t(complaint.status.toUpperCase()) }}</span>
-                
-                <button [routerLink]="['/dashboard/citizen/complaints']" class="px-3 py-1.5 rounded border border-white/10 hover:border-purple-500/40 text-[9px] font-mono uppercase text-white cursor-pointer">
-                  {{ translationService.t('READ_MORE') }}
-                </button>
-              </div>
-            </div>
-          } @empty {
-            <div class="p-12 text-center space-y-4">
-              <p class="font-mono text-xs text-gray-400 uppercase">{{ translationService.t('NO_TICKETS_ALIGN') }}</p>
-              <button [routerLink]="['/dashboard/citizen/complaints']" class="px-4 py-2 rounded bg-[#A33F93] text-white font-mono text-[9px] uppercase font-bold hover:bg-[#8c357f] cursor-pointer">
-                {{ translationService.t('REGISTER_TICKET') }}
-              </button>
-            </div>
-          }
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Trust Score</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">{{ authService.currentUser()?.trustScore ?? 100 }}/100</div>
+          <span class="text-[11px] font-medium text-indigo-600 block">Level: Verified Citizen</span>
+        </div>
+
+        <div class="card-surface p-4 space-y-1">
+          <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Assigned Ward</span>
+          <div class="text-2xl font-bold font-mono text-slate-900">Ward {{ authService.currentUser()?.ward ?? '12' }}</div>
+          <span class="text-[11px] font-medium text-slate-500 block">Municipal Division</span>
         </div>
       </div>
 
-      <!-- Multilingual Voice Assistant Co-Pilot -->
-      <app-voice-assistant></app-voice-assistant>
     </div>
-  `,
-  styles: [`
-    :host {
-      display: block;
-    }
-  `]
+  `
 })
 export class CitizenHomeComponent implements OnInit {
-  myComplaints: Complaint[] = [];
-  resolvedCount = 0;
+  authService = inject(AuthService);
+  complaintsService = inject(ComplaintsService);
+  translationService = inject(TranslationService);
 
-  public authService = inject(AuthService);
-  private complaintsService = inject(ComplaintsService);
-  public translationService = inject(TranslationService);
+  myComplaints: Complaint[] = [];
+
+  get resolvedCount(): number {
+    return this.myComplaints.filter(c => c.status === 'resolved').length;
+  }
+
+  get activeCount(): number {
+    return this.myComplaints.filter(c => c.status !== 'resolved').length;
+  }
 
   ngOnInit(): void {
-    const user = this.authService.currentUser();
-    if (user) {
-      this.complaintsService.loadComplaints().subscribe((data) => {
-        this.myComplaints = data.filter(c => c.citizen?.id === user.id || c.citizen?.name === user.name);
-        this.resolvedCount = this.myComplaints.filter(c => c.status === 'resolved').length;
-      });
-    }
+    this.complaintsService.loadComplaints().subscribe({
+      next: (list: Complaint[]) => {
+        this.myComplaints = list || [];
+      },
+      error: () => {
+        this.myComplaints = [];
+      }
+    });
+  }
+
+  getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   }
 }

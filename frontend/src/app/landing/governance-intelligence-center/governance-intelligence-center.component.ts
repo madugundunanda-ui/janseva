@@ -433,6 +433,16 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       ACTIVE_GRIEVANCES: 'ಸಕ್ರಿಯ ದೂರುಗಳು',
       EMERGENCY_ALERTS: 'ತುರ್ತು ಎಚ್ಚರಿಕೆಗಳು',
       SLA_COMPLIANCE: 'SLA ಅನುಸರಣೆ'
+    },
+    hi: {
+      ALERT_TITLE: 'मानसून आपातकालीन जल निकासी अलर्ट',
+      ALERT_SUM: 'सक्रिय जल निकासी दल भारी बारिश वाले वार्डों में तैनात।',
+      STATE_STATUS: 'राज्य स्थिति: सामान्य',
+      SUBTITLE_DESC: 'वास्तविक समय के संचालन और 30-दिवसीय शासन प्रगति।',
+      ACTIVE_DEPTS: 'सक्रिय विभाग',
+      ACTIVE_GRIEVANCES: 'सक्रिय शिकायतें',
+      EMERGENCY_ALERTS: 'आपातकालीन अलर्ट',
+      SLA_COMPLIANCE: 'एसएलए अनुपालन'
     }
   };
 
@@ -472,6 +482,15 @@ export class GovernanceIntelligenceCenterComponent implements OnInit, OnDestroy 
       AVG_RESPONSE: 'ಸರಾಸರಿ ಪ್ರತಿಕ್ರಿಯೆ ಸಮಯ',
       CITIZEN_ENGAGEMENT: 'ನಾಗರಿಕ ತೊಡಗಿಸಿಕೊಳ್ಳುವಿಕೆ',
       DISTRICT_INDEX: 'ಜಿಲ್ಲಾ ಕಾರ್ಯಾಚರಣೆ ಸೂಚ್ಯಂಕ'
+    },
+    hi: {
+      TIMELINE_TITLE: '30-दिवसीय शासन गतिविधि समयरेखा',
+      CURVE_LABEL: 'परिचालन गतिविधि वक्र',
+      CURVE_SUB: 'पिछले 30 दिन -> लाइव',
+      RESOLVED_30D: 'हल की गई शिकायतें (30 दिन)',
+      AVG_RESPONSE: 'औसत प्रतिक्रिया समय',
+      CITIZEN_ENGAGEMENT: 'नागरिक सहभागिता',
+      DISTRICT_INDEX: 'जिला प्रदर्शन सूचकांक'
     }
   };
 

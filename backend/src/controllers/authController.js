@@ -160,9 +160,48 @@ const me = asyncHandler(async (req, res) => {
   });
 });
 
+const sendEmailOtp = asyncHandler(async (req, res) => {
+  const otpService = require('../services/otpService');
+  const { email } = req.body;
+  const result = await otpService.sendEmailOtp(email);
+  sendSuccess(res, 200, result.message, result);
+});
+
+const verifyEmailOtp = asyncHandler(async (req, res) => {
+  const otpService = require('../services/otpService');
+  const { email, otp } = req.body;
+  const result = await otpService.verifyEmailOtp(email, otp);
+  if (!result.success) {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+  sendSuccess(res, 200, result.message, result);
+});
+
+const sendSmsOtp = asyncHandler(async (req, res) => {
+  const otpService = require('../services/otpService');
+  const { phone } = req.body;
+  const result = await otpService.sendSmsOtp(phone);
+  sendSuccess(res, 200, result.message, result);
+});
+
+const verifySmsOtp = asyncHandler(async (req, res) => {
+  const otpService = require('../services/otpService');
+  const { phone, otp } = req.body;
+  const result = await otpService.verifySmsOtp(phone, otp);
+  if (!result.success) {
+    return res.status(400).json({ success: false, message: result.message });
+  }
+  sendSuccess(res, 200, result.message, result);
+});
+
 module.exports = {
   register,
   login,
   logout,
   me,
+  sendEmailOtp,
+  verifyEmailOtp,
+  sendSmsOtp,
+  verifySmsOtp,
 };
+

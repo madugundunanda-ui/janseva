@@ -30,4 +30,11 @@ router.post('/login', authLimiter, validate(loginSchema), authController.login);
 router.post('/logout', authController.logout);
 router.get('/me', protect, authController.me);
 
+// OTP Endpoints (Email & SMS)
+router.post('/otp/send-email', authController.sendEmailOtp);
+router.post('/otp/verify-email', authController.verifyEmailOtp);
+router.post('/otp/send-sms', authController.sendSmsOtp);
+router.post('/otp/verify-sms', authController.verifySmsOtp);
+
 module.exports = router;
+

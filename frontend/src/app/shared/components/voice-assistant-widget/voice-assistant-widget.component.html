@@ -1,200 +1,171 @@
-<div class="voice-widget-container" 
-     [class.active]="aiPlatform.conversation.state().isActive" 
-     [class.a11y-mode]="accessibilityMode()">
+<div class="copilot-root" [class.active]="aiPlatform.conversation.state().isActive">
 
-  <!-- AI Contextual Hint (fades in/out when idle) -->
-  <div class="hint-bubble" [class.show]="showHint() && !aiPlatform.conversation.state().isActive">
-    <div class="hint-content">
-      <span class="hint-icon">✨</span>
-      <p class="hint-text">{{ currentHint() }}</p>
-    </div>
-  </div>
-
-  <!-- Redesigned Orb Card (Morphs between Orb and Panel) -->
-  <div #widgetCard 
-       class="widget-card" 
-       [class.active-panel]="aiPlatform.conversation.state().isActive"
-       [cdkTrapFocus]="aiPlatform.conversation.state().isActive"
-       [cdkTrapFocusAutoCapture]="true">
-    
-    <!-- Civic Intelligence Core (Visible when closed) -->
-    @if (!aiPlatform.conversation.state().isActive) {
-      <div class="civic-core" (click)="toggleAssistant()">
-        <!-- Outer Hexagonal Glowing Orb -->
-        <div class="hexagon-glow"></div>
-        <div class="hexagon-orb">
-          <!-- Inner Core Gradient & Pulsing Waves -->
-          <div class="core-gradient"></div>
-          <div class="core-mic-icon">
-            <i class="fas fa-microphone"></i>
-          </div>
-        </div>
-        
-        <!-- Tiny Orbiting Nodes (Floating node network) -->
-        <div class="orbiting-nodes">
-          <div class="node node-1"></div>
-          <div class="node node-2"></div>
-          <div class="node node-3"></div>
-        </div>
-
-        <!-- Hover Label -->
-        <div class="hover-label">
-          <span>JANSEVA AI</span>
-        </div>
+  <!-- Closed Floating Dock Trigger Button (Bottom-Right) -->
+  @if (!aiPlatform.conversation.state().isActive) {
+    <button class="copilot-dock-trigger group" 
+            (click)="toggleAssistant()" 
+            aria-label="Open JANSEVA Copilot AI Assistant"
+            title="Open JANSEVA Copilot">
+      <div class="trigger-sparkle">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
       </div>
-    }
+      <span class="font-medium text-slate-800 text-sm">Janseva Copilot</span>
+      <span class="text-xs bg-indigo-50 text-indigo-700 font-semibold px-2 py-0.5 rounded-full border border-indigo-200/80">AI</span>
+    </button>
+  }
 
-    <!-- Active Assistant Panel Content (Fades in when opened) -->
-    @if (aiPlatform.conversation.state().isActive) {
-      <div class="panel-content">
-        <div class="panel-header">
-          <div class="header-title">
-            <!-- Small Mini-Core status icon in header -->
-            <div class="mini-core" 
-                 [class.listening]="aiPlatform.speech.isListening()" 
-                 [class.thinking]="aiPlatform.conversation.state().isThinking" 
-                 [class.speaking]="aiPlatform.speech.isSpeaking()" 
-                 [class.error]="aiPlatform.conversation.state().hasError">
-              <div class="mini-hexagon"></div>
-            </div>
-            <div class="header-text">
-              <h3>JANSEVA AI Co-Pilot</h3>
-              <span class="status-text">{{ statusText() }}</span>
-            </div>
+  <!-- Active Copilot Slide-Over Drawer Panel -->
+  @if (aiPlatform.conversation.state().isActive) {
+    <!-- Backdrop overlay -->
+    <div class="drawer-backdrop" (click)="minimize()"></div>
+
+    <!-- Right Slide-Over Panel -->
+    <aside #widgetCard class="copilot-panel" aria-label="Janseva Copilot Assistant Panel">
+      
+      <!-- Copilot Header -->
+      <header class="copilot-header">
+        <div class="flex items-center gap-2.5">
+          <div class="copilot-badge-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-600"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3z"/></svg>
           </div>
-          
-          <div class="header-actions">
-            @if (aiPlatform.conversation.state().language) {
-              <span class="lang-badge">{{ languageLabel() }}</span>
-            }
-            <button class="a11y-toggle" (click)="toggleAccessibilityMode()" aria-label="Toggle Accessibility Mode" title="High Contrast Mode">
-              <i class="fas" [class.fa-universal-access]="!accessibilityMode()" [class.fa-eye]="accessibilityMode()"></i>
-            </button>
-            <button class="minimize-btn" (click)="minimize()" aria-label="Minimize AI Assistant" title="Minimize">
-              <i class="fas fa-minus"></i> <span class="btn-text">Minimize</span>
-            </button>
-            <button class="close-btn" (click)="close()" aria-label="Close AI Assistant" title="Close">
-              <i class="fas fa-times"></i> <span class="btn-text">Close</span>
-            </button>
+          <div>
+            <div class="flex items-center gap-2">
+              <h2 class="font-semibold text-slate-900 text-base leading-tight">Janseva Copilot</h2>
+              <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded font-semibold border border-slate-200">Gemini 1.5</span>
+            </div>
+            <div class="flex items-center gap-1.5 mt-0.5">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span class="text-xs text-slate-500 font-medium">{{ statusText() }}</span>
+            </div>
           </div>
         </div>
 
-        <div class="panel-body">
-          <div #messagesContainer class="messages-container" role="log" aria-live="polite">
-            @for (msg of aiPlatform.conversation.messages(); track msg.id) {
-              <div class="message-bubble" [class.user]="msg.sender === 'user'" [class.system]="msg.sender === 'assistant'">
-                <div class="bubble-icon" aria-hidden="true">
-                  @if (msg.sender === 'user') { 👤 } @else { 🤖 }
-                </div>
-                <div class="bubble-text">
-                  <p>{{ msg.content }}</p>
-                </div>
-              </div>
-            }
-
-            @if (aiPlatform.conversation.state().isThinking) {
-              <div class="message-bubble system">
-                <div class="bubble-icon" aria-hidden="true">🤖</div>
-                <div class="bubble-text">
-                  <div class="typing-indicator" aria-label="AI is thinking">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-
-          <!-- Dynamic Visualization Area (only shows listening, speaking, or error states) -->
-          @if (aiPlatform.speech.isListening() || aiPlatform.speech.isSpeaking() || aiPlatform.conversation.state().hasError) {
-            <div class="visualization-area">
-              
-              <!-- STATE: LISTENING (Audio spectrum / reactive rings) -->
-              @if (aiPlatform.speech.isListening()) {
-                <div class="state-listening">
-                  <div class="voice-waves">
-                    <div class="voice-wave wave-1"></div>
-                    <div class="voice-wave wave-2"></div>
-                    <div class="voice-wave wave-3"></div>
-                    <div class="voice-wave wave-4"></div>
-                    <div class="voice-wave wave-5"></div>
-                  </div>
-                  <span class="vis-label">Listening for voice...</span>
-                </div>
-              }
-
-              <!-- STATE: RESPONDING / SPEAKING (Rotating halo / typing indicator) -->
-              @if (aiPlatform.speech.isSpeaking() && !aiPlatform.conversation.state().isThinking) {
-                <div class="state-speaking">
-                  <div class="speaking-halo">
-                    <div class="halo-ring ring-1"></div>
-                    <div class="halo-ring ring-2"></div>
-                    <div class="halo-ring ring-3"></div>
-                  </div>
-                  <span class="vis-label">Speaking...</span>
-                </div>
-              }
-
-              <!-- STATE: ERROR (Orange pulse) -->
-              @if (aiPlatform.conversation.state().hasError) {
-                <div class="state-error">
-                  <div class="error-indicator">
-                    <div class="pulse-orange"></div>
-                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
-                  </div>
-                  <span class="vis-label error-text">Connection issue. Try speaking again.</span>
-                </div>
-              }
-            </div>
+        <div class="flex items-center gap-1">
+          @if (aiPlatform.conversation.state().language) {
+            <span class="text-xs bg-slate-100 text-slate-700 font-medium px-2 py-0.5 rounded border border-slate-200 mr-1">
+              {{ languageLabel() }}
+            </span>
           }
 
-          <!-- Chat Input Area -->
-          <div class="chat-input-area">
-            <textarea #chatTextarea
-                      class="chat-textarea"
-                      placeholder="Type your message here or speak..."
-                      aria-label="Chat input message"
-                      [disabled]="aiPlatform.conversation.state().isThinking"
-                      [value]="typedText()"
-                      (input)="onTextInput($event)"
-                      (keydown)="onKeyDown($event)">
-            </textarea>
-            
-            <div class="input-actions">
-              <button class="action-btn record"
-                      [disabled]="aiPlatform.conversation.state().isThinking || aiPlatform.speech.isListening()"
-                      (click)="recordAgain()"
-                      aria-label="Record voice input"
-                      title="Record Again">
-                <i class="fas fa-microphone" aria-hidden="true"></i>
-                <span>Record</span>
-              </button>
-              
-              <button class="action-btn clear"
-                      [disabled]="aiPlatform.conversation.state().isThinking"
-                      (click)="clearTranscript()"
-                      aria-label="Clear input message"
-                      title="Clear">
-                <i class="fas fa-trash-alt" aria-hidden="true"></i>
-                <span>Clear</span>
-              </button>
-              
-              <button class="action-btn send"
-                      [disabled]="aiPlatform.conversation.state().isThinking || !typedText().trim()"
-                      (click)="sendMessage()"
-                      aria-label="Send message"
-                      title="Send">
-                <i class="fas fa-paper-plane" aria-hidden="true"></i>
-                <span>Send</span>
-              </button>
-            </div>
-          </div>
+          <button class="btn-icon text-slate-400 hover:text-slate-700" 
+                  (click)="minimize()" 
+                  aria-label="Minimize Copilot" 
+                  title="Minimize Drawer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+          </button>
 
-          <!-- Hidden file input for workflows that require an image -->
-          <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+          <button class="btn-icon text-slate-400 hover:text-slate-700" 
+                  (click)="close()" 
+                  aria-label="Close Copilot" 
+                  title="Close Drawer">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Suggested Actions & Quick Prompts Pills -->
+      <div class="quick-prompts-bar">
+        <span class="text-[11px] font-medium text-slate-500 uppercase tracking-wider block mb-1.5">Suggested Queries:</span>
+        <div class="flex flex-wrap gap-1.5">
+          <button class="prompt-pill" (click)="typedText.set('How do I raise a new complaint?'); sendMessage()">
+            Raise Complaint
+          </button>
+          <button class="prompt-pill" (click)="typedText.set('Check grievance SLA status'); sendMessage()">
+            Track Status
+          </button>
+          <button class="prompt-pill" (click)="typedText.set('Show recent government updates'); sendMessage()">
+            Govt Updates
+          </button>
         </div>
       </div>
-    }
-  </div>
+
+      <!-- Messages Log Container -->
+      <div #messagesContainer class="copilot-body" role="log" aria-live="polite">
+        
+        <!-- Intro Message if conversation empty -->
+        @if (aiPlatform.conversation.messages().length === 0) {
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200/80 mb-3 text-sm text-slate-600 space-y-2">
+            <p class="font-medium text-slate-800">👋 Welcome to Janseva Copilot</p>
+            <p>I am your AI governance assistant. You can speak or type in English, Telugu, Tamil, or Kannada to file grievances, check SLA deadlines, or query public intelligence.</p>
+          </div>
+        }
+
+        @for (msg of aiPlatform.conversation.messages(); track msg.id) {
+          <div class="message-row" [class.user-row]="msg.sender === 'user'" [class.copilot-row]="msg.sender === 'assistant'">
+            <div class="message-bubble" [class.user-bubble]="msg.sender === 'user'" [class.copilot-bubble]="msg.sender === 'assistant'">
+              <p class="text-sm leading-relaxed whitespace-pre-wrap">{{ msg.content }}</p>
+            </div>
+          </div>
+        }
+
+        @if (aiPlatform.conversation.state().isThinking) {
+          <div class="message-row copilot-row">
+            <div class="message-bubble copilot-bubble flex items-center gap-2 py-2.5 px-3">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-ping"></span>
+              <span class="text-xs text-slate-500 font-medium">Copilot is analyzing details...</span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Live Voice Spectrum Bar if recording -->
+      @if (aiPlatform.speech.isListening()) {
+        <div class="voice-status-bar">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-indigo-700 flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-indigo-600 animate-pulse"></span>
+              Listening... Speak now
+            </span>
+            <button class="text-xs text-slate-500 hover:text-slate-700 underline" (click)="clearTranscript()">Cancel</button>
+          </div>
+          <div class="audio-waveform mt-2">
+            <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+          </div>
+        </div>
+      }
+
+      <!-- Copilot Footer Input Control Bar -->
+      <footer class="copilot-footer">
+        <div class="input-wrapper">
+          <textarea #chatTextarea
+                    class="copilot-input"
+                    rows="2"
+                    placeholder="Ask Copilot or dictating grievance..."
+                    aria-label="Ask Copilot input box"
+                    [disabled]="aiPlatform.conversation.state().isThinking"
+                    [value]="typedText()"
+                    (input)="onTextInput($event)"
+                    (keydown)="onKeyDown($event)">
+          </textarea>
+
+          <div class="input-toolbar">
+            <div class="flex items-center gap-1">
+              <button class="tool-btn" 
+                      [disabled]="aiPlatform.conversation.state().isThinking || aiPlatform.speech.isListening()"
+                      (click)="recordAgain()"
+                      title="Voice Speech Input">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" [class.text-indigo-600]="aiPlatform.speech.isListening()"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+              </button>
+              
+              <button class="tool-btn" 
+                      (click)="fileInput.click()"
+                      title="Upload Evidence Document/Photo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              </button>
+            </div>
+
+            <button class="btn-primary py-1.5 px-3 text-xs"
+                    [disabled]="aiPlatform.conversation.state().isThinking || !typedText().trim()"
+                    (click)="sendMessage()">
+              <span>Send</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+          </div>
+        </div>
+      </footer>
+
+      <!-- Hidden File Input for Evidence -->
+      <input type="file" #fileInput accept="image/*" style="display: none;" (change)="onFileSelected($event)">
+    </aside>
+  }
 </div>
